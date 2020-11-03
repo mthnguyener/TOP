@@ -11,6 +11,7 @@ current.date.time <- Sys.time()
 c.date <- substr(current.date.time, start = 1, stop = 10)
 c.time <- substr(current.date.time, start = 12, stop = 13)
 current.date <- str_c(c.date, "T", c.time)
+current.date.parsed <- parse_datetime(current.date)
 
 airnow.url <- str_replace_all(airnow.url.frame, pattern = "XXX", replacement = current.date)
 
@@ -25,7 +26,8 @@ airnow.current <- airnow.current %>%
          AQI = V6,
          category_number = V7,
          location = V8, 
-         agency = V9)
+         agency = V9) %>% 
+  mutate(date = current.date.parsed)
 
 category_reference <- data.frame(category_number = c(1, 2, 3, 4, 5, 6),
                                  category = c("good", "moderate", 
