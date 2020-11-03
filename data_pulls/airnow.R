@@ -4,6 +4,8 @@ library(tidyverse)
 # AirNow ------------------------------------------------------------------
 airnow.old <- read.csv("airnow.csv")
 
+airnow.old$date <- parse_datetime(airnow.old$date)
+
 airnow.url.frame <- "https://www.airnowapi.org/aq/data/?startDate=XXX&endDate=XXX&parameters=OZONE,PM25,PM10,CO,NO2,SO2&BBOX=-77.147558,38.792889,-76.888006,39.005574&dataType=A&format=text/csv&verbose=1&nowcastonly=1&includerawconcentrations=1&API_KEY=3AC62974-39D1-4E52-9D31-9F7BC30231AF"
 
 current.date.time <- Sys.time()
