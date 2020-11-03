@@ -2,18 +2,14 @@
 library(tidyverse)
 library(cronR)
 
-# AirNow Automation -------------------------------------------------------
+# Hourly Traffic and Sensor Data ------------------------------------------
 working.directory <- getwd()
-airnow.auto.file <- str_c(working.directory, "/airnow.R")
+hourly.auto.file <- str_c(working.directory, "/hourly.R")
 
-cmd.auto.airnow <- cron_rscript(airnow.auto.file)
-cron_add(command = cmd.auto.airnow, frequency = "hourly")
-
-# Hourly Traffic Automation -----------------------------------------------
-traffic.auto.file <- str_c(working.directory, "/hourly_traffic.R")
-
-cmd.auto.traffic <- cron_rscript(traffic.auto.file)
-cron_add(command = cmd.auto.traffic, frequency = "hourly")
+cmd.auto.hourly <- cron_rscript(hourly.auto.file)
+cron_add(command = cmd.auto.hourly, frequency = "hourly")
 
 ## to stop running, cron_clear()
+
+
 

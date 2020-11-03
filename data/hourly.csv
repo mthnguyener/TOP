@@ -1,0 +1,15 @@
+"date","category_number","latitude","longitude","parameter_name","raw_concentration","AQI","location","agency","V10","V11","category","traffic_index_live","jams_delay","jams_length","jams_count"
+2020-11-03 07:00:00,1,38.859402,-77.058899,"OZONE",19,19,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.859402,-77.058899,"NO2",7.8,7,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.970101,-77.016715,"NO2",10.51,9,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.921848,-77.013176,"OZONE",23,22,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.921848,-77.013176,"NO2",11.35,10,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.970101,-77.016715,"OZONE",20.7,22,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.921848,-77.013176,"SO2",0.358,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.875161,-77.012816,"PM2.5",-1,3,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.895683,-76.958089,"OZONE",27.5,26,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.921848,-77.013176,"PM2.5",3,5,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.895683,-76.958089,"NO2",6.84,6,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.894749,-76.953427,"PM2.5",5,13,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.894749,-76.953427,"NO2",5.39,5,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",2,38.3,15.5,15
+2020-11-03 07:00:00,1,38.895683,-76.958089,"PM2.5",4,15,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",2,38.3,15.5,15
