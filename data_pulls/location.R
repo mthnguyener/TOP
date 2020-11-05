@@ -1,4 +1,6 @@
+# Load Packages -----------------------------------------------------------
 library(tidyverse)
+library(xml2)
 
 # Pull Random Streets -----------------------------------------------------
 segs <- read_csv("Street_Segments.csv")
@@ -52,7 +54,7 @@ street.url <- str_replace_all(street.url.frame3,
 
 street.datalist <- list()
 
-for(i in 1:3){
+for(i in 1:length(street.url)){
   street.raw <- read_xml(street.url[i])
   street.raw.list <- as_list(street.raw)
   street.data <- as.data.frame(unlist(street.raw.list))
