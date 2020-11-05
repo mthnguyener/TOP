@@ -1,3 +1,5 @@
+library(tidyverse)
+
 # Pull Random Streets -----------------------------------------------------
 segs <- read_csv("Street_Segments.csv")
 names(segs) <- tolower(names(segs))
