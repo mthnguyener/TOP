@@ -90,6 +90,38 @@ traffic.flow <- merge(traffic.flow, an.slim.n, by = c("date", "no2_loc"))
 rm(an.slim, an.slim.n, an.slim.p, an.slim.s, an.slim.o,
    asl.n, asl.o, asl.p, asl.s)
 
+head(traffic.flow)
+
+
+traffic.flow$anc <- str_replace(traffic.flow$anc, "ANC ", "")
+traffic.flow$police_service_area <- 
+  str_replace(traffic.flow$police_service_area, "Police Service Area ", "")
+traffic.flow$ward <- 
+  str_replace(traffic.flow$ward, "Ward ", "")
+traffic.flow$neighborhood_cluster <-
+  str_replace(traffic.flow$neighborhood_cluster, "Cluster ", "")
+traffic.flow$police_district <- 
+  str_replace(traffic.flow$police_district, "Police District - ", "")
+traffic.flow$police_sector <- 
+  str_replace(traffic.flow$police_sector, "Police Sector ", "")
+traffic.flow$voter_precinct <- 
+  str_replace(traffic.flow$voter_precinct, "Precinct ", "")
+traffic.flow$single_member_district <-
+  str_replace(traffic.flow$single_member_district, "SMD ", "")
+
+traffic.flow$census_tract <-
+  as.character(traffic.flow$census_tract)
+
+for(i in 1:nrow(traffic.flow)){
+  if(nchar(traffic.flow$census_tract[i]) == 3){
+    traffic.flow$census_tract[i] <- str_c("000", traffic.flow$census_tract[i])
+  }else if(nchar(traffic.flow$census_tract[i]) == 4){
+    traffic.flow$census_tract[i] <- str_c("00", traffic.flow$census_tract[i])
+  }else if(nchar(traffic.flow$census_tract[i]) == 5){
+    traffic.flow$census_tract[i] <- str_c("0", traffic.flow$census_tract[i])
+  }
+}
+
 # User Interface ----------------------------------------------------------
 location.types <- c("Quadrant", "Ward", "Zip Code", 
                     "Advisory Neighborhood Commission",
@@ -106,9 +138,18 @@ ui <- fluidPage(
     tabPanel("Location Search",
              sidebarLayout(
                sidebarPanel(
+                 dateInput("date", "What day?",
+                           value = "2020-11-05"),
+                 sliderInput("hour", "Which hour?",
+                             value = 20, min = 0, max = 24),
                  selectInput("loc.type", "Which location type?",
                              choices = location.types, 
-                             selected = "Ward")
+                             selected = "Ward"),
+                 textInput("loc.type2", "Which location?"),
+                 checkboxInput("ozone", "Ozone"), 
+                 checkboxInput("so2", "SO2"), 
+                 checkboxInput("pm2.5", "PM 2.5"),
+                 checkboxInput("no2", "NO2")
                ),
                mainPanel(h3("Overview"))
              ))
@@ -117,10 +158,10 @@ ui <- fluidPage(
 
 # Server ------------------------------------------------------------------
 
-
 server <- function(input, output) {
-  
-  
+  output$secondSelection <- renderUI({
+    
+  })
 }
 
 
