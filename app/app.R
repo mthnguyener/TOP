@@ -91,6 +91,11 @@ rm(an.slim, an.slim.n, an.slim.p, an.slim.s, an.slim.o,
    asl.n, asl.o, asl.p, asl.s)
 
 # User Interface ----------------------------------------------------------
+location.types <- c("Quadrant", "Ward", "Zip Code", 
+                    "Advisory Neighborhood Commission",
+                    "Census Tract",
+                    "Single Member District",
+                    "Voter Precinct")
 
 ui <- fluidPage(
   titlePanel("Assessment of Air Quality and Traffic Volume"),
@@ -98,10 +103,17 @@ ui <- fluidPage(
   
   tabsetPanel(
     tabPanel("Citywide"),
-    tabPanel("Location Search")
+    tabPanel("Location Search",
+             sidebarLayout(
+               sidebarPanel(
+                 selectInput("loc.type", "Which location type?",
+                             choices = location.types, 
+                             selected = "Ward")
+               ),
+               mainPanel(h3("Overview"))
+             ))
   )
 )
-?titlePanel
 
 # Server ------------------------------------------------------------------
 
