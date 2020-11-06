@@ -141,17 +141,24 @@ ui <- fluidPage(
                  dateInput("date", "What day?",
                            value = "2020-11-05"),
                  sliderInput("hour", "Which hour?",
-                             value = 20, min = 0, max = 24),
+                             value = 17, min = 0, max = 24),
                  selectInput("loc.type", "Which location type?",
                              choices = location.types, 
-                             selected = "Ward"),
-                 textInput("loc.type2", "Which location?"),
+                             selected = "Quadrant"),
+                 textInput("loc.type2", "Which location?",
+                           value = "SE"),
                  checkboxInput("ozone", "Ozone"), 
                  checkboxInput("so2", "SO2"), 
                  checkboxInput("pm2.5", "PM 2.5"),
                  checkboxInput("no2", "NO2")
                ),
-               mainPanel(h3("Overview"))
+               mainPanel(h3("Overview"),
+                         textOutput("current.speed"),
+                         textOutput("free.flow.speed"),
+                         textOutput("current.travel.time"),
+                         textOutput("free.flow.travel.time"),
+                         plotOutput("bar"),
+                         h3("Number of Confirmed Cases"))
              ))
   )
 )
@@ -159,11 +166,31 @@ ui <- fluidPage(
 # Server ------------------------------------------------------------------
 
 server <- function(input, output) {
-  output$secondSelection <- renderUI({
+  ## Citywide Tab
+  
+  ## Location Search
+  output$current.speed <- renderText({
+    cs1 <- traffic.flow %>% 
+      filter(date == parse_datetime(str_c(as.character(input$date), 
+                                          " ", 
+                                          as.character(input$hour), 
+                                          ":00:00")))
+    if(input$loc.type == "Quadrant"){
+      if(input$loc.type2 == "SE"){
+        cs2 <- mean(cs1$current_speed[cs1$quadrant == "SE"], na.rm = TRUE)
+      }else if(input$loc.type2 == "SW"){
+        cs2 <- mean(cs1$current_speed[cs1$quadrant == "SW"], na.rm = TRUE)
+      }else if(input$loc.type2 == "NE"){
+        cs2 <- mean(cs1$current_speed[cs1$quadrant == "NE"], na.rm = TRUE)
+      }else if(input$loc.type2 == "NW"){
+        cs2 <- mean(cs1$current_speed[cs1$quadrant == "NW"], na.rm = TRUE)
+      }
+    }
+    
+    str_c("Current speed: ", round(cs2, digits = 0), " mph")
     
   })
 }
-
 
 # Run ---------------------------------------------------------------------
 shinyApp(ui = ui, server = server)
