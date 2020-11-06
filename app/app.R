@@ -226,7 +226,11 @@ ui <- fluidPage(
                          plotOutput("loc.type.graph1"),
                          h4("Traffic Volume"),
                          plotOutput("loc.type.graph2"),)
-             ))
+             )),
+    tabPanel("Raw Citywide Data",
+             dataTableOutput("static.city")),
+    tabPanel("Raw Location Specific Data",
+             dataTableOutput("static.location"))
   )
 )
 
@@ -4611,8 +4615,17 @@ server <- function(input, output) {
       }
     }
   }) 
+  
+  ## Test
+  output$static.city <- renderDataTable({
+    hourly
+  })
+  output$static.location <- renderDataTable({
+    traffic.flow %>% 
+      select(-all_lat_lon) %>% 
+      select(-street.url)
+  })
 }
-
 
 # Run ---------------------------------------------------------------------
 shinyApp(ui = ui, server = server)
