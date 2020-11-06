@@ -1,10 +1,19 @@
 # Load Packages -----------------------------------------------------------
 library(shiny)
 library(tidyverse)
+library(leaflet)
+library(ggplot2)
+library(shinyTime)
 
 # Load Data ---------------------------------------------------------------
 hourly <- read_csv("hourly.csv")
 traffic.flow <- read_csv("traffic_flow.csv")
+
+agencies <- as.data.frame(unique(hourly$agency)) %>%
+  rename(c("agency"="unique(hourly$agency)"))
+
+parameters <- as.data.frame(unique(hourly$parameter_name)) %>%
+  rename(c("agency"="unique(hourly$parameter_name)"))
 
 # Tidy Data ---------------------------------------------------------------
 airnow.sensor.loc <- hourly %>% 
@@ -134,7 +143,28 @@ ui <- fluidPage(
   h4("Washington, D.C."),
   
   tabsetPanel(
-    tabPanel("Citywide"),
+    tabPanel("Citywide",
+             sidebarLayout(
+               sidebarPanel(
+                 dateInput("date", "Date:", value = Sys.Date()),
+                 timeInput("time", "Time:", value = Sys.time()),
+                 uiOutput(outputId = "text1"),
+                 checkboxInput("traffic", "On"),
+                 uiOutput(outputId = "text2"),
+                 checkboxInput("ozone", "OZONE"),
+                 checkboxInput("so2", "SO2"),
+                 checkboxInput("pm25", "PM2.5"),
+                 checkboxInput("no2", "NO2")
+               ),
+               
+               mainPanel(#h3("Traffic and AQI"),
+                 #plotOutput("trafficaqi"),
+                 h3("Daily AQI"),
+                 plotOutput("myaqi"),
+                 h3("Map"),
+                 leafletOutput("mymap"))
+             )
+    ),
     tabPanel("Location Search",
              sidebarLayout(
                sidebarPanel(
@@ -167,6 +197,60 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   ## Citywide Tab
+  output$text1 <- renderText({
+    HTML(paste0("<b>","Turn on Traffic Index?","</b>"))
+  })
+  
+  output$text2 <- renderText({
+    HTML(paste0("<b>","Parameters","</b>"))
+  })
+  
+  
+  ## First graph for the Overview tab
+  #output$trafficaqi <- renderPlot({
+  #hourly %>%
+  #filter(parameter_name == "PM2.5") %>%
+  #ggplot(aes(x=jams_count, y = AQI)) +
+  #geom_point() +
+  #ggtitle(paste0("Traffic Data")) +
+  #xlab("Traffic Index") + ylab("AQI")
+  #})
+  
+  
+  ## Second graph for the Overview tab
+  output$myaqi <- renderPlot({
+    if(input$traffic==TRUE){
+      hourly %>%
+        ggplot(aes(x=date, y = log(AQI), color=parameter_name)) +
+        geom_line() +
+        geom_line(aes(x=date, y = log(traffic_index_live)), size = 1, color = "black") +
+        ggtitle(paste0("Traffic and AQI")) +
+        xlab("Date") + ylab("AQI")
+    }else{
+      hourly %>%
+        ggplot(aes(x=date, y = log(AQI), color=parameter_name)) +
+        geom_line() +
+        ggtitle(paste0("AQI Count")) +
+        xlab("Date") + ylab("AQI")
+    }
+  })
+  
+  ## Third graph for the Overview tab
+  output$mymap <- renderLeaflet({
+    if(input$traffic==TRUE){
+      leaflet(hourly) %>% addTiles() %>%
+        addCircles(lng = ~longitude, lat = ~latitude, weight = 1,
+                   radius = ~(AQI+12)*10, popup = ~location, color = "#FF0000") %>%
+        addCircles(lng = ~longitude, lat = ~latitude, weight = 1,
+                   radius = ~(traffic_index_live+5)*10, popup = ~location, color = "#52E74B")
+    }else{
+      leaflet(hourly) %>% addTiles() %>%
+        addCircles(lng = ~longitude, lat = ~latitude, weight = 1,
+                   radius = ~(AQI+12)*10, popup = ~location, color = "#FF0000")
+      
+    }
+  })
+  
   
   ## Location Search
   output$current.speed <- renderText({
