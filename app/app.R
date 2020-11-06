@@ -221,6 +221,7 @@ server <- function(input, output) {
   output$myaqi <- renderPlot({
     if(input$traffic==TRUE){
       hourly %>%
+        filter(agency == "District of Columbia - Department of Energy and Environment") %>%
         ggplot(aes(x=date, y = log(AQI), color=parameter_name)) +
         geom_line() +
         geom_line(aes(x=date, y = log(traffic_index_live)), size = 1, color = "black") +
