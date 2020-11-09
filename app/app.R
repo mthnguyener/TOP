@@ -515,14 +515,14 @@ server <- function(input, output) {
     if(input$loc.type == "Quadrant"){
       if(input$loc.type2 != "SE" & input$loc.type2 != "SW" &
          input$loc.type2 != "NE" & input$loc.type2 != "NW"){
-        "Warning: Enter a valid value for location."
+        "Warning: Enter a valid value for quadrant location (e.g., SE)."
       }
     }else if(input$loc.type == "Ward"){
       if(input$loc.type2 != "1" & input$loc.type2 != "2" & 
          input$loc.type2 != "3" & input$loc.type2 != "4" & 
          input$loc.type2 != "5" & input$loc.type2 != "6" & 
          input$loc.type2 != "7" & input$loc.type2 != "8"){
-        "Warning: Enter a valid value for location."
+        "Warning: Enter a valid value for ward location (e.g., 1)."
       }
     }else if(input$loc.type == "Zip Code"){
       if(input$loc.type2 != "20032" & input$loc.type2 != "20037" &
@@ -536,7 +536,7 @@ server <- function(input, output) {
          input$loc.type2 != "20011" & input$loc.type2 != "20010" &
          input$loc.type2 != "20374" & input$loc.type2 != "20015" &
          input$loc.type2 != "20012"){
-        "Warning: Enter a valid value for location."
+        "Warning: Enter a valid value for zip code location (e.g., 20012)."
       }
     }else if(input$loc.type == "Advisory Neighborhood Commission"){
       if(input$loc.type2 != "8E" & input$loc.type2 != "2A" & 
@@ -555,7 +555,7 @@ server <- function(input, output) {
          input$loc.type2 != "3G" & input$loc.type2 != "4B" & 
          input$loc.type2 != "4A" & input$loc.type2 != "5A" & 
          input$loc.type2 != "4D" & input$loc.type2 != "3F"){
-        "Warning: Enter a valid value for location."
+        "Warning: Enter a valid value for advisory neighborhood commission location (e.g., 3F)."
       }
     }else if(input$loc.type == "Census Tract"){
       if(input$loc.type2 != "007304" & input$loc.type2 != "005600" & 
@@ -597,7 +597,7 @@ server <- function(input, output) {
          input$loc.type2 != "002600" & input$loc.type2 != "001901" & 
          input$loc.type2 != "002001" & input$loc.type2 != "001803" & 
          input$loc.type2 != "001100" & input$loc.type2 != "001600"){
-        "Warning: Enter a valid value for location."
+        "Warning: Enter a valid value for census tract location (e.g., 001100)."
       }
     }else if(input$loc.type == "Single Member District"){
       if(input$loc.type2 != "8E04" & input$loc.type2 != "2A03" & 
@@ -641,7 +641,7 @@ server <- function(input, output) {
          input$loc.type2 != "4B04" & input$loc.type2 != "4A06" & 
          input$loc.type2 != "4A07" & input$loc.type2 != "3E04" & 
          input$loc.type2 != "3D03" & input$loc.type2 != "4A02"){
-        "Warning: Enter a valid value for location."
+        "Warning: Enter a valid value for single member district location (e.g., 4A02)."
       }
     }else if(input$loc.type == "Voter Precinct"){
       if(input$loc.type2 != "120" & input$loc.type2 != "3" & 
@@ -679,7 +679,7 @@ server <- function(input, output) {
          input$loc.type2 != "57" & input$loc.type2 != "31" &  
          input$loc.type2 != "53" & input$loc.type2 != "61" & 
          input$loc.type2 != "32" & input$loc.type2 != "62"){
-        "Warning: Enter a valid value for location."
+        "Warning: Enter a valid value for voter precinct location (e.g., 62)."
       }
     }
   })
