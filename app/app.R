@@ -233,6 +233,7 @@ ui <- fluidPage(#theme = shinytheme("darkly"),
                              selected = "Quadrant"),
                  textInput("loc.type2", "Which location?",
                            value = "SE"),
+                 span(textOutput("warning.text"), style = "color:red"),
                  h5("Air Quality Parameters"),
                  checkboxInput("ozone1", "Ozone", value = TRUE), 
                  checkboxInput("so2.1", "SO2"), 
@@ -510,6 +511,179 @@ server <- function(input, output) {
   })
   
   ## Location Search
+  output$warning.text <- renderText({
+    if(input$loc.type == "Quadrant"){
+      if(input$loc.type2 != "SE" & input$loc.type2 != "SW" &
+         input$loc.type2 != "NE" & input$loc.type2 != "NW"){
+        "Warning: Enter a valid value for location."
+      }
+    }else if(input$loc.type == "Ward"){
+      if(input$loc.type2 != "1" & input$loc.type2 != "2" & 
+         input$loc.type2 != "3" & input$loc.type2 != "4" & 
+         input$loc.type2 != "5" & input$loc.type2 != "6" & 
+         input$loc.type2 != "7" & input$loc.type2 != "8"){
+        "Warning: Enter a valid value for location."
+      }
+    }else if(input$loc.type == "Zip Code"){
+      if(input$loc.type2 != "20032" & input$loc.type2 != "20037" &
+         input$loc.type2 != "20227" & input$loc.type2 != "20019" &
+         input$loc.type2 != "20020" & input$loc.type2 != "20018" &
+         input$loc.type2 != "20016" & input$loc.type2 != "20024" &
+         input$loc.type2 != "20002" & input$loc.type2 != "20001" &
+         input$loc.type2 != "20009" & input$loc.type2 != "20008" &
+         input$loc.type2 != "20007" & input$loc.type2 != "20017" &
+         input$loc.type2 != "20005" & input$loc.type2 != "20003" &
+         input$loc.type2 != "20011" & input$loc.type2 != "20010" &
+         input$loc.type2 != "20374" & input$loc.type2 != "20015" &
+         input$loc.type2 != "20012"){
+        "Warning: Enter a valid value for location."
+      }
+    }else if(input$loc.type == "Advisory Neighborhood Commission"){
+      if(input$loc.type2 != "8E" & input$loc.type2 != "2A" & 
+         input$loc.type2 != "8C" & input$loc.type2 != "8D" & 
+         input$loc.type2 != "7F" & input$loc.type2 != "7C" & 
+         input$loc.type2 != "7E" & input$loc.type2 != "5C" & 
+         input$loc.type2 != "3D" & input$loc.type2 != "6D" & 
+         input$loc.type2 != "5D" & input$loc.type2 != "1B" & 
+         input$loc.type2 != "2B" & input$loc.type2 != "3C" & 
+         input$loc.type2 != "2E" & input$loc.type2 != "5E" & 
+         input$loc.type2 != "5B" & input$loc.type2 != "6E" & 
+         input$loc.type2 != "2F" & input$loc.type2 != "4C" & 
+         input$loc.type2 != "3E" & input$loc.type2 != "6B" &
+         input$loc.type2 != "1A" & input$loc.type2 != "6A" & 
+         input$loc.type2 != "6C" & input$loc.type2 != "8A" & 
+         input$loc.type2 != "3G" & input$loc.type2 != "4B" & 
+         input$loc.type2 != "4A" & input$loc.type2 != "5A" & 
+         input$loc.type2 != "4D" & input$loc.type2 != "3F"){
+        "Warning: Enter a valid value for location."
+      }
+    }else if(input$loc.type == "Census Tract"){
+      if(input$loc.type2 != "007304" & input$loc.type2 != "005600" & 
+         input$loc.type2 != "009804" & input$loc.type2 != "009807" & 
+         input$loc.type2 != "009811" & input$loc.type2 != "010800" & 
+         input$loc.type2 != "009700" & input$loc.type2 != "010400" &
+         input$loc.type2 != "006202" & input$loc.type2 != "007301" & 
+         input$loc.type2 != "009603" & input$loc.type2 != "007708" & 
+         input$loc.type2 != "007804" & input$loc.type2 != "007707" & 
+         input$loc.type2 != "009902" & input$loc.type2 != "007807" &
+         input$loc.type2 != "007806" & input$loc.type2 != "007809" & 
+         input$loc.type2 !=  "009905" & input$loc.type2 !=  "009000" & 
+         input$loc.type2 != "009400" & input$loc.type2 != "000901" & 
+         input$loc.type2 != "006400" & input$loc.type2 != "008803" &
+         input$loc.type2 != "003400" & input$loc.type2 != "004201" & 
+         input$loc.type2 != "000600" & input$loc.type2 != "000300" & 
+         input$loc.type2 != "008702" & input$loc.type2 != "009302" & 
+         input$loc.type2 != "001002" & input$loc.type2 != "003301" &
+         input$loc.type2 != "004702" & input$loc.type2 != "010100" & 
+         input$loc.type2 !=  "000400" & input$loc.type2 != "010200" & 
+         input$loc.type2 != "010500" & input$loc.type2 != "008701" & 
+         input$loc.type2 != "002501" & input$loc.type2 != "009503" &
+         input$loc.type2 != "011100" & input$loc.type2 != "004600" & 
+         input$loc.type2 != "001001" & input$loc.type2 != "002400" & 
+         input$loc.type2 != "006500" & input$loc.type2 != "004400" & 
+         input$loc.type2 != "009102" & input$loc.type2 != "002900" &
+         input$loc.type2 != "000502" & input$loc.type2 != "009201" & 
+         input$loc.type2 != "010600" & input$loc.type2 != "004902" & 
+         input$loc.type2 !=  "008302" & input$loc.type2 != "007200" & 
+         input$loc.type2 != "006802" & input$loc.type2 != "006600" &
+         input$loc.type2 != "008001" & input$loc.type2 != "006700" & 
+         input$loc.type2 != "008100" & input$loc.type2 != "007601" & 
+         input$loc.type2 != "007100" & input$loc.type2 != "008904" & 
+         input$loc.type2 != "008200" & input$loc.type2 != "008002" &
+         input$loc.type2 != "001401" & input$loc.type2 != "001902" & 
+         input$loc.type2 != "001804" & input$loc.type2 != "001500" & 
+         input$loc.type2 != "009509" & input$loc.type2 != "002101" & 
+         input$loc.type2 != "001301" & input$loc.type2 != "002102" &
+         input$loc.type2 != "002600" & input$loc.type2 != "001901" & 
+         input$loc.type2 != "002001" & input$loc.type2 != "001803" & 
+         input$loc.type2 != "001100" & input$loc.type2 != "001600"){
+        "Warning: Enter a valid value for location."
+      }
+    }else if(input$loc.type == "Single Member District"){
+      if(input$loc.type2 != "8E04" & input$loc.type2 != "2A03" & 
+         input$loc.type2 != "8C07" & input$loc.type2 != "8C03" & 
+         input$loc.type2 != "8D06" & input$loc.type2 != "8D01" & 
+         input$loc.type2 != "2A07" & input$loc.type2 != "8E05" & 
+         input$loc.type2 != "2A01" & input$loc.type2 != "8D03" & 
+         input$loc.type2 != "8C05" & input$loc.type2 != "7F01" & 
+         input$loc.type2 != "7F06" & input$loc.type2 != "7C03" &   
+         input$loc.type2 != "7E01" & input$loc.type2 != "7E02" & 
+         input$loc.type2 != "7C06" & input$loc.type2 != "7C07" & 
+         input$loc.type2 != "7C04" & input$loc.type2 != "7E06" & 
+         input$loc.type2 != "5C03" & input$loc.type2 != "5C01" & 
+         input$loc.type2 != "3D02" & input$loc.type2 != "6D06" & 
+         input$loc.type2 != "5D01" & input$loc.type2 != "1B01" & 
+         input$loc.type2 != "2B09" & input$loc.type2 != "3C09" &  
+         input$loc.type2 != "2E01" & input$loc.type2 != "5E03" & 
+         input$loc.type2 != "5B03" & input$loc.type2 != "3C06" & 
+         input$loc.type2 != "5E08" & input$loc.type2 != "6E07" & 
+         input$loc.type2 != "2B05" & input$loc.type2 != "3C08" & 
+         input$loc.type2 != "6D05" & input$loc.type2 != "6D03" & 
+         input$loc.type2 != "2F08" & input$loc.type2 != "5E04" & 
+         input$loc.type2 != "4C03" & input$loc.type2 != "5B01" & 
+         input$loc.type2 != "5C02" & input$loc.type2 != "5E05" & 
+         input$loc.type2 != "3E05" & input$loc.type2 != "4C08" & 
+         input$loc.type2 != "6B01" & input$loc.type2 != "1B02" & 
+         input$loc.type2 != "5C06" & input$loc.type2 != "1A04" & 
+         input$loc.type2 != "3C03" & input$loc.type2 != "5E01" & 
+         input$loc.type2 != "6A01" & input$loc.type2 != "2F06" & 
+         input$loc.type2 != "6C03" & input$loc.type2 != "6D07" & 
+         input$loc.type2 != "6B09" & input$loc.type2 != "6B02" & 
+         input$loc.type2 != "5C04" & input$loc.type2 != "6A02" & 
+         input$loc.type2 != "6B05" & input$loc.type2 != "6A03" & 
+         input$loc.type2 != "8A03" & input$loc.type2 != "6B07" & 
+         input$loc.type2 != "5D05" & input$loc.type2 != "6B06" & 
+         input$loc.type2 != "6A08" & input$loc.type2 != "3G05" & 
+         input$loc.type2 != "4B06" & input$loc.type2 != "4A04" & 
+         input$loc.type2 != "3G04" & input$loc.type2 != "5A08" & 
+         input$loc.type2 != "4D03" & input$loc.type2 != "3F03" & 
+         input$loc.type2 != "3E02" & input$loc.type2 != "4A08" & 
+         input$loc.type2 != "4B04" & input$loc.type2 != "4A06" & 
+         input$loc.type2 != "4A07" & input$loc.type2 != "3E04" & 
+         input$loc.type2 != "3D03" & input$loc.type2 != "4A02"){
+        "Warning: Enter a valid value for location."
+      }
+    }else if(input$loc.type == "Voter Precinct"){
+      if(input$loc.type2 != "120" & input$loc.type2 != "3" & 
+         input$loc.type2 != "122" & input$loc.type2 != "126" & 
+         input$loc.type2 != "125" & input$loc.type2 != "2" & 
+         input$loc.type2 != "121" & input$loc.type2 != "123" & 
+         input$loc.type2 != "129" & input$loc.type2 != "102" & 
+         input$loc.type2 != "132" & input$loc.type2 != "97" & 
+         input$loc.type2 != "106" & input$loc.type2 != "110" & 
+         input$loc.type2 != "95" & input$loc.type2 != "93" & 
+         input$loc.type2 != "94" & input$loc.type2 != "105" & 
+         input$loc.type2 != "139" & input$loc.type2 != "69" & 
+         input$loc.type2 != "9" & input$loc.type2 != "127" & 
+         input$loc.type2 != "76" & input$loc.type2 != "20" & 
+         input$loc.type2 != "141" & input$loc.type2 != "27" & 
+         input$loc.type2 != "6" & input$loc.type2 != "75" & 
+         input$loc.type2 != "73" & input$loc.type2 != "29" & 
+         input$loc.type2 != "135" & input$loc.type2 != "1" & 
+         input$loc.type2 != "17" & input$loc.type2 != "12" & 
+         input$loc.type2 != "128" & input$loc.type2 != "48" & 
+         input$loc.type2 != "67" & input$loc.type2 != "72" & 
+         input$loc.type2 != "19" & input$loc.type2 != "30" & 
+         input$loc.type2 != "45" & input$loc.type2 != "130" & 
+         input$loc.type2 != "22" & input$loc.type2 != "42" & 
+         input$loc.type2 != "26" & input$loc.type2 != "74" & 
+         input$loc.type2 != "82" & input$loc.type2 != "85" & 
+         input$loc.type2 != "131" & input$loc.type2 != "91" & 
+         input$loc.type2 != "89" & input$loc.type2 != "71" & 
+         input$loc.type2 != "81" & input$loc.type2 != "88" & 
+         input$loc.type2 != "133" & input$loc.type2 != "79" &  
+         input$loc.type2 != "86" & input$loc.type2 != "50" & 
+         input$loc.type2 != "59" & input$loc.type2 != "60" & 
+         input$loc.type2 != "51" & input$loc.type2 != "66" & 
+         input$loc.type2 != "56" & input$loc.type2 != "138" & 
+         input$loc.type2 != "57" & input$loc.type2 != "31" &  
+         input$loc.type2 != "53" & input$loc.type2 != "61" & 
+         input$loc.type2 != "32" & input$loc.type2 != "62"){
+        "Warning: Enter a valid value for location."
+      }
+    }
+  })
+  
   output$airtable <- renderTable({
     cs1 <- traffic.flow %>% 
       filter(date == parse_datetime(str_c(as.character(input$date1), 
@@ -4287,7 +4461,11 @@ server <- function(input, output) {
       }
     }
     
-    cs2 <- round(cs2, digits = 0)
+    if(is.numeric(cs2) == TRUE){
+      cs2 <- round(cs2, digits = 0) 
+    }else if(is.na(cs2) == TRUE){
+      cs2 <- "NaN"
+    }
     
     if(cs2 == 1){
       str_c("Current average air quality: ", "Good")
@@ -4301,9 +4479,9 @@ server <- function(input, output) {
       str_c("Current average air quality: ", "Very unhealthy")
     }else if(cs2 == 6){
       str_c("Current average air quality: ", "Hazardous")
+    }else if(cs2 == "NaN"){
+      str_c("Current average air quality: ", "NaN")
     }
-    
-    
     
   })
   
