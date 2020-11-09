@@ -248,6 +248,8 @@ ui <- fluidPage(#theme = shinytheme("darkly"),
                          textOutput("current.speed"),
                          textOutput("current.travel.time"),
                          textOutput("current.air.quality"),
+                         h5("Air Quality and Traffic in Location"),
+                         tableOutput("airtable"), 
                          h3("Within Location"),
                          plotOutput("location.graph"),
                          h3("Location Type Comparison"),
@@ -508,6 +510,759 @@ server <- function(input, output) {
   })
   
   ## Location Search
+  output$airtable <- renderTable({
+    cs1 <- traffic.flow %>% 
+      filter(date == parse_datetime(str_c(as.character(input$date1), 
+                                          " ", 
+                                          as.character(input$hour), 
+                                          ":00:00")))
+    
+    if(input$loc.type == "Quadrant"){
+      if(input$loc.type2 == "SE"){
+        cs2 <- cs1 %>% filter(quadrant == "SE")
+      }else if(input$loc.type2 == "SW"){
+        cs2 <- cs1 %>% filter(quadrant == "SW")
+      }else if(input$loc.type2 == "NE"){
+        cs2 <- cs1 %>% filter(quadrant == "NE")
+      }else if(input$loc.type2 == "NW"){
+        cs2 <- cs1 %>% filter(quadrant == "NW")
+      }
+    }else if(input$loc.type == "Ward"){
+      if(input$loc.type2 == "1"){
+        cs2 <- cs1 %>% filter(ward == "1")
+      }else if(input$loc.type2 == "2"){
+        cs2 <- cs1 %>% filter(ward == "2")
+      }else if(input$loc.type2 == "3"){
+        cs2 <- cs1 %>% filter(ward == "3")
+      }else if(input$loc.type2 == "4"){
+        cs2 <- cs1 %>% filter(ward == "4")
+      }else if(input$loc.type2 == "5"){
+        cs2 <- cs1 %>% filter(ward == "5")
+      }else if(input$loc.type2 == "6"){
+        cs2 <- cs1 %>% filter(ward == "6")
+      }else if(input$loc.type2 == "7"){
+        cs2 <- cs1 %>% filter(ward == "7")
+      }else if(input$loc.type2 == "8"){
+        cs2 <- cs1 %>% filter(ward == "8")
+      }
+    }else if(input$loc.type == "Zip Code"){
+      if(input$loc.type2 == "20227"){
+        cs2 <- cs1 %>% filter(zip_code == "20227")
+      }else if(input$loc.type2 == "20032"){
+        cs2 <- cs1 %>% filter(zip_code == "20032")
+      }else if(input$loc.type2 == "20037"){
+        cs2 <- cs1 %>% filter(zip_code == "20037")
+      }else if(input$loc.type2 == "20019"){
+        cs2 <- cs1 %>% filter(zip_code == "20019")
+      }else if(input$loc.type2 == "20020"){
+        cs2 <- cs1 %>% filter(zip_code == "20020")
+      }else if(input$loc.type2 == "20018"){
+        cs2 <- cs1 %>% filter(zip_code == "20018")
+      }else if(input$loc.type2 == "20024"){
+        cs2 <- cs1 %>% filter(zip_code == "20024")
+      }else if(input$loc.type2 == "20002"){
+        cs2 <- cs1 %>% filter(zip_code == "20002")
+      }else if(input$loc.type2 == "20003"){
+        cs2 <- cs1 %>% filter(zip_code == "20003")
+      }else if(input$loc.type2 == "20001"){
+        cs2 <- cs1 %>% filter(zip_code == "20001")
+      }else if(input$loc.type2 == "20005"){
+        cs2 <- cs1 %>% filter(zip_code == "20005")
+      }else if(input$loc.type2 == "20009"){
+        cs2 <- cs1 %>% filter(zip_code == "20009")
+      }else if(input$loc.type2 == "20017"){
+        cs2 <- cs1 %>% filter(zip_code == "20017")
+      }else if(input$loc.type2 == "20010"){
+        cs2 <- cs1 %>% filter(zip_code == "20010")
+      }else if(input$loc.type2 == "20016"){
+        cs2 <- cs1 %>% filter(zip_code == "20016")
+      }else if(input$loc.type2 == "20008"){
+        cs2 <- cs1 %>% filter(zip_code == "20008")
+      }else if(input$loc.type2 == "20011"){
+        cs2 <- cs1 %>% filter(zip_code == "20011")
+      }else if(input$loc.type2 == "20007"){
+        cs2 <- cs1 %>% filter(zip_code == "20007")
+      }else if(input$loc.type2 == "20374"){
+        cs2 <- cs1 %>% filter(zip_code == "20374")
+      }else if(input$loc.type2 == "20015"){
+        cs2 <- cs1 %>% filter(zip_code == "20015")
+      }else if(input$loc.type2 == "20012"){
+        cs2 <- cs1 %>% filter(zip_code == "20012")
+      }
+    }else if(input$loc.type == "Advisory Neighborhood Commission"){
+      if(input$loc.type2 == "2A"){
+        cs2 <- cs1 %>% filter(anc == "2A")
+      }else if(input$loc.type2 == "8D"){
+        cs2 <- cs1 %>% filter(anc == "8D")
+      }else if(input$loc.type2 == "8E"){
+        cs2 <- cs1 %>% filter(anc == "8E")
+      }else if(input$loc.type2 == "8C"){
+        cs2 <- cs1 %>% filter(anc == "8C")
+      }else if(input$loc.type2 == "7F"){
+        cs2 <- cs1 %>% filter(anc == "7F")
+      }else if(input$loc.type2 == "7C"){
+        cs2 <- cs1 %>% filter(anc == "7C")
+      }else if(input$loc.type2 == "7E"){
+        cs2 <- cs1 %>% filter(anc == "7E")
+      }else if(input$loc.type2 == "5C"){
+        cs2 <- cs1 %>% filter(anc == "5C")
+      }else if(input$loc.type2 == "6D"){
+        cs2 <- cs1 %>% filter(anc == "6D")
+      }else if(input$loc.type2 == "5D"){
+        cs2 <- cs1 %>% filter(anc == "5D")
+      }else if(input$loc.type2 == "6B"){
+        cs2 <- cs1 %>% filter(anc == "6B")
+      }else if(input$loc.type2 == "5E"){
+        cs2 <- cs1 %>% filter(anc == "5E")
+      }else if(input$loc.type2 == "2F"){
+        cs2 <- cs1 %>% filter(anc == "2F")
+      }else if(input$loc.type2 == "2B"){
+        cs2 <- cs1 %>% filter(anc == "2B")
+      }else if(input$loc.type2 == "1B"){
+        cs2 <- cs1 %>% filter(anc == "1B")
+      }else if(input$loc.type2 == "6E"){
+        cs2 <- cs1 %>% filter(anc == "6E")
+      }else if(input$loc.type2 == "5B"){
+        cs2 <- cs1 %>% filter(anc == "5B")
+      }else if(input$loc.type2 == "1A"){
+        cs2 <- cs1 %>% filter(anc == "1A")
+      }else if(input$loc.type2 == "3C"){
+        cs2 <- cs1 %>% filter(anc == "3C")
+      }else if(input$loc.type2 == "6A"){
+        cs2 <- cs1 %>% filter(anc == "6A")
+      }else if(input$loc.type2 == "3D"){
+        cs2 <- cs1 %>% filter(anc == "3D")
+      }else if(input$loc.type2 == "4C"){
+        cs2 <- cs1 %>% filter(anc == "4C")
+      }else if(input$loc.type2 == "3E"){
+        cs2 <- cs1 %>% filter(anc == "3E")
+      }else if(input$loc.type2 == "2E"){
+        cs2 <- cs1 %>% filter(anc == "2E")
+      }else if(input$loc.type2 == "6C"){
+        cs2 <- cs1 %>% filter(anc == "6C")
+      }else if(input$loc.type2 == "8A"){
+        cs2 <- cs1 %>% filter(anc == "8A")
+      }else if(input$loc.type2 == "4D"){
+        cs2 <- cs1 %>% filter(anc == "4D")
+      }else if(input$loc.type2 == "4B"){
+        cs2 <- cs1 %>% filter(anc == "4B")
+      }else if(input$loc.type2 == "4A"){
+        cs2 <- cs1 %>% filter(anc == "4A")
+      }else if(input$loc.type2 == "3G"){
+        cs2 <- cs1 %>% filter(anc == "3G")
+      }else if(input$loc.type2 == "3F"){
+        cs2 <- cs1 %>% filter(anc == "3F")
+      }else if(input$loc.type2 == "5A"){
+        cs2 <- cs1 %>% filter(anc == "5A")
+      }
+    }else if(input$loc.type == "Census Tract"){
+      if(input$loc.type2 == "006202"){
+        cs2 <- cs1 %>% filter(census_tract == "006202")
+      }else if(input$loc.type2 == "009811"){
+        cs2 <- cs1 %>% filter(census_tract == "009811")
+      }else if(input$loc.type2 == "009807"){
+        cs2 <- cs1 %>% filter(census_tract == "009807")
+      }else if(input$loc.type2 == "009700"){
+        cs2 <- cs1 %>% filter(census_tract == "009700")
+      }else if(input$loc.type2 == "009804"){
+        cs2 <- cs1 %>% filter(census_tract == "009804")
+      }else if(input$loc.type2 == "007304"){
+        cs2 <- cs1 %>% filter(census_tract == "007304")
+      }else if(input$loc.type2 == "007301"){
+        cs2 <- cs1 %>% filter(census_tract == "007301")
+      }else if(input$loc.type2 == "010400"){
+        cs2 <- cs1 %>% filter(census_tract == "010400")
+      }else if(input$loc.type2 == "010800"){
+        cs2 <- cs1 %>% filter(census_tract == "010800")
+      }else if(input$loc.type2 == "005600"){
+        cs2 <- cs1 %>% filter(census_tract == "005600")
+      }else if(input$loc.type2 == "009603"){
+        cs2 <- cs1 %>% filter(census_tract == "009603")
+      }else if(input$loc.type2 == "007809"){
+        cs2 <- cs1 %>% filter(census_tract == "007809")
+      }else if(input$loc.type2 == "009902"){
+        cs2 <- cs1 %>% filter(census_tract == "009902")
+      }else if(input$loc.type2 == "009000"){
+        cs2 <- cs1 %>% filter(census_tract == "009000")
+      }else if(input$loc.type2 == "009905"){
+        cs2 <- cs1 %>% filter(census_tract == "009905")
+      }else if(input$loc.type2 == "007707"){
+        cs2 <- cs1 %>% filter(census_tract == "007707")
+      }else if(input$loc.type2 == "007806"){
+        cs2 <- cs1 %>% filter(census_tract == "007806")
+      }else if(input$loc.type2 == "007804"){
+        cs2 <- cs1 %>% filter(census_tract == "007804")
+      }else if(input$loc.type2 == "007807"){
+        cs2 <- cs1 %>% filter(census_tract == "007807")
+      }else if(input$loc.type2 == "007708"){
+        cs2 <- cs1 %>% filter(census_tract == "007708")
+      }else if(input$loc.type2 == "010500"){
+        cs2 <- cs1 %>% filter(census_tract == "010500")
+      }else if(input$loc.type2 == "006400"){
+        cs2 <- cs1 %>% filter(census_tract == "006400")
+      }else if(input$loc.type2 == "008803"){
+        cs2 <- cs1 %>% filter(census_tract == "008803")
+      }else if(input$loc.type2 == "010200"){
+        cs2 <- cs1 %>% filter(census_tract == "010200")
+      }else if(input$loc.type2 == "006500"){
+        cs2 <- cs1 %>% filter(census_tract == "006500")
+      }else if(input$loc.type2 == "008702"){
+        cs2 <- cs1 %>% filter(census_tract == "008702")
+      }else if(input$loc.type2 == "003301"){
+        cs2 <- cs1 %>% filter(census_tract == "003301")
+      }else if(input$loc.type2 == "004902"){
+        cs2 <- cs1 %>% filter(census_tract == "004902")
+      }else if(input$loc.type2 == "004201"){
+        cs2 <- cs1 %>% filter(census_tract == "004201")
+      }else if(input$loc.type2 == "003400"){
+        cs2 <- cs1 %>% filter(census_tract == "003400")
+      }else if(input$loc.type2 == "004400"){
+        cs2 <- cs1 %>% filter(census_tract == "004400")
+      }else if(input$loc.type2 == "011100"){
+        cs2 <- cs1 %>% filter(census_tract == "011100")
+      }else if(input$loc.type2 == "004702"){
+        cs2 <- cs1 %>% filter(census_tract == "004702")
+      }else if(input$loc.type2 == "009302"){
+        cs2 <- cs1 %>% filter(census_tract == "009302")
+      }else if(input$loc.type2 == "008701"){
+        cs2 <- cs1 %>% filter(census_tract == "008701")
+      }else if(input$loc.type2 == "010100"){
+        cs2 <- cs1 %>% filter(census_tract == "010100")
+      }else if(input$loc.type2 == "002900"){
+        cs2 <- cs1 %>% filter(census_tract == "002900")
+      }else if(input$loc.type2 == "004600"){
+        cs2 <- cs1 %>% filter(census_tract == "004600")
+      }else if(input$loc.type2 == "009400"){
+        cs2 <- cs1 %>% filter(census_tract == "009400")
+      }else if(input$loc.type2 == "001002"){
+        cs2 <- cs1 %>% filter(census_tract == "001002")
+      }else if(input$loc.type2 == "010600"){
+        cs2 <- cs1 %>% filter(census_tract == "010600")
+      }else if(input$loc.type2 == "000901"){
+        cs2 <- cs1 %>% filter(census_tract == "000901")
+      }else if(input$loc.type2 == "000502"){
+        cs2 <- cs1 %>% filter(census_tract == "000502")
+      }else if(input$loc.type2 == "009102"){
+        cs2 <- cs1 %>% filter(census_tract == "009102")
+      }else if(input$loc.type2 == "009201"){
+        cs2 <- cs1 %>% filter(census_tract == "009201")
+      }else if(input$loc.type2 == "002400"){
+        cs2 <- cs1 %>% filter(census_tract == "002400")
+      }else if(input$loc.type2 == "001001"){
+        cs2 <- cs1 %>% filter(census_tract == "001001")
+      }else if(input$loc.type2 == "000600"){
+        cs2 <- cs1 %>% filter(census_tract == "000600")
+      }else if(input$loc.type2 == "002501"){
+        cs2 <- cs1 %>% filter(census_tract == "002501")
+      }else if(input$loc.type2 == "009503"){
+        cs2 <- cs1 %>% filter(census_tract == "009503")
+      }else if(input$loc.type2 == "000300"){
+        cs2 <- cs1 %>% filter(census_tract == "000300")
+      }else if(input$loc.type2 == "000400"){
+        cs2 <- cs1 %>% filter(census_tract == "000400")
+      }else if(input$loc.type2 == "006700"){
+        cs2 <- cs1 %>% filter(census_tract == "006700")
+      }else if(input$loc.type2 == "007200"){
+        cs2 <- cs1 %>% filter(census_tract == "007200")
+      }else if(input$loc.type2 == "008302"){
+        cs2 <- cs1 %>% filter(census_tract == "008302")
+      }else if(input$loc.type2 == "006600"){
+        cs2 <- cs1 %>% filter(census_tract == "006600")
+      }else if(input$loc.type2 == "008904"){
+        cs2 <- cs1 %>% filter(census_tract == "008904")
+      }else if(input$loc.type2 == "008100"){
+        cs2 <- cs1 %>% filter(census_tract == "008100")
+      }else if(input$loc.type2 == "006802"){
+        cs2 <- cs1 %>% filter(census_tract == "006802")
+      }else if(input$loc.type2 == "007601"){
+        cs2 <- cs1 %>% filter(census_tract == "007601")
+      }else if(input$loc.type2 == "007100"){
+        cs2 <- cs1 %>% filter(census_tract == "007100")
+      }else if(input$loc.type2 == "008200"){
+        cs2 <- cs1 %>% filter(census_tract == "008200")
+      }else if(input$loc.type2 == "008001"){
+        cs2 <- cs1 %>% filter(census_tract == "008001")
+      }else if(input$loc.type2 == "008002"){
+        cs2 <- cs1 %>% filter(census_tract == "008002")
+      }else if(input$loc.type2 == "002101"){
+        cs2 <- cs1 %>% filter(census_tract == "002101")
+      }else if(input$loc.type2 == "001901"){
+        cs2 <- cs1 %>% filter(census_tract == "001901")
+      }else if(input$loc.type2 == "002600"){
+        cs2 <- cs1 %>% filter(census_tract == "002600")
+      }else if(input$loc.type2 == "001401"){
+        cs2 <- cs1 %>% filter(census_tract == "001401")
+      }else if(input$loc.type2 == "001803"){
+        cs2 <- cs1 %>% filter(census_tract == "001803")
+      }else if(input$loc.type2 == "001301"){
+        cs2 <- cs1 %>% filter(census_tract == "001301")
+      }else if(input$loc.type2 == "002102"){
+        cs2 <- cs1 %>% filter(census_tract == "002102")
+      }else if(input$loc.type2 == "001804"){
+        cs2 <- cs1 %>% filter(census_tract == "001804")
+      }else if(input$loc.type2 == "002001"){
+        cs2 <- cs1 %>% filter(census_tract == "002001")
+      }else if(input$loc.type2 == "001902"){
+        cs2 <- cs1 %>% filter(census_tract == "001902")
+      }else if(input$loc.type2 == "001100"){
+        cs2 <- cs1 %>% filter(census_tract == "001100")
+      }else if(input$loc.type2 == "001600"){
+        cs2 <- cs1 %>% filter(census_tract == "001600")
+      }else if(input$loc.type2 == "009509"){
+        cs2 <- cs1 %>% filter(census_tract == "009509")
+      }else if(input$loc.type2 == "001500"){
+        cs2 <- cs1 %>% filter(census_tract == "001500")
+      }
+    }else if(input$loc.type == "Single Member District"){
+      if(input$loc.type2 == "2A01"){
+        cs2 <- cs1 %>% filter(single_member_district == "2A01")
+      }else if(input$loc.type2 == "8D03"){
+        cs2 <- cs1 %>% filter(single_member_district == "8D03")
+      }else if(input$loc.type2 == "8D01"){
+        cs2 <- cs1 %>% filter(single_member_district == "8D01")
+      }else if(input$loc.type2 == "8D06"){
+        cs2 <- cs1 %>% filter(single_member_district == "8D06")
+      }else if(input$loc.type2 == "8E05"){
+        cs2 <- cs1 %>% filter(single_member_district == "8E05")
+      }else if(input$loc.type2 == "8C07"){
+        cs2 <- cs1 %>% filter(single_member_district == "8C07")
+      }else if(input$loc.type2 == "8E04"){
+        cs2 <- cs1 %>% filter(single_member_district == "8E04")
+      }else if(input$loc.type2 == "8C05"){
+        cs2 <- cs1 %>% filter(single_member_district == "8C05")
+      }else if(input$loc.type2 == "8C03"){
+        cs2 <- cs1 %>% filter(single_member_district == "8C03")
+      }else if(input$loc.type2 == "2A07"){
+        cs2 <- cs1 %>% filter(single_member_district == "2A07")
+      }else if(input$loc.type2 == "2A03"){
+        cs2 <- cs1 %>% filter(single_member_district == "2A03")
+      }else if(input$loc.type2 == "7F01"){
+        cs2 <- cs1 %>% filter(single_member_district == "7F01")
+      }else if(input$loc.type2 == "7C04"){
+        cs2 <- cs1 %>% filter(single_member_district == "7C04")
+      }else if(input$loc.type2 == "7E02"){
+        cs2 <- cs1 %>% filter(single_member_district == "7E02")
+      }else if(input$loc.type2 == "5C03"){
+        cs2 <- cs1 %>% filter(single_member_district == "5C03")
+      }else if(input$loc.type2 == "7E06"){
+        cs2 <- cs1 %>% filter(single_member_district == "7E06")
+      }else if(input$loc.type2 == "7E01"){
+        cs2 <- cs1 %>% filter(single_member_district == "7E01")
+      }else if(input$loc.type2 == "7C07"){
+        cs2 <- cs1 %>% filter(single_member_district == "7C07")
+      }else if(input$loc.type2 == "7C03"){
+        cs2 <- cs1 %>% filter(single_member_district == "7C03")
+      }else if(input$loc.type2 == "7C06"){
+        cs2 <- cs1 %>% filter(single_member_district == "7C06")
+      }else if(input$loc.type2 == "7F06"){
+        cs2 <- cs1 %>% filter(single_member_district == "7F06")
+      }else if(input$loc.type2 == "6D03"){
+        cs2 <- cs1 %>% filter(single_member_district == "6D03")
+      }else if(input$loc.type2 == "6D06"){
+        cs2 <- cs1 %>% filter(single_member_district == "6D06")
+      }else if(input$loc.type2 == "5D01"){
+        cs2 <- cs1 %>% filter(single_member_district == "5D01")
+      }else if(input$loc.type2 == "6D05"){
+        cs2 <- cs1 %>% filter(single_member_district == "6D05")
+      }else if(input$loc.type2 == "6B01"){
+        cs2 <- cs1 %>% filter(single_member_district == "6B01")
+      }else if(input$loc.type2 == "5E03"){
+        cs2 <- cs1 %>% filter(single_member_district == "5E03")
+      }else if(input$loc.type2 == "5E08"){
+        cs2 <- cs1 %>% filter(single_member_district == "5E08")
+      }else if(input$loc.type2 == "2F06"){
+        cs2 <- cs1 %>% filter(single_member_district == "2F06")
+      }else if(input$loc.type2 == "2B09"){
+        cs2 <- cs1 %>% filter(single_member_district == "2B09")
+      }else if(input$loc.type2 == "1B01"){
+        cs2 <- cs1 %>% filter(single_member_district == "1B01")
+      }else if(input$loc.type2 == "1B02"){
+        cs2 <- cs1 %>% filter(single_member_district == "1B02")
+      }else if(input$loc.type2 == "5C02"){
+        cs2 <- cs1 %>% filter(single_member_district == "5C02")
+      }else if(input$loc.type2 == "6E07"){
+        cs2 <- cs1 %>% filter(single_member_district == "6E07")
+      }else if(input$loc.type2 == "5B03"){
+        cs2 <- cs1 %>% filter(single_member_district == "5B03")
+      }else if(input$loc.type2 == "5E04"){
+        cs2 <- cs1 %>% filter(single_member_district == "5E04")
+      }else if(input$loc.type2 == "2F08"){
+        cs2 <- cs1 %>% filter(single_member_district == "2F08")
+      }else if(input$loc.type2 == "1A04"){
+        cs2 <- cs1 %>% filter(single_member_district == "1A04")
+      }else if(input$loc.type2 == "5E05"){
+        cs2 <- cs1 %>% filter(single_member_district == "5E05")
+      }else if(input$loc.type2 == "5C01"){
+        cs2 <- cs1 %>% filter(single_member_district == "5C01")
+      }else if(input$loc.type2 == "3C06"){
+        cs2 <- cs1 %>% filter(single_member_district == "3C06")
+      }else if(input$loc.type2 == "6A01"){
+        cs2 <- cs1 %>% filter(single_member_district == "6A01")
+      }else if(input$loc.type2 == "2B05"){
+        cs2 <- cs1 %>% filter(single_member_district == "2B05")
+      }else if(input$loc.type2 == "3D02"){
+        cs2 <- cs1 %>% filter(single_member_district == "3D02")
+      }else if(input$loc.type2 == "3C03"){
+        cs2 <- cs1 %>% filter(single_member_district == "3C03")
+      }else if(input$loc.type2 == "5B01"){
+        cs2 <- cs1 %>% filter(single_member_district == "5B01")
+      }else if(input$loc.type2 == "5C06"){
+        cs2 <- cs1 %>% filter(single_member_district == "5C06")
+      }else if(input$loc.type2 == "5E01"){
+        cs2 <- cs1 %>% filter(single_member_district == "5E01")
+      }else if(input$loc.type2 == "4C08"){
+        cs2 <- cs1 %>% filter(single_member_district == "4C08")
+      }else if(input$loc.type2 == "3E05"){
+        cs2 <- cs1 %>% filter(single_member_district == "3E05")
+      }else if(input$loc.type2 == "3C09"){
+        cs2 <- cs1 %>% filter(single_member_district == "3C09")
+      }else if(input$loc.type2 == "4C03"){
+        cs2 <- cs1 %>% filter(single_member_district == "4C03")
+      }else if(input$loc.type2 == "2E01"){
+        cs2 <- cs1 %>% filter(single_member_district == "2E01")
+      }else if(input$loc.type2 == "3C08"){
+        cs2 <- cs1 %>% filter(single_member_district == "3C08")
+      }else if(input$loc.type2 == "6B05"){
+        cs2 <- cs1 %>% filter(single_member_district == "6B05")
+      }else if(input$loc.type2 == "5C04"){
+        cs2 <- cs1 %>% filter(single_member_district == "5C04")
+      }else if(input$loc.type2 == "6D07"){
+        cs2 <- cs1 %>% filter(single_member_district == "6D07")
+      }else if(input$loc.type2 == "6C03"){
+        cs2 <- cs1 %>% filter(single_member_district == "6C03")
+      }else if(input$loc.type2 == "6B02"){
+        cs2 <- cs1 %>% filter(single_member_district == "6B02")
+      }else if(input$loc.type2 == "5D05"){
+        cs2 <- cs1 %>% filter(single_member_district == "5D05")
+      }else if(input$loc.type2 == "6A03"){
+        cs2 <- cs1 %>% filter(single_member_district == "6A03")
+      }else if(input$loc.type2 == "6B09"){
+        cs2 <- cs1 %>% filter(single_member_district == "6B09")
+      }else if(input$loc.type2 == "8A03"){
+        cs2 <- cs1 %>% filter(single_member_district == "8A03")
+      }else if(input$loc.type2 == "6B07"){
+        cs2 <- cs1 %>% filter(single_member_district == "6B07")
+      }else if(input$loc.type2 == "6B06"){
+        cs2 <- cs1 %>% filter(single_member_district == "6B06")
+      }else if(input$loc.type2 == "6A02"){
+        cs2 <- cs1 %>% filter(single_member_district == "6A02")
+      }else if(input$loc.type2 == "6A08"){
+        cs2 <- cs1 %>% filter(single_member_district == "6A08")
+      }else if(input$loc.type2 == "4D03"){
+        cs2 <- cs1 %>% filter(single_member_district == "4D03")
+      }else if(input$loc.type2 == "4B04"){
+        cs2 <- cs1 %>% filter(single_member_district == "4B04")
+      }else if(input$loc.type2 == "4A08"){
+        cs2 <- cs1 %>% filter(single_member_district == "4A08")
+      }else if(input$loc.type2 == "3D03"){
+        cs2 <- cs1 %>% filter(single_member_district == "3D03")
+      }else if(input$loc.type2 == "3G05"){
+        cs2 <- cs1 %>% filter(single_member_district == "3G05")
+      }else if(input$loc.type2 == "4A07"){
+        cs2 <- cs1 %>% filter(single_member_district == "4A07")
+      }else if(input$loc.type2 == "3E02"){
+        cs2 <- cs1 %>% filter(single_member_district == "3E02")
+      }else if(input$loc.type2 == "3F03"){
+        cs2 <- cs1 %>% filter(single_member_district == "3F03")
+      }else if(input$loc.type2 == "4B06"){
+        cs2 <- cs1 %>% filter(single_member_district == "4B06")
+      }else if(input$loc.type2 == "4A04"){
+        cs2 <- cs1 %>% filter(single_member_district == "4A04")
+      }else if(input$loc.type2 == "4A06"){
+        cs2 <- cs1 %>% filter(single_member_district == "4A06")
+      }else if(input$loc.type2 == "3E04"){
+        cs2 <- cs1 %>% filter(single_member_district == "3E04")
+      }else if(input$loc.type2 == "4A02"){
+        cs2 <- cs1 %>% filter(single_member_district == "4A02")
+      }else if(input$loc.type2 == "5A08"){
+        cs2 <- cs1 %>% filter(single_member_district == "5A08")
+      }else if(input$loc.type2 == "3G04"){
+        cs2 <- cs1 %>% filter(single_member_district == "3G04")
+      }
+    }else if(input$loc.type == "Voter Precinct"){
+      if(input$loc.type2 == "129"){
+        cs2 <- cs1 %>% filter(voter_precinct == "129")
+      }else if(input$loc.type2 == "125"){
+        cs2 <- cs1 %>% filter(voter_precinct == "125")
+      }else if(input$loc.type2 == "126"){
+        cs2 <- cs1 %>% filter(voter_precinct == "126")
+      }else if(input$loc.type2 == "121"){
+        cs2 <- cs1 %>% filter(voter_precinct == "121")
+      }else if(input$loc.type2 == "122"){
+        cs2 <- cs1 %>% filter(voter_precinct == "122")
+      }else if(input$loc.type2 == "120"){
+        cs2 <- cs1 %>% filter(voter_precinct == "120")
+      }else if(input$loc.type2 == "123"){
+        cs2 <- cs1 %>% filter(voter_precinct == "123")
+      }else if(input$loc.type2 == "2"){
+        cs2 <- cs1 %>% filter(voter_precinct == "2")
+      }else if(input$loc.type2 == "3"){
+        cs2 <- cs1 %>% filter(voter_precinct == "3")
+      }else if(input$loc.type2 == "102"){
+        cs2 <- cs1 %>% filter(voter_precinct == "102")
+      }else if(input$loc.type2 == "94"){
+        cs2 <- cs1 %>% filter(voter_precinct == "94")
+      }else if(input$loc.type2 == "110"){
+        cs2 <- cs1 %>% filter(voter_precinct == "110")
+      }else if(input$loc.type2 == "139"){
+        cs2 <- cs1 %>% filter(voter_precinct == "139")
+      }else if(input$loc.type2 == "105"){
+        cs2 <- cs1 %>% filter(voter_precinct == "105")
+      }else if(input$loc.type2 == "106"){
+        cs2 <- cs1 %>% filter(voter_precinct == "106")
+      }else if(input$loc.type2 == "93"){
+        cs2 <- cs1 %>% filter(voter_precinct == "93")
+      }else if(input$loc.type2 == "97"){
+        cs2 <- cs1 %>% filter(voter_precinct == "97")
+      }else if(input$loc.type2 == "95"){
+        cs2 <- cs1 %>% filter(voter_precinct == "95")
+      }else if(input$loc.type2 == "132"){
+        cs2 <- cs1 %>% filter(voter_precinct == "132")
+      }else if(input$loc.type2 == "128"){
+        cs2 <- cs1 %>% filter(voter_precinct == "128")
+      }else if(input$loc.type2 == "127"){
+        cs2 <- cs1 %>% filter(voter_precinct == "127")
+      }else if(input$loc.type2 == "76"){
+        cs2 <- cs1 %>% filter(voter_precinct == "76")
+      }else if(input$loc.type2 == "130"){
+        cs2 <- cs1 %>% filter(voter_precinct == "130")
+      }else if(input$loc.type2 == "75"){
+        cs2 <- cs1 %>% filter(voter_precinct == "75")
+      }else if(input$loc.type2 == "135"){
+        cs2 <- cs1 %>% filter(voter_precinct == "135")
+      }else if(input$loc.type2 == "141"){
+        cs2 <- cs1 %>% filter(voter_precinct == "141")
+      }else if(input$loc.type2 == "20"){
+        cs2 <- cs1 %>% filter(voter_precinct == "20")
+      }else if(input$loc.type2 == "22"){
+        cs2 <- cs1 %>% filter(voter_precinct == "22")
+      }else if(input$loc.type2 == "72"){
+        cs2 <- cs1 %>% filter(voter_precinct == "72")
+      }else if(input$loc.type2 == "1"){
+        cs2 <- cs1 %>% filter(voter_precinct == "1")
+      }else if(input$loc.type2 == "73"){
+        cs2 <- cs1 %>% filter(voter_precinct == "73")
+      }else if(input$loc.type2 == "42"){
+        cs2 <- cs1 %>% filter(voter_precinct == "42")
+      }else if(input$loc.type2 == "19"){
+        cs2 <- cs1 %>% filter(voter_precinct == "19")
+      }else if(input$loc.type2 == "69"){
+        cs2 <- cs1 %>% filter(voter_precinct == "69")
+      }else if(input$loc.type2 == "29"){
+        cs2 <- cs1 %>% filter(voter_precinct == "29")
+      }else if(input$loc.type2 == "82"){
+        cs2 <- cs1 %>% filter(voter_precinct == "82")
+      }else if(input$loc.type2 == "17"){
+        cs2 <- cs1 %>% filter(voter_precinct == "17")
+      }else if(input$loc.type2 == "9"){
+        cs2 <- cs1 %>% filter(voter_precinct == "9")
+      }else if(input$loc.type2 == "26"){
+        cs2 <- cs1 %>% filter(voter_precinct == "26")
+      }else if(input$loc.type2 == "74"){
+        cs2 <- cs1 %>% filter(voter_precinct == "74")
+      }else if(input$loc.type2 == "45"){
+        cs2 <- cs1 %>% filter(voter_precinct == "45")
+      }else if(input$loc.type2 == "30"){
+        cs2 <- cs1 %>% filter(voter_precinct == "30")
+      }else if(input$loc.type2 == "27"){
+        cs2 <- cs1 %>% filter(voter_precinct == "27")
+      }else if(input$loc.type2 == "48"){
+        cs2 <- cs1 %>% filter(voter_precinct == "48")
+      }else if(input$loc.type2 == "67"){
+        cs2 <- cs1 %>% filter(voter_precinct == "67")
+      }else if(input$loc.type2 == "6"){
+        cs2 <- cs1 %>% filter(voter_precinct == "6")
+      }else if(input$loc.type2 == "12"){
+        cs2 <- cs1 %>% filter(voter_precinct == "12")
+      }else if(input$loc.type2 == "88"){
+        cs2 <- cs1 %>% filter(voter_precinct == "88")
+      }else if(input$loc.type2 == "131"){
+        cs2 <- cs1 %>% filter(voter_precinct == "131")
+      }else if(input$loc.type2 == "85"){
+        cs2 <- cs1 %>% filter(voter_precinct == "85")
+      }else if(input$loc.type2 == "89"){
+        cs2 <- cs1 %>% filter(voter_precinct == "89")
+      }else if(input$loc.type2 == "79"){
+        cs2 <- cs1 %>% filter(voter_precinct == "79")
+      }else if(input$loc.type2 == "91"){
+        cs2 <- cs1 %>% filter(voter_precinct == "91")
+      }else if(input$loc.type2 == "133"){
+        cs2 <- cs1 %>% filter(voter_precinct == "133")
+      }else if(input$loc.type2 == "81"){
+        cs2 <- cs1 %>% filter(voter_precinct == "81")
+      }else if(input$loc.type2 == "71"){
+        cs2 <- cs1 %>% filter(voter_precinct == "71")
+      }else if(input$loc.type2 == "86"){
+        cs2 <- cs1 %>% filter(voter_precinct == "86")
+      }else if(input$loc.type2 == "56"){
+        cs2 <- cs1 %>% filter(voter_precinct == "56")
+      }else if(input$loc.type2 == "59"){
+        cs2 <- cs1 %>% filter(voter_precinct == "59")
+      }else if(input$loc.type2 == "50"){
+        cs2 <- cs1 %>% filter(voter_precinct == "50")
+      }else if(input$loc.type2 == "61"){
+        cs2 <- cs1 %>% filter(voter_precinct == "61")
+      }else if(input$loc.type2 == "31"){
+        cs2 <- cs1 %>% filter(voter_precinct == "31")
+      }else if(input$loc.type2 == "138"){
+        cs2 <- cs1 %>% filter(voter_precinct == "138")
+      }else if(input$loc.type2 == "57"){
+        cs2 <- cs1 %>% filter(voter_precinct == "57")
+      }else if(input$loc.type2 == "60"){
+        cs2 <- cs1 %>% filter(voter_precinct == "60")
+      }else if(input$loc.type2 == "53"){
+        cs2 <- cs1 %>% filter(voter_precinct == "53")
+      }else if(input$loc.type2 == "32"){
+        cs2 <- cs1 %>% filter(voter_precinct == "32")
+      }else if(input$loc.type2 == "62"){
+        cs2 <- cs1 %>% filter(voter_precinct == "62")
+      }else if(input$loc.type2 == "66"){
+        cs2 <- cs1 %>% filter(voter_precinct == "66")
+      }else if(input$loc.type2 == "51"){
+        cs2 <- cs1 %>% filter(voter_precinct == "51")
+      }
+    }
+    
+    df1 <- data.frame(stat = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
+               Ozone = c(round(summary(cs2$ozone_loc_aqi), digits = 2)),
+               SO2 = c(round(summary(cs2$so2_loc_aqi), digits = 2)),
+               PM2.5 = c(round(summary(cs2$pm2.5_loc_aqi), digits = 2)),
+               NO2 = c(round(summary(cs2$no2_loc_aqi), digits = 2)))
+    
+    if(input$ozone1 == TRUE){
+      if(input$so2.1 == TRUE){
+        if(input$pm2.5.1 == TRUE){
+          if(input$no2.1 == TRUE){
+            p2 <- df1[,c(1, 2, 3, 4, 5)]
+          }else if(input$no2.1 == FALSE){
+            p2 <- df1[,c(1, 2, 3, 4)]
+          }
+        }else if(input$pm2.5.1 == FALSE){
+          if(input$no2.1 == TRUE){
+            p2 <- df1[,c(1, 2, 3, 5)]
+          }else if(input$no2.1 == FALSE){
+            p2 <- df1[,c(1, 2, 3)]
+          }
+        }
+      }else if(input$so2.1 == FALSE){
+        if(input$pm2.5.1 == TRUE){
+          if(input$no2.1 == TRUE){
+            p2 <- df1[,c(1, 2, 4, 5)]
+          }else if(input$no2.1 == FALSE){
+            p2 <- df1[,c(1, 2, 4)]
+          }
+        }else if(input$pm2.5.1 == FALSE){
+          if(input$no2.1 == TRUE){
+            p2 <- df1[,c(1, 2, 5)]
+          }else if(input$no2.1 == FALSE){
+            p2 <- df1[,c(1, 2)]
+          }
+        }
+      }
+    }else if(input$ozone1 == FALSE){
+      if(input$so2.1 == TRUE){
+        if(input$pm2.5.1 == TRUE){
+          if(input$no2.1 == TRUE){
+            p2 <- df1[,c(1, 3, 4, 5)]
+          }else if(input$no2.1 == FALSE){
+            p2 <- df1[,c(1, 3, 4)]
+          }
+        }else if(input$pm2.5.1 == FALSE){
+          if(input$no2.1 == TRUE){
+            p2 <- df1[,c(1, 3, 5)]
+          }else if(input$no2.1 == FALSE){
+            p2 <- df1[,c(1, 3)]
+          }
+        }
+      }else if(input$so2.1 == FALSE){
+        if(input$pm2.5.1 == TRUE){
+          if(input$no2.1 == TRUE){
+            p2 <- df1[,c(1, 4, 5)]
+          }else if(input$no2.1 == FALSE){
+            p2 <- df1[,c(1, 4)]
+          }
+        }else if(input$pm2.5.1 == FALSE){
+          if(input$no2.1 == TRUE){
+            p2 <- df1[,c(1, 5)]
+          }else if(input$no2.1 == FALSE){
+            p2 <- df1[,c(1)]
+          }
+        }
+      }
+    }
+    
+    df1 <- data.frame(stat = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
+                      C.Speed = c(round(summary(cs2$current_speed), digits = 2)),
+                      FF.Speed = c(round(summary(cs2$free_flow_speed), digits = 2)),
+                      C.Travel.Time = c(round(summary(cs2$current_travel_time), digits = 2)),
+                      FF.Travel.Time = c(round(summary(cs2$free_flow_travel_time), digits = 2)))
+    
+    if(input$cspeed == TRUE){
+      if(input$ffspeed == TRUE){
+        if(input$ctravel == TRUE){
+          if(input$fftravel == TRUE){
+            p1 <- df1[,c(1, 2, 3, 4, 5)]
+          }else if(input$fftravel == FALSE){
+            p1 <- df1[,c(1, 2, 3, 4)]
+          }
+        }else if(input$ctravel == FALSE){
+          if(input$fftravel == TRUE){
+            p1 <- df1[,c(1, 2, 3, 5)]
+          }else if(input$fftravel == FALSE){
+            p1 <- df1[,c(1, 2, 3)]
+          }
+        }
+      }else if(input$ffspeed == FALSE){
+        if(input$ctravel == TRUE){
+          if(input$fftravel == TRUE){
+            p1 <- df1[,c(1, 2, 4, 5)]
+          }else if(input$fftravel == FALSE){
+            p1 <- df1[,c(1, 2, 4)]
+          }
+        }else if(input$ctravel == FALSE){
+          if(input$fftravel == TRUE){
+            p1 <- df1[,c(1, 2, 5)]
+          }else if(input$fftravel == FALSE){
+            p1 <- df1[,c(1, 2)]
+          }
+        }
+      }
+    }else if(input$cspeed == FALSE){
+      if(input$ffspeed == TRUE){
+        if(input$ctravel == TRUE){
+          if(input$fftravel == TRUE){
+            p1 <- df1[,c(1, 3, 4, 5)]
+          }else if(input$fftravel == FALSE){
+            p1 <- df1[,c(1, 3, 4)]
+          }
+        }else if(input$ctravel == FALSE){
+          if(input$fftravel == TRUE){
+            p1 <- df1[,c(1, 3, 5)]
+          }else if(input$fftravel == FALSE){
+            p1 <- df1[,c(1, 3)]
+          }
+        }
+      }else if(input$ffspeed == FALSE){
+        if(input$ctravel == TRUE){
+          if(input$fftravel == TRUE){
+            p1 <- df1[,c(1, 4, 5)]
+          }else if(input$fftravel == FALSE){
+            p1 <- df1[,c(1, 4)]
+          }
+        }else if(input$ctravel == FALSE){
+          if(input$fftravel == TRUE){
+            p1 <- df1[,c(1, 5)]
+          }else if(input$fftravel == FALSE){
+            p1 <- df1[,c(1)]
+          }
+        }
+      }
+    }
+    
+    merge(p2, p1, by = "stat")
+    
+  })
+  
   output$current.speed <- renderText({
     cs1 <- traffic.flow %>% 
       filter(date == parse_datetime(str_c(as.character(input$date1), 
@@ -3556,7 +4311,6 @@ server <- function(input, output) {
     if(input$loc.type == "Quadrant"){
       if(input$loc.type2 == "SE"){
         cs2 <- traffic.flow %>% filter(quadrant == "SE")
-        traffic.flow %>% filter(quadrant == "SE")
       }else if(input$loc.type2 == "SW"){
         cs2 <- traffic.flow %>% filter(quadrant == "SW")
       }else if(input$loc.type2 == "NE"){
@@ -4174,14 +4928,19 @@ server <- function(input, output) {
                 mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
                 mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
     
+    colors <- c("Ozone" = "blue", "SO2" = "red", "PM 2.5" = "Orange",
+                "NO2" = "green")
+    
     g <- cs3 %>% 
       ggplot(data = ., aes(x = date)) +
       labs(x = "Date", y = "Air Quality Index", 
-           title = str_c(input$loc.type, ": ", input$loc.type2))
-    g1 <- geom_line(aes(y = mean_ozone_loc_aqi), color = "blue")
-    g2 <- geom_line(aes(y = mean_so2_loc_aqi), color = "red")
-    g3 <- geom_line(aes(y = mean_pm2.5_loc_aqi), color = "orange")
-    g4 <- geom_line(aes(y = mean_no2_loc_aqi), color = "green")
+           title = str_c(input$loc.type, ": ", input$loc.type2),
+           color = "Parameter") +
+      scale_color_manual(values = colors)
+    g1 <- geom_line(aes(y = mean_ozone_loc_aqi, color = "Ozone"))
+    g2 <- geom_line(aes(y = mean_so2_loc_aqi, color = "SO2"))
+    g3 <- geom_line(aes(y = mean_pm2.5_loc_aqi, color = "PM 2.5"))
+    g4 <- geom_line(aes(y = mean_no2_loc_aqi, color = "NO2"))
     
     if(input$ozone1 == TRUE){
       if(input$so2.1 == TRUE){
@@ -4245,14 +5004,20 @@ server <- function(input, output) {
       }
     }
     
+    colors <- c("Current Speed" = "blue", "Free Flow Speed" = "red", 
+                "Current Travel Time" = "Orange",
+                "Free Flow Travel Time" = "green")
+    
     g <- cs4 %>% 
       ggplot(data = ., aes(x = date)) +
       labs(x = "Date", y = "Traffic Value",
-           title = str_c(input$loc.type, ": ", input$loc.type2))
-    g1 <- geom_line(aes(y = mean_current_speed), color = "blue")
-    g2 <- geom_line(aes(y = mean_free_flow_speed), color = "red")
-    g3 <- geom_line(aes(y = mean_current_travel_time), color = "orange")
-    g4 <- geom_line(aes(y = mean_free_flow_travel_time), color = "green")
+           title = str_c(input$loc.type, ": ", input$loc.type2),
+           color = "Parameter") +
+      scale_color_manual(values = colors)
+    g1 <- geom_line(aes(y = mean_current_speed, color = "Current Speed"))
+    g2 <- geom_line(aes(y = mean_free_flow_speed, color = "Free Flow Speed"))
+    g3 <- geom_line(aes(y = mean_current_travel_time, color = "Current Travel Time"))
+    g4 <- geom_line(aes(y = mean_free_flow_travel_time, color = "Free Flow Travel Time"))
     
     if(input$cspeed == TRUE){
       if(input$ffspeed == TRUE){
