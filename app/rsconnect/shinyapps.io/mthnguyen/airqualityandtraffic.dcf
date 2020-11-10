@@ -1,0 +1,12 @@
+name: airqualityandtraffic
+title: airqualityandtraffic
+username:
+account: mthnguyen
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3203141
+bundleId: 3844696
+url: https://mthnguyen.shinyapps.io/airqualityandtraffic/
+when: 1605043187.29205
+asMultiple: FALSE
+asStatic: FALSE

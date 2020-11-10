@@ -183,9 +183,9 @@ ui <- fluidPage(theme = shinytheme("slate"),
              sidebarLayout(
                sidebarPanel(
                  dateInput("date2", "What day?",
-                           value = Sys.Date()),
+                           value = "2020-11-05"),
                  sliderInput("hour2", "Which hour?",
-                             value = 17, min = 0, max = 24),
+                             value = 12, min = 0, max = 24),
                  uiOutput(outputId = "text1"),
                  checkboxInput("traffic", "On", value = TRUE),
                  uiOutput(outputId = "text2"),
@@ -213,7 +213,7 @@ ui <- fluidPage(theme = shinytheme("slate"),
                  dateInput("date1", "What day?",
                            value = "2020-11-05"),
                  sliderInput("hour", "Which hour?",
-                             value = 17, min = 0, max = 24),
+                             value = 12, min = 0, max = 24),
                  selectInput("loc.type", "Which location type?",
                              choices = location.types, 
                              selected = "Quadrant"),
@@ -223,7 +223,7 @@ ui <- fluidPage(theme = shinytheme("slate"),
                  h5("Air Quality Parameters"),
                  checkboxInput("ozone1", "Ozone", value = TRUE), 
                  checkboxInput("so2.1", "SO2"), 
-                 checkboxInput("pm2.5.1", "PM 2.5"),
+                 checkboxInput("pm2.5.1", "PM 2.5", value = TRUE),
                  checkboxInput("no2.1", "NO2"),
                  h5("Traffic Parameters"),
                  checkboxInput("cspeed", "Current Speed", value = TRUE), 
@@ -277,12 +277,20 @@ server <- function(input, output) {
                                           " ", 
                                           as.character(input$hour2), 
                                           ":00:00")))
+    oz <- hourly %>%
+      filter(parameter_name == "OZONE")
+    so <- hourly %>%
+      filter(parameter_name == "SO2")
+    no <- hourly %>%
+      filter(parameter_name == "NO2")
+    pm <- hourly %>%
+      filter(parameter_name == "PM2.5")
+    
     df <- data.frame(stat = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
-                        Ozone = c(round(summary(hourly$AQI), digits = 2)),
-                        SO2 = c(round(summary(hourly$AQI), digits = 2)),
-                        PM2.5 = c(round(summary(hourly$AQI), digits = 2)),
-                        NO2 = c(round(summary(hourly$AQI), digits = 2)))
-
+                     Ozone = c(round(summary(oz$AQI), digits = 2)),
+                     SO2 = c(round(summary(so$AQI), digits = 2)),
+                     PM2.5 = c(round(summary(pm$AQI), digits = 2)),
+                     NO2 = c(round(summary(no$AQI), digits = 2)))
     
     if(input$ozone == TRUE){
       if(input$so2 == TRUE){
@@ -386,14 +394,19 @@ server <- function(input, output) {
                 "SO2" = "Orange", "NO2" = "yellow",
                 "traffic" = "black")
     
-    #ptitle <- str_c("AQI and Traffic")
+    avg <- mean(x$traffic_index_live)
     
+    #ptitle <- str_c("AQI and Traffic")
     p1 <- x %>%
       ggplot(aes(x = date)) +
       labs(x = "Date", y = "AQI",
            title = "AQI and Traffic",
            color = "Parameter") +
-      scale_color_manual(values = colors)
+      scale_color_manual(values = colors) +
+      annotate("text", x = as_datetime(1603836000), y = 105, label = "Sensitive") +
+      geom_hline(yintercept = 101, linetype = "dashed", color = "orange", size = 1.5) +
+      annotate("text", x = as_datetime(1603836000), y = 155, label = "Unhealthy") +
+      geom_hline(yintercept = 151, linetype = "dashed", color = "red", size = 1.5)
     
     ptra <- geom_line(aes(y = traffic_index_live, color = "traffic"))
     po <- geom_line(aes(y = OZONE, color = "OZONE"))
