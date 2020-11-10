@@ -10,10 +10,11 @@ library(ggplot2)
 library(shinyTime)
 library(shinythemes)
 library(lubridate)
+library(stringr)
 
 # Load Data ---------------------------------------------------------------
-hourly <- read_csv("hourly.csv")
-traffic.flow <- read_csv("traffic_flow.csv")
+hourly <- read_csv("TOP/data/hourly.csv")
+traffic.flow <- read_csv("TOP/data/traffic_flow.csv")
 
 agencies <- as.data.frame(unique(hourly$agency)) %>%
   rename(c("agency"="unique(hourly$agency)"))
@@ -172,11 +173,10 @@ location.types <- c("Quadrant", "Ward", "Zip Code",
                     "Single Member District",
                     "Voter Precinct")
 
-ui <- fluidPage(#theme = shinytheme("darkly"),
-  shinythemes::themeSelector(),
-  titlePanel("Assessment of Air Quality and Traffic Volume"),
-  h4("Washington, D.C."),
-  h4("American University Team - Chace Paulson, Minh Nguyen & Shalini Ramachandra"),
+ui <- fluidPage(theme = shinytheme("slate"),
+  wellPanel(titlePanel("Assessment of Air Quality and Traffic Volume"),
+            h4("Washington, D.C."),
+            h4("American University Team - Chace Paulson, Minh Nguyen & Shalini Ramachandra")),
   
   tabsetPanel(
     tabPanel("Citywide",
@@ -195,30 +195,16 @@ ui <- fluidPage(#theme = shinytheme("darkly"),
                  checkboxInput("no2", "NO2")
                ),
                
-               mainPanel(#h3("Traffic and AQI"),
-                 #plotOutput("trafficaqi"),
-                 fluidRow(title = "Current Quality",
-                          column(3,
-                                 h4("OZONE:",
-                                    tableOutput("ozonetext"))
-                                 ),
-                          column(3,
-                                 h4("SO2:",
-                                    tableOutput("so2text"))
-                                 ),
-                          column(3,
-                                 h4("PM2.5:",
-                                    tableOutput("pm25text"))
-                                 ),
-                          column(3,
-                                 h4("NO2:",
-                                    tableOutput("no2text"))
-                          )
-                          ),
-                 
-                 h3("Daily AQI"),
+               mainPanel(
+                 tags$style(type="text/css",
+                            ".shiny-output-error { visibility: hidden; }",
+                            ".shiny-output-error:before { visibility: hidden; }"),
+                 h3("Overview"),
+                 tableOutput("aqitable"),
+                 tableOutput("traffictable"),
+                 h5("Daily AQI"),
                  plotOutput("myaqi"),
-                 h3("Map"),
+                 h5("Map"),
                  leafletOutput("mymap"))
              )),
     tabPanel("Location Search",
@@ -245,19 +231,23 @@ ui <- fluidPage(#theme = shinytheme("darkly"),
                  checkboxInput("ctravel", "Current Travel Time"),
                  checkboxInput("fftravel", "Free Flow Travel Time")
                ),
-               mainPanel(h3("Overview"),
-                         textOutput("current.speed"),
-                         textOutput("current.travel.time"),
-                         textOutput("current.air.quality"),
-                         h5("Air Quality and Traffic in Location"),
-                         tableOutput("airtable"), 
-                         h3("Within Location"),
-                         plotOutput("location.graph"),
-                         h3("Location Type Comparison"),
-                         h4("Air Quality"),
-                         plotOutput("loc.type.graph1"),
-                         h4("Traffic Volume"),
-                         plotOutput("loc.type.graph2"),)
+               mainPanel(
+                 tags$style(type="text/css",
+                            ".shiny-output-error { visibility: hidden; }",
+                            ".shiny-output-error:before { visibility: hidden; }"),
+                 h3("Overview"),
+                 textOutput("current.speed"),
+                 textOutput("current.travel.time"),
+                 textOutput("current.air.quality"),
+                 h5("Air Quality and Traffic in Location"),
+                 tableOutput("airtable"),
+                 h3("Within Location"),
+                 plotOutput("location.graph"),
+                 h3("Location Type Comparison"),
+                 h4("Air Quality"),
+                 plotOutput("loc.type.graph1"),
+                 h4("Traffic Volume"),
+                 plotOutput("loc.type.graph2"))
              )),
     tabPanel("Raw Citywide Data",
              dataTableOutput("static.city")),
@@ -279,62 +269,99 @@ server <- function(input, output) {
     HTML(paste0("<b>","Air Quality Parameters","</b>"))
   })
   
+  
   # AQI SUMMARY
-  
-  output$ozonetext <- renderTable({
-    y <- hourly %>%
-      rename(c("datetime"="date")) %>%
-      separate(datetime, into = c('date', 'hour'), sep=' ', remove = FALSE) %>%
-      mutate(date = as.Date(date),
-             hour = as.numeric(str_remove(hour,"\\:\\d+\\:\\d+"))) %>% 
-      filter(parameter_name == "OZONE" & date == as.Date(input$date2) & hour == input$hour2) %>% select(AQI)
-    
-    table <- as.data.frame(summary(y)) %>%
-      separate(Freq, into = c('stat', 'result'), sep=':', remove = FALSE)
-    
-    table[,4:5]
-  })
-  
-  output$so2text <- renderTable({
-    y <- hourly %>%
-      rename(c("datetime"="date")) %>%
-      separate(datetime, into = c('date', 'hour'), sep=' ', remove = FALSE) %>%
-      mutate(date = as.Date(date),
-             hour = as.numeric(str_remove(hour,"\\:\\d+\\:\\d+"))) %>% 
-      filter(parameter_name == "SO2" & date == as.Date(input$date2) & hour == input$hour2) %>% select(AQI)
-    
-    table <- as.data.frame(summary(y)) %>%
-      separate(Freq, into = c('stat', 'result'), sep=':', remove = FALSE)
-    
-    table[,4:5]
-  })
+  output$aqitable <- renderTable({
+    hourly <- hourly %>% 
+      filter(date == parse_datetime(str_c(as.character(input$date2), 
+                                          " ", 
+                                          as.character(input$hour2), 
+                                          ":00:00")))
+    df <- data.frame(stat = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
+                        Ozone = c(round(summary(hourly$AQI), digits = 2)),
+                        SO2 = c(round(summary(hourly$AQI), digits = 2)),
+                        PM2.5 = c(round(summary(hourly$AQI), digits = 2)),
+                        NO2 = c(round(summary(hourly$AQI), digits = 2)))
 
-  output$pm25text <- renderTable({
-    y <- hourly %>%
-      rename(c("datetime"="date")) %>%
-      separate(datetime, into = c('date', 'hour'), sep=' ', remove = FALSE) %>%
-      mutate(date = as.Date(date),
-             hour = as.numeric(str_remove(hour,"\\:\\d+\\:\\d+"))) %>% 
-      filter(parameter_name == "PM2.5" & date == as.Date(input$date2) & hour == input$hour2) %>% select(AQI)
     
-    table <- as.data.frame(summary(y)) %>%
-      separate(Freq, into = c('stat', 'result'), sep=':', remove = FALSE)
-    
-    table[,4:5]
-  })
+    if(input$ozone == TRUE){
+      if(input$so2 == TRUE){
+        if(input$pm25 == TRUE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 2, 3, 4, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 2, 3, 4)]
+          }
+        }else if(input$pm25 == FALSE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 2, 3, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 2, 3)]
+          }
+        }
+      }else if(input$so2 == FALSE){
+        if(input$pm25 == TRUE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 2, 4, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 2, 4)]
+          }
+        }else if(input$pm25 == FALSE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 2, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 2)]
+          }
+        }
+      }
+    }else if(input$ozone == FALSE){
+      if(input$so2 == TRUE){
+        if(input$pm25 == TRUE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 3, 4, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 3, 4)]
+          }
+        }else if(input$pm25 == FALSE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 3, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 3)]
+          }
+        }
+      }else if(input$so2 == FALSE){
+        if(input$pm25 == TRUE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 4, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 4)]
+          }
+        }else if(input$pm25 == FALSE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1)]
+          }
+        }
+      }
+    }
+
+    })
   
-  output$no2text <- renderTable({
-    y <- hourly %>%
-      rename(c("datetime"="date")) %>%
-      separate(datetime, into = c('date', 'hour'), sep=' ', remove = FALSE) %>%
-      mutate(date = as.Date(date),
-             hour = as.numeric(str_remove(hour,"\\:\\d+\\:\\d+"))) %>% 
-      filter(parameter_name == "NO2" & date == as.Date(input$date2) & hour == input$hour2) %>% select(AQI)
+  
+  output$traffictable <- renderTable({
+    cs1 <- hourly %>% 
+      filter(date == parse_datetime(str_c(as.character(input$date2), 
+                                          " ", 
+                                          as.character(input$hour2), 
+                                          ":00:00")))
+    df1 <- data.frame(traffic_index = c(round(summary(cs1$traffic_index_live), digits = 2)),
+                      jams_delay = c(round(summary(cs1$jams_delay), digits = 2)),
+                      jams_length = c(round(summary(cs1$jams_length), digits = 2)),
+                      jams_count = c(round(summary(cs1$jams_count), digits = 2)))
     
-    table <- as.data.frame(summary(y)) %>%
-      separate(Freq, into = c('stat', 'result'), sep=':', remove = FALSE)
+    df1[1,]
     
-    table[,4:5]
   })
   
   ## First graph for the Overview tab
@@ -355,44 +382,54 @@ server <- function(input, output) {
     
     x[is.na(x)] <- 0
     
-    ptitle <- str_c("AQI and Traffic")
+    colors <- c("OZONE" = "blue", "PM2.5" = "red", 
+                "SO2" = "Orange", "NO2" = "yellow",
+                "traffic" = "black")
     
-    p1 <- ggplot(data = x, aes(x = date))
-    ptra <- geom_line(aes(y = traffic_index_live), color = "black")
-    po <- geom_line(aes(y = OZONE), color = "orange")
-    pc <- geom_line(aes(y = SO2), color = "blue")
-    ph <- geom_line(aes(y = PM2.5), color = "green") 
-    pl <- geom_line(aes(y = NO2), color = "red")
-    pt <- labs(title = ptitle, x = "Date", y = "")
+    #ptitle <- str_c("AQI and Traffic")
+    
+    p1 <- x %>%
+      ggplot(aes(x = date)) +
+      labs(x = "Date", y = "AQI",
+           title = "AQI and Traffic",
+           color = "Parameter") +
+      scale_color_manual(values = colors)
+    
+    ptra <- geom_line(aes(y = traffic_index_live, color = "traffic"))
+    po <- geom_line(aes(y = OZONE, color = "OZONE"))
+    pc <- geom_line(aes(y = SO2, color = "SO2"))
+    ph <- geom_line(aes(y = PM2.5, color = "PM2.5"))
+    pl <- geom_line(aes(y = NO2, color = "NO2"))
+    #pt <- labs(title = ptitle, x = "Date", y = "")
       
     if(input$traffic == TRUE) {
       if(input$ozone == TRUE){
         if(input$so2 == TRUE){
           if(input$pm25 == TRUE){
             if(input$no2 == TRUE){
-                p1 + ptra + po + pc + ph + pl + pt
+                p1 + ptra + po + pc + ph + pl #+ pt
             } else if(input$no2 == FALSE){
-                p1 + ptra + po + pc + ph + pt
+                p1 + ptra + po + pc + ph #+ pt
             }
           }else if(input$pm25 == FALSE){
             if(input$no2 == TRUE){
-              p1 + ptra + po + pc + pl + pt
+              p1 + ptra + po + pc + pl #+ pt
             } else if(input$no2 == FALSE){
-              p1 + ptra + po + pc + pt
+              p1 + ptra + po + pc #+ pt
             }
           }
         } else if(input$so2 == FALSE){
           if(input$pm25 == TRUE){
             if(input$no2 == TRUE){
-              p1 + ptra + po + ph + pl + pt
+              p1 + ptra + po + ph + pl #+ pt
             } else if(input$no2 == FALSE){
-              p1 + ptra + po + ph + pt
+              p1 + ptra + po + ph #+ pt
             }
           }else if(input$pm25 == FALSE){
             if(input$no2 == TRUE){
-              p1 + ptra + po + pl + pt
+              p1 + ptra + po + pl #+ pt
             } else if(input$no2 == FALSE){
-              p1 + ptra + po + pt
+              p1 + ptra + po #+ pt
             }
           }
         }
@@ -400,29 +437,29 @@ server <- function(input, output) {
         if(input$so2 == TRUE){
           if(input$pm25 == TRUE){
             if(input$no2 == TRUE){
-              p1 + ptra + pc + ph + pl + pt
+              p1 + ptra + pc + ph + pl #+ pt
             } else if(input$no2 == FALSE){
-              p1 + ptra + pc + ph + pt
+              p1 + ptra + pc + ph #+ pt
             }
           }else if(input$pm25 == FALSE){
             if(input$no2 == TRUE){
-              p1 + ptra + pc + pl + pt
+              p1 + ptra + pc + pl #+ pt
             } else if(input$no2 == FALSE){
-              p1 + ptra + pc + pt
+              p1 + ptra + pc #+ pt
             }
           }
         } else if(input$so2 == FALSE){
           if(input$pm25 == TRUE){
             if(input$no2 == TRUE){
-              p1 + ptra + ph + pl + pt
+              p1 + ptra + ph + pl #+ pt
             } else if(input$no2 == FALSE){
-              p1 + ptra + ph + pt
+              p1 + ptra + ph #+ pt
             }
           }else if(input$pm25 == FALSE){
             if(input$no2 == TRUE){
-              p1 + ptra + pl + pt
+              p1 + ptra + pl #+ pt
             } else if(input$no2 == FALSE){
-              p1 + ptra + pt
+              p1 + ptra #+ pt
             }
           }
         }
@@ -433,29 +470,29 @@ server <- function(input, output) {
           if(input$so2 == TRUE){
             if(input$pm25 == TRUE){
               if(input$no2 == TRUE){
-                p1 + po + pc + ph + pl + pt
+                p1 + po + pc + ph + pl #+ pt
               } else if(input$no2 == FALSE){
-                p1 + po + pc + ph + pt
+                p1 + po + pc + ph #+ pt
               }
             }else if(input$pm25 == FALSE){
               if(input$no2 == TRUE){
-                p1 + po + pc + pl + pt
+                p1 + po + pc + pl #+ pt
               } else if(input$no2 == FALSE){
-                p1 + po + pc + pt
+                p1 + po + pc #+ pt
               }
             }
           } else if(input$so2 == FALSE){
             if(input$pm25 == TRUE){
               if(input$no2 == TRUE){
-                p1 + po + ph + pl + pt
+                p1 + po + ph + pl #+ pt
               } else if(input$no2 == FALSE){
-                p1 + po + ph + pt
+                p1 + po + ph #+ pt
               }
             }else if(input$pm25 == FALSE){
               if(input$no2 == TRUE){
-                p1 + po + pl + pt
+                p1 + po + pl #+ pt
               } else if(input$no2 == FALSE){
-                p1 + po + pt
+                p1 + po #+ pt
               }
             }
           }
@@ -463,29 +500,29 @@ server <- function(input, output) {
           if(input$so2 == TRUE){
             if(input$pm25 == TRUE){
               if(input$no2 == TRUE){
-                p1 + pc + ph + pl + pt
+                p1 + pc + ph + pl #+ pt
               } else if(input$no2 == FALSE){
-                p1 + pc + ph + pt
+                p1 + pc + ph #+ pt
               }
             }else if(input$pm25 == FALSE){
               if(input$no2 == TRUE){
-                p1 + pc + pl + pt
+                p1 + pc + pl #+ pt
               } else if(input$no2 == FALSE){
-                p1 + pc + pt
+                p1 + pc #+ pt
               }
             }
           } else if(input$so2 == FALSE){
             if(input$pm25 == TRUE){
               if(input$no2 == TRUE){
-                p1 + ph + pl + pt
+                p1 + ph + pl #+ pt
               } else if(input$no2 == FALSE){
-                p1 + ph + pt
+                p1 + ph #+ pt
               }
             }else if(input$pm25 == FALSE){
               if(input$no2 == TRUE){
-                p1 + pl + pt
+                p1 + pl #+ pt
               } else if(input$no2 == FALSE){
-                p1 + pt
+                p1 #+ pt
               }
             }
           }
@@ -501,7 +538,11 @@ server <- function(input, output) {
         addCircles(lng = ~longitude, lat = ~latitude, weight = 1,
                    radius = ~(AQI+12)*10, popup = ~location, color = "#FF0000") %>%
         addCircles(lng = ~longitude, lat = ~latitude, weight = 1,
-                   radius = ~(traffic_index_live+5)*10, popup = ~location, color = "#52E74B")
+                   radius = ~(traffic_index_live+5)*10, popup = ~location, 
+                   color = "#000000") %>%
+        addLegend("bottomright", colors =c("#FF0000",  "#000000"),
+                  labels= c("AQI", "Traffic"), 
+                  opacity = 1)
     }else{
       leaflet(hourly) %>% addTiles() %>%
         addCircles(lng = ~longitude, lat = ~latitude, weight = 1,
