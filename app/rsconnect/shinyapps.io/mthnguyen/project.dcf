@@ -1,0 +1,12 @@
+name: project
+title: project
+username:
+account: mthnguyen
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3186272
+bundleId: 3840516
+url: https://mthnguyen.shinyapps.io/project/
+when: 1604976460.26881
+asMultiple: FALSE
+asStatic: FALSE

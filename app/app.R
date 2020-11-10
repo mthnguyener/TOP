@@ -13,8 +13,8 @@ library(lubridate)
 library(stringr)
 
 # Load Data ---------------------------------------------------------------
-hourly <- read_csv("TOP/data/hourly.csv")
-traffic.flow <- read_csv("TOP/data/traffic_flow.csv")
+hourly <- read_csv("hourly.csv")
+traffic.flow <- read_csv("traffic_flow.csv")
 
 agencies <- as.data.frame(unique(hourly$agency)) %>%
   rename(c("agency"="unique(hourly$agency)"))
