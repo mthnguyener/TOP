@@ -173,6 +173,11 @@ location.types <- c("Quadrant", "Ward", "Zip Code",
                     "Single Member District",
                     "Voter Precinct")
 
+current.date.time <- Sys.time()
+
+c.date <- substr(current.date.time, start = 1, stop = 10)
+c.time <- substr(current.date.time, start = 12, stop = 13)
+
 ui <- fluidPage(theme = shinytheme("slate"),
   wellPanel(titlePanel("Assessment of Air Quality and Traffic Volume"),
             h4("Washington, D.C."),
@@ -183,9 +188,9 @@ ui <- fluidPage(theme = shinytheme("slate"),
              sidebarLayout(
                sidebarPanel(
                  dateInput("date2", "What day?",
-                           value = "2020-11-05"),
+                           value = c.date),
                  sliderInput("hour2", "Which hour?",
-                             value = 12, min = 0, max = 24),
+                             value = c.time, min = 0, max = 24),
                  uiOutput(outputId = "text1"),
                  checkboxInput("traffic", "On", value = TRUE),
                  uiOutput(outputId = "text2"),
@@ -210,10 +215,14 @@ ui <- fluidPage(theme = shinytheme("slate"),
     tabPanel("Location Search",
              sidebarLayout(
                sidebarPanel(
+                 h5("Metric Comparisons"),
+                 checkboxInput("currenttime", "Current Date", value = TRUE), 
+                 checkboxInput("lastweek", "Previous Week", value = TRUE), 
+                 checkboxInput("historical", "Historical", value = TRUE),
                  dateInput("date1", "What day?",
-                           value = "2020-11-05"),
+                           value = c.date),
                  sliderInput("hour", "Which hour?",
-                             value = 12, min = 0, max = 24),
+                             value = c.time, min = 0, max = 24),
                  selectInput("loc.type", "Which location type?",
                              choices = location.types, 
                              selected = "Quadrant"),
@@ -239,8 +248,12 @@ ui <- fluidPage(theme = shinytheme("slate"),
                  textOutput("current.speed"),
                  textOutput("current.travel.time"),
                  textOutput("current.air.quality"),
-                 h5("Air Quality and Traffic in Location"),
+                 h4("Air Quality and Traffic in Location"),
+                 textOutput("airtable.title"),
                  tableOutput("airtable"),
+                 textOutput("airtable.title2"),
+                 tableOutput("airtable2"),
+                 plotOutput("airtable.graph"),
                  h3("Within Location"),
                  plotOutput("location.graph"),
                  h3("Location Type Comparison"),
@@ -738,757 +751,2304 @@ server <- function(input, output) {
     }
   })
   
+  output$airtable.title <- renderText({
+    if(input$currenttime == TRUE){
+      str_c("Current Date")
+    }
+  })
+  output$airtable.title2 <- renderText({
+    if(input$lastweek == TRUE){
+      str_c("Last Week")
+    }
+  })
+  
   output$airtable <- renderTable({
-    cs1 <- traffic.flow %>% 
-      filter(date == parse_datetime(str_c(as.character(input$date1), 
-                                          " ", 
-                                          as.character(input$hour), 
-                                          ":00:00")))
-    
-    if(input$loc.type == "Quadrant"){
-      if(input$loc.type2 == "SE"){
-        cs2 <- cs1 %>% filter(quadrant == "SE")
-      }else if(input$loc.type2 == "SW"){
-        cs2 <- cs1 %>% filter(quadrant == "SW")
-      }else if(input$loc.type2 == "NE"){
-        cs2 <- cs1 %>% filter(quadrant == "NE")
-      }else if(input$loc.type2 == "NW"){
-        cs2 <- cs1 %>% filter(quadrant == "NW")
+    if(input$currenttime == TRUE){
+      cs1 <- traffic.flow %>% 
+        filter(date == parse_datetime(str_c(as.character(input$date1), 
+                                            " ", 
+                                            as.character(input$hour), 
+                                            ":00:00")))
+      
+      if(input$loc.type == "Quadrant"){
+        if(input$loc.type2 == "SE"){
+          cs2 <- cs1 %>% filter(quadrant == "SE")
+        }else if(input$loc.type2 == "SW"){
+          cs2 <- cs1 %>% filter(quadrant == "SW")
+        }else if(input$loc.type2 == "NE"){
+          cs2 <- cs1 %>% filter(quadrant == "NE")
+        }else if(input$loc.type2 == "NW"){
+          cs2 <- cs1 %>% filter(quadrant == "NW")
+        }
+      }else if(input$loc.type == "Ward"){
+        if(input$loc.type2 == "1"){
+          cs2 <- cs1 %>% filter(ward == "1")
+        }else if(input$loc.type2 == "2"){
+          cs2 <- cs1 %>% filter(ward == "2")
+        }else if(input$loc.type2 == "3"){
+          cs2 <- cs1 %>% filter(ward == "3")
+        }else if(input$loc.type2 == "4"){
+          cs2 <- cs1 %>% filter(ward == "4")
+        }else if(input$loc.type2 == "5"){
+          cs2 <- cs1 %>% filter(ward == "5")
+        }else if(input$loc.type2 == "6"){
+          cs2 <- cs1 %>% filter(ward == "6")
+        }else if(input$loc.type2 == "7"){
+          cs2 <- cs1 %>% filter(ward == "7")
+        }else if(input$loc.type2 == "8"){
+          cs2 <- cs1 %>% filter(ward == "8")
+        }
+      }else if(input$loc.type == "Zip Code"){
+        if(input$loc.type2 == "20227"){
+          cs2 <- cs1 %>% filter(zip_code == "20227")
+        }else if(input$loc.type2 == "20032"){
+          cs2 <- cs1 %>% filter(zip_code == "20032")
+        }else if(input$loc.type2 == "20037"){
+          cs2 <- cs1 %>% filter(zip_code == "20037")
+        }else if(input$loc.type2 == "20019"){
+          cs2 <- cs1 %>% filter(zip_code == "20019")
+        }else if(input$loc.type2 == "20020"){
+          cs2 <- cs1 %>% filter(zip_code == "20020")
+        }else if(input$loc.type2 == "20018"){
+          cs2 <- cs1 %>% filter(zip_code == "20018")
+        }else if(input$loc.type2 == "20024"){
+          cs2 <- cs1 %>% filter(zip_code == "20024")
+        }else if(input$loc.type2 == "20002"){
+          cs2 <- cs1 %>% filter(zip_code == "20002")
+        }else if(input$loc.type2 == "20003"){
+          cs2 <- cs1 %>% filter(zip_code == "20003")
+        }else if(input$loc.type2 == "20001"){
+          cs2 <- cs1 %>% filter(zip_code == "20001")
+        }else if(input$loc.type2 == "20005"){
+          cs2 <- cs1 %>% filter(zip_code == "20005")
+        }else if(input$loc.type2 == "20009"){
+          cs2 <- cs1 %>% filter(zip_code == "20009")
+        }else if(input$loc.type2 == "20017"){
+          cs2 <- cs1 %>% filter(zip_code == "20017")
+        }else if(input$loc.type2 == "20010"){
+          cs2 <- cs1 %>% filter(zip_code == "20010")
+        }else if(input$loc.type2 == "20016"){
+          cs2 <- cs1 %>% filter(zip_code == "20016")
+        }else if(input$loc.type2 == "20008"){
+          cs2 <- cs1 %>% filter(zip_code == "20008")
+        }else if(input$loc.type2 == "20011"){
+          cs2 <- cs1 %>% filter(zip_code == "20011")
+        }else if(input$loc.type2 == "20007"){
+          cs2 <- cs1 %>% filter(zip_code == "20007")
+        }else if(input$loc.type2 == "20374"){
+          cs2 <- cs1 %>% filter(zip_code == "20374")
+        }else if(input$loc.type2 == "20015"){
+          cs2 <- cs1 %>% filter(zip_code == "20015")
+        }else if(input$loc.type2 == "20012"){
+          cs2 <- cs1 %>% filter(zip_code == "20012")
+        }
+      }else if(input$loc.type == "Advisory Neighborhood Commission"){
+        if(input$loc.type2 == "2A"){
+          cs2 <- cs1 %>% filter(anc == "2A")
+        }else if(input$loc.type2 == "8D"){
+          cs2 <- cs1 %>% filter(anc == "8D")
+        }else if(input$loc.type2 == "8E"){
+          cs2 <- cs1 %>% filter(anc == "8E")
+        }else if(input$loc.type2 == "8C"){
+          cs2 <- cs1 %>% filter(anc == "8C")
+        }else if(input$loc.type2 == "7F"){
+          cs2 <- cs1 %>% filter(anc == "7F")
+        }else if(input$loc.type2 == "7C"){
+          cs2 <- cs1 %>% filter(anc == "7C")
+        }else if(input$loc.type2 == "7E"){
+          cs2 <- cs1 %>% filter(anc == "7E")
+        }else if(input$loc.type2 == "5C"){
+          cs2 <- cs1 %>% filter(anc == "5C")
+        }else if(input$loc.type2 == "6D"){
+          cs2 <- cs1 %>% filter(anc == "6D")
+        }else if(input$loc.type2 == "5D"){
+          cs2 <- cs1 %>% filter(anc == "5D")
+        }else if(input$loc.type2 == "6B"){
+          cs2 <- cs1 %>% filter(anc == "6B")
+        }else if(input$loc.type2 == "5E"){
+          cs2 <- cs1 %>% filter(anc == "5E")
+        }else if(input$loc.type2 == "2F"){
+          cs2 <- cs1 %>% filter(anc == "2F")
+        }else if(input$loc.type2 == "2B"){
+          cs2 <- cs1 %>% filter(anc == "2B")
+        }else if(input$loc.type2 == "1B"){
+          cs2 <- cs1 %>% filter(anc == "1B")
+        }else if(input$loc.type2 == "6E"){
+          cs2 <- cs1 %>% filter(anc == "6E")
+        }else if(input$loc.type2 == "5B"){
+          cs2 <- cs1 %>% filter(anc == "5B")
+        }else if(input$loc.type2 == "1A"){
+          cs2 <- cs1 %>% filter(anc == "1A")
+        }else if(input$loc.type2 == "3C"){
+          cs2 <- cs1 %>% filter(anc == "3C")
+        }else if(input$loc.type2 == "6A"){
+          cs2 <- cs1 %>% filter(anc == "6A")
+        }else if(input$loc.type2 == "3D"){
+          cs2 <- cs1 %>% filter(anc == "3D")
+        }else if(input$loc.type2 == "4C"){
+          cs2 <- cs1 %>% filter(anc == "4C")
+        }else if(input$loc.type2 == "3E"){
+          cs2 <- cs1 %>% filter(anc == "3E")
+        }else if(input$loc.type2 == "2E"){
+          cs2 <- cs1 %>% filter(anc == "2E")
+        }else if(input$loc.type2 == "6C"){
+          cs2 <- cs1 %>% filter(anc == "6C")
+        }else if(input$loc.type2 == "8A"){
+          cs2 <- cs1 %>% filter(anc == "8A")
+        }else if(input$loc.type2 == "4D"){
+          cs2 <- cs1 %>% filter(anc == "4D")
+        }else if(input$loc.type2 == "4B"){
+          cs2 <- cs1 %>% filter(anc == "4B")
+        }else if(input$loc.type2 == "4A"){
+          cs2 <- cs1 %>% filter(anc == "4A")
+        }else if(input$loc.type2 == "3G"){
+          cs2 <- cs1 %>% filter(anc == "3G")
+        }else if(input$loc.type2 == "3F"){
+          cs2 <- cs1 %>% filter(anc == "3F")
+        }else if(input$loc.type2 == "5A"){
+          cs2 <- cs1 %>% filter(anc == "5A")
+        }
+      }else if(input$loc.type == "Census Tract"){
+        if(input$loc.type2 == "006202"){
+          cs2 <- cs1 %>% filter(census_tract == "006202")
+        }else if(input$loc.type2 == "009811"){
+          cs2 <- cs1 %>% filter(census_tract == "009811")
+        }else if(input$loc.type2 == "009807"){
+          cs2 <- cs1 %>% filter(census_tract == "009807")
+        }else if(input$loc.type2 == "009700"){
+          cs2 <- cs1 %>% filter(census_tract == "009700")
+        }else if(input$loc.type2 == "009804"){
+          cs2 <- cs1 %>% filter(census_tract == "009804")
+        }else if(input$loc.type2 == "007304"){
+          cs2 <- cs1 %>% filter(census_tract == "007304")
+        }else if(input$loc.type2 == "007301"){
+          cs2 <- cs1 %>% filter(census_tract == "007301")
+        }else if(input$loc.type2 == "010400"){
+          cs2 <- cs1 %>% filter(census_tract == "010400")
+        }else if(input$loc.type2 == "010800"){
+          cs2 <- cs1 %>% filter(census_tract == "010800")
+        }else if(input$loc.type2 == "005600"){
+          cs2 <- cs1 %>% filter(census_tract == "005600")
+        }else if(input$loc.type2 == "009603"){
+          cs2 <- cs1 %>% filter(census_tract == "009603")
+        }else if(input$loc.type2 == "007809"){
+          cs2 <- cs1 %>% filter(census_tract == "007809")
+        }else if(input$loc.type2 == "009902"){
+          cs2 <- cs1 %>% filter(census_tract == "009902")
+        }else if(input$loc.type2 == "009000"){
+          cs2 <- cs1 %>% filter(census_tract == "009000")
+        }else if(input$loc.type2 == "009905"){
+          cs2 <- cs1 %>% filter(census_tract == "009905")
+        }else if(input$loc.type2 == "007707"){
+          cs2 <- cs1 %>% filter(census_tract == "007707")
+        }else if(input$loc.type2 == "007806"){
+          cs2 <- cs1 %>% filter(census_tract == "007806")
+        }else if(input$loc.type2 == "007804"){
+          cs2 <- cs1 %>% filter(census_tract == "007804")
+        }else if(input$loc.type2 == "007807"){
+          cs2 <- cs1 %>% filter(census_tract == "007807")
+        }else if(input$loc.type2 == "007708"){
+          cs2 <- cs1 %>% filter(census_tract == "007708")
+        }else if(input$loc.type2 == "010500"){
+          cs2 <- cs1 %>% filter(census_tract == "010500")
+        }else if(input$loc.type2 == "006400"){
+          cs2 <- cs1 %>% filter(census_tract == "006400")
+        }else if(input$loc.type2 == "008803"){
+          cs2 <- cs1 %>% filter(census_tract == "008803")
+        }else if(input$loc.type2 == "010200"){
+          cs2 <- cs1 %>% filter(census_tract == "010200")
+        }else if(input$loc.type2 == "006500"){
+          cs2 <- cs1 %>% filter(census_tract == "006500")
+        }else if(input$loc.type2 == "008702"){
+          cs2 <- cs1 %>% filter(census_tract == "008702")
+        }else if(input$loc.type2 == "003301"){
+          cs2 <- cs1 %>% filter(census_tract == "003301")
+        }else if(input$loc.type2 == "004902"){
+          cs2 <- cs1 %>% filter(census_tract == "004902")
+        }else if(input$loc.type2 == "004201"){
+          cs2 <- cs1 %>% filter(census_tract == "004201")
+        }else if(input$loc.type2 == "003400"){
+          cs2 <- cs1 %>% filter(census_tract == "003400")
+        }else if(input$loc.type2 == "004400"){
+          cs2 <- cs1 %>% filter(census_tract == "004400")
+        }else if(input$loc.type2 == "011100"){
+          cs2 <- cs1 %>% filter(census_tract == "011100")
+        }else if(input$loc.type2 == "004702"){
+          cs2 <- cs1 %>% filter(census_tract == "004702")
+        }else if(input$loc.type2 == "009302"){
+          cs2 <- cs1 %>% filter(census_tract == "009302")
+        }else if(input$loc.type2 == "008701"){
+          cs2 <- cs1 %>% filter(census_tract == "008701")
+        }else if(input$loc.type2 == "010100"){
+          cs2 <- cs1 %>% filter(census_tract == "010100")
+        }else if(input$loc.type2 == "002900"){
+          cs2 <- cs1 %>% filter(census_tract == "002900")
+        }else if(input$loc.type2 == "004600"){
+          cs2 <- cs1 %>% filter(census_tract == "004600")
+        }else if(input$loc.type2 == "009400"){
+          cs2 <- cs1 %>% filter(census_tract == "009400")
+        }else if(input$loc.type2 == "001002"){
+          cs2 <- cs1 %>% filter(census_tract == "001002")
+        }else if(input$loc.type2 == "010600"){
+          cs2 <- cs1 %>% filter(census_tract == "010600")
+        }else if(input$loc.type2 == "000901"){
+          cs2 <- cs1 %>% filter(census_tract == "000901")
+        }else if(input$loc.type2 == "000502"){
+          cs2 <- cs1 %>% filter(census_tract == "000502")
+        }else if(input$loc.type2 == "009102"){
+          cs2 <- cs1 %>% filter(census_tract == "009102")
+        }else if(input$loc.type2 == "009201"){
+          cs2 <- cs1 %>% filter(census_tract == "009201")
+        }else if(input$loc.type2 == "002400"){
+          cs2 <- cs1 %>% filter(census_tract == "002400")
+        }else if(input$loc.type2 == "001001"){
+          cs2 <- cs1 %>% filter(census_tract == "001001")
+        }else if(input$loc.type2 == "000600"){
+          cs2 <- cs1 %>% filter(census_tract == "000600")
+        }else if(input$loc.type2 == "002501"){
+          cs2 <- cs1 %>% filter(census_tract == "002501")
+        }else if(input$loc.type2 == "009503"){
+          cs2 <- cs1 %>% filter(census_tract == "009503")
+        }else if(input$loc.type2 == "000300"){
+          cs2 <- cs1 %>% filter(census_tract == "000300")
+        }else if(input$loc.type2 == "000400"){
+          cs2 <- cs1 %>% filter(census_tract == "000400")
+        }else if(input$loc.type2 == "006700"){
+          cs2 <- cs1 %>% filter(census_tract == "006700")
+        }else if(input$loc.type2 == "007200"){
+          cs2 <- cs1 %>% filter(census_tract == "007200")
+        }else if(input$loc.type2 == "008302"){
+          cs2 <- cs1 %>% filter(census_tract == "008302")
+        }else if(input$loc.type2 == "006600"){
+          cs2 <- cs1 %>% filter(census_tract == "006600")
+        }else if(input$loc.type2 == "008904"){
+          cs2 <- cs1 %>% filter(census_tract == "008904")
+        }else if(input$loc.type2 == "008100"){
+          cs2 <- cs1 %>% filter(census_tract == "008100")
+        }else if(input$loc.type2 == "006802"){
+          cs2 <- cs1 %>% filter(census_tract == "006802")
+        }else if(input$loc.type2 == "007601"){
+          cs2 <- cs1 %>% filter(census_tract == "007601")
+        }else if(input$loc.type2 == "007100"){
+          cs2 <- cs1 %>% filter(census_tract == "007100")
+        }else if(input$loc.type2 == "008200"){
+          cs2 <- cs1 %>% filter(census_tract == "008200")
+        }else if(input$loc.type2 == "008001"){
+          cs2 <- cs1 %>% filter(census_tract == "008001")
+        }else if(input$loc.type2 == "008002"){
+          cs2 <- cs1 %>% filter(census_tract == "008002")
+        }else if(input$loc.type2 == "002101"){
+          cs2 <- cs1 %>% filter(census_tract == "002101")
+        }else if(input$loc.type2 == "001901"){
+          cs2 <- cs1 %>% filter(census_tract == "001901")
+        }else if(input$loc.type2 == "002600"){
+          cs2 <- cs1 %>% filter(census_tract == "002600")
+        }else if(input$loc.type2 == "001401"){
+          cs2 <- cs1 %>% filter(census_tract == "001401")
+        }else if(input$loc.type2 == "001803"){
+          cs2 <- cs1 %>% filter(census_tract == "001803")
+        }else if(input$loc.type2 == "001301"){
+          cs2 <- cs1 %>% filter(census_tract == "001301")
+        }else if(input$loc.type2 == "002102"){
+          cs2 <- cs1 %>% filter(census_tract == "002102")
+        }else if(input$loc.type2 == "001804"){
+          cs2 <- cs1 %>% filter(census_tract == "001804")
+        }else if(input$loc.type2 == "002001"){
+          cs2 <- cs1 %>% filter(census_tract == "002001")
+        }else if(input$loc.type2 == "001902"){
+          cs2 <- cs1 %>% filter(census_tract == "001902")
+        }else if(input$loc.type2 == "001100"){
+          cs2 <- cs1 %>% filter(census_tract == "001100")
+        }else if(input$loc.type2 == "001600"){
+          cs2 <- cs1 %>% filter(census_tract == "001600")
+        }else if(input$loc.type2 == "009509"){
+          cs2 <- cs1 %>% filter(census_tract == "009509")
+        }else if(input$loc.type2 == "001500"){
+          cs2 <- cs1 %>% filter(census_tract == "001500")
+        }
+      }else if(input$loc.type == "Single Member District"){
+        if(input$loc.type2 == "2A01"){
+          cs2 <- cs1 %>% filter(single_member_district == "2A01")
+        }else if(input$loc.type2 == "8D03"){
+          cs2 <- cs1 %>% filter(single_member_district == "8D03")
+        }else if(input$loc.type2 == "8D01"){
+          cs2 <- cs1 %>% filter(single_member_district == "8D01")
+        }else if(input$loc.type2 == "8D06"){
+          cs2 <- cs1 %>% filter(single_member_district == "8D06")
+        }else if(input$loc.type2 == "8E05"){
+          cs2 <- cs1 %>% filter(single_member_district == "8E05")
+        }else if(input$loc.type2 == "8C07"){
+          cs2 <- cs1 %>% filter(single_member_district == "8C07")
+        }else if(input$loc.type2 == "8E04"){
+          cs2 <- cs1 %>% filter(single_member_district == "8E04")
+        }else if(input$loc.type2 == "8C05"){
+          cs2 <- cs1 %>% filter(single_member_district == "8C05")
+        }else if(input$loc.type2 == "8C03"){
+          cs2 <- cs1 %>% filter(single_member_district == "8C03")
+        }else if(input$loc.type2 == "2A07"){
+          cs2 <- cs1 %>% filter(single_member_district == "2A07")
+        }else if(input$loc.type2 == "2A03"){
+          cs2 <- cs1 %>% filter(single_member_district == "2A03")
+        }else if(input$loc.type2 == "7F01"){
+          cs2 <- cs1 %>% filter(single_member_district == "7F01")
+        }else if(input$loc.type2 == "7C04"){
+          cs2 <- cs1 %>% filter(single_member_district == "7C04")
+        }else if(input$loc.type2 == "7E02"){
+          cs2 <- cs1 %>% filter(single_member_district == "7E02")
+        }else if(input$loc.type2 == "5C03"){
+          cs2 <- cs1 %>% filter(single_member_district == "5C03")
+        }else if(input$loc.type2 == "7E06"){
+          cs2 <- cs1 %>% filter(single_member_district == "7E06")
+        }else if(input$loc.type2 == "7E01"){
+          cs2 <- cs1 %>% filter(single_member_district == "7E01")
+        }else if(input$loc.type2 == "7C07"){
+          cs2 <- cs1 %>% filter(single_member_district == "7C07")
+        }else if(input$loc.type2 == "7C03"){
+          cs2 <- cs1 %>% filter(single_member_district == "7C03")
+        }else if(input$loc.type2 == "7C06"){
+          cs2 <- cs1 %>% filter(single_member_district == "7C06")
+        }else if(input$loc.type2 == "7F06"){
+          cs2 <- cs1 %>% filter(single_member_district == "7F06")
+        }else if(input$loc.type2 == "6D03"){
+          cs2 <- cs1 %>% filter(single_member_district == "6D03")
+        }else if(input$loc.type2 == "6D06"){
+          cs2 <- cs1 %>% filter(single_member_district == "6D06")
+        }else if(input$loc.type2 == "5D01"){
+          cs2 <- cs1 %>% filter(single_member_district == "5D01")
+        }else if(input$loc.type2 == "6D05"){
+          cs2 <- cs1 %>% filter(single_member_district == "6D05")
+        }else if(input$loc.type2 == "6B01"){
+          cs2 <- cs1 %>% filter(single_member_district == "6B01")
+        }else if(input$loc.type2 == "5E03"){
+          cs2 <- cs1 %>% filter(single_member_district == "5E03")
+        }else if(input$loc.type2 == "5E08"){
+          cs2 <- cs1 %>% filter(single_member_district == "5E08")
+        }else if(input$loc.type2 == "2F06"){
+          cs2 <- cs1 %>% filter(single_member_district == "2F06")
+        }else if(input$loc.type2 == "2B09"){
+          cs2 <- cs1 %>% filter(single_member_district == "2B09")
+        }else if(input$loc.type2 == "1B01"){
+          cs2 <- cs1 %>% filter(single_member_district == "1B01")
+        }else if(input$loc.type2 == "1B02"){
+          cs2 <- cs1 %>% filter(single_member_district == "1B02")
+        }else if(input$loc.type2 == "5C02"){
+          cs2 <- cs1 %>% filter(single_member_district == "5C02")
+        }else if(input$loc.type2 == "6E07"){
+          cs2 <- cs1 %>% filter(single_member_district == "6E07")
+        }else if(input$loc.type2 == "5B03"){
+          cs2 <- cs1 %>% filter(single_member_district == "5B03")
+        }else if(input$loc.type2 == "5E04"){
+          cs2 <- cs1 %>% filter(single_member_district == "5E04")
+        }else if(input$loc.type2 == "2F08"){
+          cs2 <- cs1 %>% filter(single_member_district == "2F08")
+        }else if(input$loc.type2 == "1A04"){
+          cs2 <- cs1 %>% filter(single_member_district == "1A04")
+        }else if(input$loc.type2 == "5E05"){
+          cs2 <- cs1 %>% filter(single_member_district == "5E05")
+        }else if(input$loc.type2 == "5C01"){
+          cs2 <- cs1 %>% filter(single_member_district == "5C01")
+        }else if(input$loc.type2 == "3C06"){
+          cs2 <- cs1 %>% filter(single_member_district == "3C06")
+        }else if(input$loc.type2 == "6A01"){
+          cs2 <- cs1 %>% filter(single_member_district == "6A01")
+        }else if(input$loc.type2 == "2B05"){
+          cs2 <- cs1 %>% filter(single_member_district == "2B05")
+        }else if(input$loc.type2 == "3D02"){
+          cs2 <- cs1 %>% filter(single_member_district == "3D02")
+        }else if(input$loc.type2 == "3C03"){
+          cs2 <- cs1 %>% filter(single_member_district == "3C03")
+        }else if(input$loc.type2 == "5B01"){
+          cs2 <- cs1 %>% filter(single_member_district == "5B01")
+        }else if(input$loc.type2 == "5C06"){
+          cs2 <- cs1 %>% filter(single_member_district == "5C06")
+        }else if(input$loc.type2 == "5E01"){
+          cs2 <- cs1 %>% filter(single_member_district == "5E01")
+        }else if(input$loc.type2 == "4C08"){
+          cs2 <- cs1 %>% filter(single_member_district == "4C08")
+        }else if(input$loc.type2 == "3E05"){
+          cs2 <- cs1 %>% filter(single_member_district == "3E05")
+        }else if(input$loc.type2 == "3C09"){
+          cs2 <- cs1 %>% filter(single_member_district == "3C09")
+        }else if(input$loc.type2 == "4C03"){
+          cs2 <- cs1 %>% filter(single_member_district == "4C03")
+        }else if(input$loc.type2 == "2E01"){
+          cs2 <- cs1 %>% filter(single_member_district == "2E01")
+        }else if(input$loc.type2 == "3C08"){
+          cs2 <- cs1 %>% filter(single_member_district == "3C08")
+        }else if(input$loc.type2 == "6B05"){
+          cs2 <- cs1 %>% filter(single_member_district == "6B05")
+        }else if(input$loc.type2 == "5C04"){
+          cs2 <- cs1 %>% filter(single_member_district == "5C04")
+        }else if(input$loc.type2 == "6D07"){
+          cs2 <- cs1 %>% filter(single_member_district == "6D07")
+        }else if(input$loc.type2 == "6C03"){
+          cs2 <- cs1 %>% filter(single_member_district == "6C03")
+        }else if(input$loc.type2 == "6B02"){
+          cs2 <- cs1 %>% filter(single_member_district == "6B02")
+        }else if(input$loc.type2 == "5D05"){
+          cs2 <- cs1 %>% filter(single_member_district == "5D05")
+        }else if(input$loc.type2 == "6A03"){
+          cs2 <- cs1 %>% filter(single_member_district == "6A03")
+        }else if(input$loc.type2 == "6B09"){
+          cs2 <- cs1 %>% filter(single_member_district == "6B09")
+        }else if(input$loc.type2 == "8A03"){
+          cs2 <- cs1 %>% filter(single_member_district == "8A03")
+        }else if(input$loc.type2 == "6B07"){
+          cs2 <- cs1 %>% filter(single_member_district == "6B07")
+        }else if(input$loc.type2 == "6B06"){
+          cs2 <- cs1 %>% filter(single_member_district == "6B06")
+        }else if(input$loc.type2 == "6A02"){
+          cs2 <- cs1 %>% filter(single_member_district == "6A02")
+        }else if(input$loc.type2 == "6A08"){
+          cs2 <- cs1 %>% filter(single_member_district == "6A08")
+        }else if(input$loc.type2 == "4D03"){
+          cs2 <- cs1 %>% filter(single_member_district == "4D03")
+        }else if(input$loc.type2 == "4B04"){
+          cs2 <- cs1 %>% filter(single_member_district == "4B04")
+        }else if(input$loc.type2 == "4A08"){
+          cs2 <- cs1 %>% filter(single_member_district == "4A08")
+        }else if(input$loc.type2 == "3D03"){
+          cs2 <- cs1 %>% filter(single_member_district == "3D03")
+        }else if(input$loc.type2 == "3G05"){
+          cs2 <- cs1 %>% filter(single_member_district == "3G05")
+        }else if(input$loc.type2 == "4A07"){
+          cs2 <- cs1 %>% filter(single_member_district == "4A07")
+        }else if(input$loc.type2 == "3E02"){
+          cs2 <- cs1 %>% filter(single_member_district == "3E02")
+        }else if(input$loc.type2 == "3F03"){
+          cs2 <- cs1 %>% filter(single_member_district == "3F03")
+        }else if(input$loc.type2 == "4B06"){
+          cs2 <- cs1 %>% filter(single_member_district == "4B06")
+        }else if(input$loc.type2 == "4A04"){
+          cs2 <- cs1 %>% filter(single_member_district == "4A04")
+        }else if(input$loc.type2 == "4A06"){
+          cs2 <- cs1 %>% filter(single_member_district == "4A06")
+        }else if(input$loc.type2 == "3E04"){
+          cs2 <- cs1 %>% filter(single_member_district == "3E04")
+        }else if(input$loc.type2 == "4A02"){
+          cs2 <- cs1 %>% filter(single_member_district == "4A02")
+        }else if(input$loc.type2 == "5A08"){
+          cs2 <- cs1 %>% filter(single_member_district == "5A08")
+        }else if(input$loc.type2 == "3G04"){
+          cs2 <- cs1 %>% filter(single_member_district == "3G04")
+        }
+      }else if(input$loc.type == "Voter Precinct"){
+        if(input$loc.type2 == "129"){
+          cs2 <- cs1 %>% filter(voter_precinct == "129")
+        }else if(input$loc.type2 == "125"){
+          cs2 <- cs1 %>% filter(voter_precinct == "125")
+        }else if(input$loc.type2 == "126"){
+          cs2 <- cs1 %>% filter(voter_precinct == "126")
+        }else if(input$loc.type2 == "121"){
+          cs2 <- cs1 %>% filter(voter_precinct == "121")
+        }else if(input$loc.type2 == "122"){
+          cs2 <- cs1 %>% filter(voter_precinct == "122")
+        }else if(input$loc.type2 == "120"){
+          cs2 <- cs1 %>% filter(voter_precinct == "120")
+        }else if(input$loc.type2 == "123"){
+          cs2 <- cs1 %>% filter(voter_precinct == "123")
+        }else if(input$loc.type2 == "2"){
+          cs2 <- cs1 %>% filter(voter_precinct == "2")
+        }else if(input$loc.type2 == "3"){
+          cs2 <- cs1 %>% filter(voter_precinct == "3")
+        }else if(input$loc.type2 == "102"){
+          cs2 <- cs1 %>% filter(voter_precinct == "102")
+        }else if(input$loc.type2 == "94"){
+          cs2 <- cs1 %>% filter(voter_precinct == "94")
+        }else if(input$loc.type2 == "110"){
+          cs2 <- cs1 %>% filter(voter_precinct == "110")
+        }else if(input$loc.type2 == "139"){
+          cs2 <- cs1 %>% filter(voter_precinct == "139")
+        }else if(input$loc.type2 == "105"){
+          cs2 <- cs1 %>% filter(voter_precinct == "105")
+        }else if(input$loc.type2 == "106"){
+          cs2 <- cs1 %>% filter(voter_precinct == "106")
+        }else if(input$loc.type2 == "93"){
+          cs2 <- cs1 %>% filter(voter_precinct == "93")
+        }else if(input$loc.type2 == "97"){
+          cs2 <- cs1 %>% filter(voter_precinct == "97")
+        }else if(input$loc.type2 == "95"){
+          cs2 <- cs1 %>% filter(voter_precinct == "95")
+        }else if(input$loc.type2 == "132"){
+          cs2 <- cs1 %>% filter(voter_precinct == "132")
+        }else if(input$loc.type2 == "128"){
+          cs2 <- cs1 %>% filter(voter_precinct == "128")
+        }else if(input$loc.type2 == "127"){
+          cs2 <- cs1 %>% filter(voter_precinct == "127")
+        }else if(input$loc.type2 == "76"){
+          cs2 <- cs1 %>% filter(voter_precinct == "76")
+        }else if(input$loc.type2 == "130"){
+          cs2 <- cs1 %>% filter(voter_precinct == "130")
+        }else if(input$loc.type2 == "75"){
+          cs2 <- cs1 %>% filter(voter_precinct == "75")
+        }else if(input$loc.type2 == "135"){
+          cs2 <- cs1 %>% filter(voter_precinct == "135")
+        }else if(input$loc.type2 == "141"){
+          cs2 <- cs1 %>% filter(voter_precinct == "141")
+        }else if(input$loc.type2 == "20"){
+          cs2 <- cs1 %>% filter(voter_precinct == "20")
+        }else if(input$loc.type2 == "22"){
+          cs2 <- cs1 %>% filter(voter_precinct == "22")
+        }else if(input$loc.type2 == "72"){
+          cs2 <- cs1 %>% filter(voter_precinct == "72")
+        }else if(input$loc.type2 == "1"){
+          cs2 <- cs1 %>% filter(voter_precinct == "1")
+        }else if(input$loc.type2 == "73"){
+          cs2 <- cs1 %>% filter(voter_precinct == "73")
+        }else if(input$loc.type2 == "42"){
+          cs2 <- cs1 %>% filter(voter_precinct == "42")
+        }else if(input$loc.type2 == "19"){
+          cs2 <- cs1 %>% filter(voter_precinct == "19")
+        }else if(input$loc.type2 == "69"){
+          cs2 <- cs1 %>% filter(voter_precinct == "69")
+        }else if(input$loc.type2 == "29"){
+          cs2 <- cs1 %>% filter(voter_precinct == "29")
+        }else if(input$loc.type2 == "82"){
+          cs2 <- cs1 %>% filter(voter_precinct == "82")
+        }else if(input$loc.type2 == "17"){
+          cs2 <- cs1 %>% filter(voter_precinct == "17")
+        }else if(input$loc.type2 == "9"){
+          cs2 <- cs1 %>% filter(voter_precinct == "9")
+        }else if(input$loc.type2 == "26"){
+          cs2 <- cs1 %>% filter(voter_precinct == "26")
+        }else if(input$loc.type2 == "74"){
+          cs2 <- cs1 %>% filter(voter_precinct == "74")
+        }else if(input$loc.type2 == "45"){
+          cs2 <- cs1 %>% filter(voter_precinct == "45")
+        }else if(input$loc.type2 == "30"){
+          cs2 <- cs1 %>% filter(voter_precinct == "30")
+        }else if(input$loc.type2 == "27"){
+          cs2 <- cs1 %>% filter(voter_precinct == "27")
+        }else if(input$loc.type2 == "48"){
+          cs2 <- cs1 %>% filter(voter_precinct == "48")
+        }else if(input$loc.type2 == "67"){
+          cs2 <- cs1 %>% filter(voter_precinct == "67")
+        }else if(input$loc.type2 == "6"){
+          cs2 <- cs1 %>% filter(voter_precinct == "6")
+        }else if(input$loc.type2 == "12"){
+          cs2 <- cs1 %>% filter(voter_precinct == "12")
+        }else if(input$loc.type2 == "88"){
+          cs2 <- cs1 %>% filter(voter_precinct == "88")
+        }else if(input$loc.type2 == "131"){
+          cs2 <- cs1 %>% filter(voter_precinct == "131")
+        }else if(input$loc.type2 == "85"){
+          cs2 <- cs1 %>% filter(voter_precinct == "85")
+        }else if(input$loc.type2 == "89"){
+          cs2 <- cs1 %>% filter(voter_precinct == "89")
+        }else if(input$loc.type2 == "79"){
+          cs2 <- cs1 %>% filter(voter_precinct == "79")
+        }else if(input$loc.type2 == "91"){
+          cs2 <- cs1 %>% filter(voter_precinct == "91")
+        }else if(input$loc.type2 == "133"){
+          cs2 <- cs1 %>% filter(voter_precinct == "133")
+        }else if(input$loc.type2 == "81"){
+          cs2 <- cs1 %>% filter(voter_precinct == "81")
+        }else if(input$loc.type2 == "71"){
+          cs2 <- cs1 %>% filter(voter_precinct == "71")
+        }else if(input$loc.type2 == "86"){
+          cs2 <- cs1 %>% filter(voter_precinct == "86")
+        }else if(input$loc.type2 == "56"){
+          cs2 <- cs1 %>% filter(voter_precinct == "56")
+        }else if(input$loc.type2 == "59"){
+          cs2 <- cs1 %>% filter(voter_precinct == "59")
+        }else if(input$loc.type2 == "50"){
+          cs2 <- cs1 %>% filter(voter_precinct == "50")
+        }else if(input$loc.type2 == "61"){
+          cs2 <- cs1 %>% filter(voter_precinct == "61")
+        }else if(input$loc.type2 == "31"){
+          cs2 <- cs1 %>% filter(voter_precinct == "31")
+        }else if(input$loc.type2 == "138"){
+          cs2 <- cs1 %>% filter(voter_precinct == "138")
+        }else if(input$loc.type2 == "57"){
+          cs2 <- cs1 %>% filter(voter_precinct == "57")
+        }else if(input$loc.type2 == "60"){
+          cs2 <- cs1 %>% filter(voter_precinct == "60")
+        }else if(input$loc.type2 == "53"){
+          cs2 <- cs1 %>% filter(voter_precinct == "53")
+        }else if(input$loc.type2 == "32"){
+          cs2 <- cs1 %>% filter(voter_precinct == "32")
+        }else if(input$loc.type2 == "62"){
+          cs2 <- cs1 %>% filter(voter_precinct == "62")
+        }else if(input$loc.type2 == "66"){
+          cs2 <- cs1 %>% filter(voter_precinct == "66")
+        }else if(input$loc.type2 == "51"){
+          cs2 <- cs1 %>% filter(voter_precinct == "51")
+        }
       }
-    }else if(input$loc.type == "Ward"){
-      if(input$loc.type2 == "1"){
-        cs2 <- cs1 %>% filter(ward == "1")
-      }else if(input$loc.type2 == "2"){
-        cs2 <- cs1 %>% filter(ward == "2")
-      }else if(input$loc.type2 == "3"){
-        cs2 <- cs1 %>% filter(ward == "3")
-      }else if(input$loc.type2 == "4"){
-        cs2 <- cs1 %>% filter(ward == "4")
-      }else if(input$loc.type2 == "5"){
-        cs2 <- cs1 %>% filter(ward == "5")
-      }else if(input$loc.type2 == "6"){
-        cs2 <- cs1 %>% filter(ward == "6")
-      }else if(input$loc.type2 == "7"){
-        cs2 <- cs1 %>% filter(ward == "7")
-      }else if(input$loc.type2 == "8"){
-        cs2 <- cs1 %>% filter(ward == "8")
+      
+      df1 <- data.frame(stat = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
+                        Ozone = c(round(summary(cs2$ozone_loc_aqi), digits = 2)),
+                        SO2 = c(round(summary(cs2$so2_loc_aqi), digits = 2)),
+                        PM2.5 = c(round(summary(cs2$pm2.5_loc_aqi), digits = 2)),
+                        NO2 = c(round(summary(cs2$no2_loc_aqi), digits = 2)))
+      
+      if(input$ozone1 == TRUE){
+        if(input$so2.1 == TRUE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 2, 3, 4, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 2, 3, 4)]
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 2, 3, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 2, 3)]
+            }
+          }
+        }else if(input$so2.1 == FALSE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 2, 4, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 2, 4)]
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 2, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 2)]
+            }
+          }
+        }
+      }else if(input$ozone1 == FALSE){
+        if(input$so2.1 == TRUE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 3, 4, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 3, 4)]
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 3, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 3)]
+            }
+          }
+        }else if(input$so2.1 == FALSE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 4, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 4)]
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1)]
+            }
+          }
+        }
       }
-    }else if(input$loc.type == "Zip Code"){
-      if(input$loc.type2 == "20227"){
-        cs2 <- cs1 %>% filter(zip_code == "20227")
-      }else if(input$loc.type2 == "20032"){
-        cs2 <- cs1 %>% filter(zip_code == "20032")
-      }else if(input$loc.type2 == "20037"){
-        cs2 <- cs1 %>% filter(zip_code == "20037")
-      }else if(input$loc.type2 == "20019"){
-        cs2 <- cs1 %>% filter(zip_code == "20019")
-      }else if(input$loc.type2 == "20020"){
-        cs2 <- cs1 %>% filter(zip_code == "20020")
-      }else if(input$loc.type2 == "20018"){
-        cs2 <- cs1 %>% filter(zip_code == "20018")
-      }else if(input$loc.type2 == "20024"){
-        cs2 <- cs1 %>% filter(zip_code == "20024")
-      }else if(input$loc.type2 == "20002"){
-        cs2 <- cs1 %>% filter(zip_code == "20002")
-      }else if(input$loc.type2 == "20003"){
-        cs2 <- cs1 %>% filter(zip_code == "20003")
-      }else if(input$loc.type2 == "20001"){
-        cs2 <- cs1 %>% filter(zip_code == "20001")
-      }else if(input$loc.type2 == "20005"){
-        cs2 <- cs1 %>% filter(zip_code == "20005")
-      }else if(input$loc.type2 == "20009"){
-        cs2 <- cs1 %>% filter(zip_code == "20009")
-      }else if(input$loc.type2 == "20017"){
-        cs2 <- cs1 %>% filter(zip_code == "20017")
-      }else if(input$loc.type2 == "20010"){
-        cs2 <- cs1 %>% filter(zip_code == "20010")
-      }else if(input$loc.type2 == "20016"){
-        cs2 <- cs1 %>% filter(zip_code == "20016")
-      }else if(input$loc.type2 == "20008"){
-        cs2 <- cs1 %>% filter(zip_code == "20008")
-      }else if(input$loc.type2 == "20011"){
-        cs2 <- cs1 %>% filter(zip_code == "20011")
-      }else if(input$loc.type2 == "20007"){
-        cs2 <- cs1 %>% filter(zip_code == "20007")
-      }else if(input$loc.type2 == "20374"){
-        cs2 <- cs1 %>% filter(zip_code == "20374")
-      }else if(input$loc.type2 == "20015"){
-        cs2 <- cs1 %>% filter(zip_code == "20015")
-      }else if(input$loc.type2 == "20012"){
-        cs2 <- cs1 %>% filter(zip_code == "20012")
+      
+      df1 <- data.frame(stat = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
+                        C.Speed = c(round(summary(cs2$current_speed), digits = 2)),
+                        FF.Speed = c(round(summary(cs2$free_flow_speed), digits = 2)),
+                        C.Travel.Time = c(round(summary(cs2$current_travel_time), digits = 2)),
+                        FF.Travel.Time = c(round(summary(cs2$free_flow_travel_time), digits = 2)))
+      
+      if(input$cspeed == TRUE){
+        if(input$ffspeed == TRUE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 2, 3, 4, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 2, 3, 4)]
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 2, 3, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 2, 3)]
+            }
+          }
+        }else if(input$ffspeed == FALSE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 2, 4, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 2, 4)]
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 2, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 2)]
+            }
+          }
+        }
+      }else if(input$cspeed == FALSE){
+        if(input$ffspeed == TRUE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 3, 4, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 3, 4)]
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 3, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 3)]
+            }
+          }
+        }else if(input$ffspeed == FALSE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 4, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 4)]
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1)]
+            }
+          }
+        }
       }
-    }else if(input$loc.type == "Advisory Neighborhood Commission"){
-      if(input$loc.type2 == "2A"){
-        cs2 <- cs1 %>% filter(anc == "2A")
-      }else if(input$loc.type2 == "8D"){
-        cs2 <- cs1 %>% filter(anc == "8D")
-      }else if(input$loc.type2 == "8E"){
-        cs2 <- cs1 %>% filter(anc == "8E")
-      }else if(input$loc.type2 == "8C"){
-        cs2 <- cs1 %>% filter(anc == "8C")
-      }else if(input$loc.type2 == "7F"){
-        cs2 <- cs1 %>% filter(anc == "7F")
-      }else if(input$loc.type2 == "7C"){
-        cs2 <- cs1 %>% filter(anc == "7C")
-      }else if(input$loc.type2 == "7E"){
-        cs2 <- cs1 %>% filter(anc == "7E")
-      }else if(input$loc.type2 == "5C"){
-        cs2 <- cs1 %>% filter(anc == "5C")
-      }else if(input$loc.type2 == "6D"){
-        cs2 <- cs1 %>% filter(anc == "6D")
-      }else if(input$loc.type2 == "5D"){
-        cs2 <- cs1 %>% filter(anc == "5D")
-      }else if(input$loc.type2 == "6B"){
-        cs2 <- cs1 %>% filter(anc == "6B")
-      }else if(input$loc.type2 == "5E"){
-        cs2 <- cs1 %>% filter(anc == "5E")
-      }else if(input$loc.type2 == "2F"){
-        cs2 <- cs1 %>% filter(anc == "2F")
-      }else if(input$loc.type2 == "2B"){
-        cs2 <- cs1 %>% filter(anc == "2B")
-      }else if(input$loc.type2 == "1B"){
-        cs2 <- cs1 %>% filter(anc == "1B")
-      }else if(input$loc.type2 == "6E"){
-        cs2 <- cs1 %>% filter(anc == "6E")
-      }else if(input$loc.type2 == "5B"){
-        cs2 <- cs1 %>% filter(anc == "5B")
-      }else if(input$loc.type2 == "1A"){
-        cs2 <- cs1 %>% filter(anc == "1A")
-      }else if(input$loc.type2 == "3C"){
-        cs2 <- cs1 %>% filter(anc == "3C")
-      }else if(input$loc.type2 == "6A"){
-        cs2 <- cs1 %>% filter(anc == "6A")
-      }else if(input$loc.type2 == "3D"){
-        cs2 <- cs1 %>% filter(anc == "3D")
-      }else if(input$loc.type2 == "4C"){
-        cs2 <- cs1 %>% filter(anc == "4C")
-      }else if(input$loc.type2 == "3E"){
-        cs2 <- cs1 %>% filter(anc == "3E")
-      }else if(input$loc.type2 == "2E"){
-        cs2 <- cs1 %>% filter(anc == "2E")
-      }else if(input$loc.type2 == "6C"){
-        cs2 <- cs1 %>% filter(anc == "6C")
-      }else if(input$loc.type2 == "8A"){
-        cs2 <- cs1 %>% filter(anc == "8A")
-      }else if(input$loc.type2 == "4D"){
-        cs2 <- cs1 %>% filter(anc == "4D")
-      }else if(input$loc.type2 == "4B"){
-        cs2 <- cs1 %>% filter(anc == "4B")
-      }else if(input$loc.type2 == "4A"){
-        cs2 <- cs1 %>% filter(anc == "4A")
-      }else if(input$loc.type2 == "3G"){
-        cs2 <- cs1 %>% filter(anc == "3G")
-      }else if(input$loc.type2 == "3F"){
-        cs2 <- cs1 %>% filter(anc == "3F")
-      }else if(input$loc.type2 == "5A"){
-        cs2 <- cs1 %>% filter(anc == "5A")
-      }
-    }else if(input$loc.type == "Census Tract"){
-      if(input$loc.type2 == "006202"){
-        cs2 <- cs1 %>% filter(census_tract == "006202")
-      }else if(input$loc.type2 == "009811"){
-        cs2 <- cs1 %>% filter(census_tract == "009811")
-      }else if(input$loc.type2 == "009807"){
-        cs2 <- cs1 %>% filter(census_tract == "009807")
-      }else if(input$loc.type2 == "009700"){
-        cs2 <- cs1 %>% filter(census_tract == "009700")
-      }else if(input$loc.type2 == "009804"){
-        cs2 <- cs1 %>% filter(census_tract == "009804")
-      }else if(input$loc.type2 == "007304"){
-        cs2 <- cs1 %>% filter(census_tract == "007304")
-      }else if(input$loc.type2 == "007301"){
-        cs2 <- cs1 %>% filter(census_tract == "007301")
-      }else if(input$loc.type2 == "010400"){
-        cs2 <- cs1 %>% filter(census_tract == "010400")
-      }else if(input$loc.type2 == "010800"){
-        cs2 <- cs1 %>% filter(census_tract == "010800")
-      }else if(input$loc.type2 == "005600"){
-        cs2 <- cs1 %>% filter(census_tract == "005600")
-      }else if(input$loc.type2 == "009603"){
-        cs2 <- cs1 %>% filter(census_tract == "009603")
-      }else if(input$loc.type2 == "007809"){
-        cs2 <- cs1 %>% filter(census_tract == "007809")
-      }else if(input$loc.type2 == "009902"){
-        cs2 <- cs1 %>% filter(census_tract == "009902")
-      }else if(input$loc.type2 == "009000"){
-        cs2 <- cs1 %>% filter(census_tract == "009000")
-      }else if(input$loc.type2 == "009905"){
-        cs2 <- cs1 %>% filter(census_tract == "009905")
-      }else if(input$loc.type2 == "007707"){
-        cs2 <- cs1 %>% filter(census_tract == "007707")
-      }else if(input$loc.type2 == "007806"){
-        cs2 <- cs1 %>% filter(census_tract == "007806")
-      }else if(input$loc.type2 == "007804"){
-        cs2 <- cs1 %>% filter(census_tract == "007804")
-      }else if(input$loc.type2 == "007807"){
-        cs2 <- cs1 %>% filter(census_tract == "007807")
-      }else if(input$loc.type2 == "007708"){
-        cs2 <- cs1 %>% filter(census_tract == "007708")
-      }else if(input$loc.type2 == "010500"){
-        cs2 <- cs1 %>% filter(census_tract == "010500")
-      }else if(input$loc.type2 == "006400"){
-        cs2 <- cs1 %>% filter(census_tract == "006400")
-      }else if(input$loc.type2 == "008803"){
-        cs2 <- cs1 %>% filter(census_tract == "008803")
-      }else if(input$loc.type2 == "010200"){
-        cs2 <- cs1 %>% filter(census_tract == "010200")
-      }else if(input$loc.type2 == "006500"){
-        cs2 <- cs1 %>% filter(census_tract == "006500")
-      }else if(input$loc.type2 == "008702"){
-        cs2 <- cs1 %>% filter(census_tract == "008702")
-      }else if(input$loc.type2 == "003301"){
-        cs2 <- cs1 %>% filter(census_tract == "003301")
-      }else if(input$loc.type2 == "004902"){
-        cs2 <- cs1 %>% filter(census_tract == "004902")
-      }else if(input$loc.type2 == "004201"){
-        cs2 <- cs1 %>% filter(census_tract == "004201")
-      }else if(input$loc.type2 == "003400"){
-        cs2 <- cs1 %>% filter(census_tract == "003400")
-      }else if(input$loc.type2 == "004400"){
-        cs2 <- cs1 %>% filter(census_tract == "004400")
-      }else if(input$loc.type2 == "011100"){
-        cs2 <- cs1 %>% filter(census_tract == "011100")
-      }else if(input$loc.type2 == "004702"){
-        cs2 <- cs1 %>% filter(census_tract == "004702")
-      }else if(input$loc.type2 == "009302"){
-        cs2 <- cs1 %>% filter(census_tract == "009302")
-      }else if(input$loc.type2 == "008701"){
-        cs2 <- cs1 %>% filter(census_tract == "008701")
-      }else if(input$loc.type2 == "010100"){
-        cs2 <- cs1 %>% filter(census_tract == "010100")
-      }else if(input$loc.type2 == "002900"){
-        cs2 <- cs1 %>% filter(census_tract == "002900")
-      }else if(input$loc.type2 == "004600"){
-        cs2 <- cs1 %>% filter(census_tract == "004600")
-      }else if(input$loc.type2 == "009400"){
-        cs2 <- cs1 %>% filter(census_tract == "009400")
-      }else if(input$loc.type2 == "001002"){
-        cs2 <- cs1 %>% filter(census_tract == "001002")
-      }else if(input$loc.type2 == "010600"){
-        cs2 <- cs1 %>% filter(census_tract == "010600")
-      }else if(input$loc.type2 == "000901"){
-        cs2 <- cs1 %>% filter(census_tract == "000901")
-      }else if(input$loc.type2 == "000502"){
-        cs2 <- cs1 %>% filter(census_tract == "000502")
-      }else if(input$loc.type2 == "009102"){
-        cs2 <- cs1 %>% filter(census_tract == "009102")
-      }else if(input$loc.type2 == "009201"){
-        cs2 <- cs1 %>% filter(census_tract == "009201")
-      }else if(input$loc.type2 == "002400"){
-        cs2 <- cs1 %>% filter(census_tract == "002400")
-      }else if(input$loc.type2 == "001001"){
-        cs2 <- cs1 %>% filter(census_tract == "001001")
-      }else if(input$loc.type2 == "000600"){
-        cs2 <- cs1 %>% filter(census_tract == "000600")
-      }else if(input$loc.type2 == "002501"){
-        cs2 <- cs1 %>% filter(census_tract == "002501")
-      }else if(input$loc.type2 == "009503"){
-        cs2 <- cs1 %>% filter(census_tract == "009503")
-      }else if(input$loc.type2 == "000300"){
-        cs2 <- cs1 %>% filter(census_tract == "000300")
-      }else if(input$loc.type2 == "000400"){
-        cs2 <- cs1 %>% filter(census_tract == "000400")
-      }else if(input$loc.type2 == "006700"){
-        cs2 <- cs1 %>% filter(census_tract == "006700")
-      }else if(input$loc.type2 == "007200"){
-        cs2 <- cs1 %>% filter(census_tract == "007200")
-      }else if(input$loc.type2 == "008302"){
-        cs2 <- cs1 %>% filter(census_tract == "008302")
-      }else if(input$loc.type2 == "006600"){
-        cs2 <- cs1 %>% filter(census_tract == "006600")
-      }else if(input$loc.type2 == "008904"){
-        cs2 <- cs1 %>% filter(census_tract == "008904")
-      }else if(input$loc.type2 == "008100"){
-        cs2 <- cs1 %>% filter(census_tract == "008100")
-      }else if(input$loc.type2 == "006802"){
-        cs2 <- cs1 %>% filter(census_tract == "006802")
-      }else if(input$loc.type2 == "007601"){
-        cs2 <- cs1 %>% filter(census_tract == "007601")
-      }else if(input$loc.type2 == "007100"){
-        cs2 <- cs1 %>% filter(census_tract == "007100")
-      }else if(input$loc.type2 == "008200"){
-        cs2 <- cs1 %>% filter(census_tract == "008200")
-      }else if(input$loc.type2 == "008001"){
-        cs2 <- cs1 %>% filter(census_tract == "008001")
-      }else if(input$loc.type2 == "008002"){
-        cs2 <- cs1 %>% filter(census_tract == "008002")
-      }else if(input$loc.type2 == "002101"){
-        cs2 <- cs1 %>% filter(census_tract == "002101")
-      }else if(input$loc.type2 == "001901"){
-        cs2 <- cs1 %>% filter(census_tract == "001901")
-      }else if(input$loc.type2 == "002600"){
-        cs2 <- cs1 %>% filter(census_tract == "002600")
-      }else if(input$loc.type2 == "001401"){
-        cs2 <- cs1 %>% filter(census_tract == "001401")
-      }else if(input$loc.type2 == "001803"){
-        cs2 <- cs1 %>% filter(census_tract == "001803")
-      }else if(input$loc.type2 == "001301"){
-        cs2 <- cs1 %>% filter(census_tract == "001301")
-      }else if(input$loc.type2 == "002102"){
-        cs2 <- cs1 %>% filter(census_tract == "002102")
-      }else if(input$loc.type2 == "001804"){
-        cs2 <- cs1 %>% filter(census_tract == "001804")
-      }else if(input$loc.type2 == "002001"){
-        cs2 <- cs1 %>% filter(census_tract == "002001")
-      }else if(input$loc.type2 == "001902"){
-        cs2 <- cs1 %>% filter(census_tract == "001902")
-      }else if(input$loc.type2 == "001100"){
-        cs2 <- cs1 %>% filter(census_tract == "001100")
-      }else if(input$loc.type2 == "001600"){
-        cs2 <- cs1 %>% filter(census_tract == "001600")
-      }else if(input$loc.type2 == "009509"){
-        cs2 <- cs1 %>% filter(census_tract == "009509")
-      }else if(input$loc.type2 == "001500"){
-        cs2 <- cs1 %>% filter(census_tract == "001500")
-      }
-    }else if(input$loc.type == "Single Member District"){
-      if(input$loc.type2 == "2A01"){
-        cs2 <- cs1 %>% filter(single_member_district == "2A01")
-      }else if(input$loc.type2 == "8D03"){
-        cs2 <- cs1 %>% filter(single_member_district == "8D03")
-      }else if(input$loc.type2 == "8D01"){
-        cs2 <- cs1 %>% filter(single_member_district == "8D01")
-      }else if(input$loc.type2 == "8D06"){
-        cs2 <- cs1 %>% filter(single_member_district == "8D06")
-      }else if(input$loc.type2 == "8E05"){
-        cs2 <- cs1 %>% filter(single_member_district == "8E05")
-      }else if(input$loc.type2 == "8C07"){
-        cs2 <- cs1 %>% filter(single_member_district == "8C07")
-      }else if(input$loc.type2 == "8E04"){
-        cs2 <- cs1 %>% filter(single_member_district == "8E04")
-      }else if(input$loc.type2 == "8C05"){
-        cs2 <- cs1 %>% filter(single_member_district == "8C05")
-      }else if(input$loc.type2 == "8C03"){
-        cs2 <- cs1 %>% filter(single_member_district == "8C03")
-      }else if(input$loc.type2 == "2A07"){
-        cs2 <- cs1 %>% filter(single_member_district == "2A07")
-      }else if(input$loc.type2 == "2A03"){
-        cs2 <- cs1 %>% filter(single_member_district == "2A03")
-      }else if(input$loc.type2 == "7F01"){
-        cs2 <- cs1 %>% filter(single_member_district == "7F01")
-      }else if(input$loc.type2 == "7C04"){
-        cs2 <- cs1 %>% filter(single_member_district == "7C04")
-      }else if(input$loc.type2 == "7E02"){
-        cs2 <- cs1 %>% filter(single_member_district == "7E02")
-      }else if(input$loc.type2 == "5C03"){
-        cs2 <- cs1 %>% filter(single_member_district == "5C03")
-      }else if(input$loc.type2 == "7E06"){
-        cs2 <- cs1 %>% filter(single_member_district == "7E06")
-      }else if(input$loc.type2 == "7E01"){
-        cs2 <- cs1 %>% filter(single_member_district == "7E01")
-      }else if(input$loc.type2 == "7C07"){
-        cs2 <- cs1 %>% filter(single_member_district == "7C07")
-      }else if(input$loc.type2 == "7C03"){
-        cs2 <- cs1 %>% filter(single_member_district == "7C03")
-      }else if(input$loc.type2 == "7C06"){
-        cs2 <- cs1 %>% filter(single_member_district == "7C06")
-      }else if(input$loc.type2 == "7F06"){
-        cs2 <- cs1 %>% filter(single_member_district == "7F06")
-      }else if(input$loc.type2 == "6D03"){
-        cs2 <- cs1 %>% filter(single_member_district == "6D03")
-      }else if(input$loc.type2 == "6D06"){
-        cs2 <- cs1 %>% filter(single_member_district == "6D06")
-      }else if(input$loc.type2 == "5D01"){
-        cs2 <- cs1 %>% filter(single_member_district == "5D01")
-      }else if(input$loc.type2 == "6D05"){
-        cs2 <- cs1 %>% filter(single_member_district == "6D05")
-      }else if(input$loc.type2 == "6B01"){
-        cs2 <- cs1 %>% filter(single_member_district == "6B01")
-      }else if(input$loc.type2 == "5E03"){
-        cs2 <- cs1 %>% filter(single_member_district == "5E03")
-      }else if(input$loc.type2 == "5E08"){
-        cs2 <- cs1 %>% filter(single_member_district == "5E08")
-      }else if(input$loc.type2 == "2F06"){
-        cs2 <- cs1 %>% filter(single_member_district == "2F06")
-      }else if(input$loc.type2 == "2B09"){
-        cs2 <- cs1 %>% filter(single_member_district == "2B09")
-      }else if(input$loc.type2 == "1B01"){
-        cs2 <- cs1 %>% filter(single_member_district == "1B01")
-      }else if(input$loc.type2 == "1B02"){
-        cs2 <- cs1 %>% filter(single_member_district == "1B02")
-      }else if(input$loc.type2 == "5C02"){
-        cs2 <- cs1 %>% filter(single_member_district == "5C02")
-      }else if(input$loc.type2 == "6E07"){
-        cs2 <- cs1 %>% filter(single_member_district == "6E07")
-      }else if(input$loc.type2 == "5B03"){
-        cs2 <- cs1 %>% filter(single_member_district == "5B03")
-      }else if(input$loc.type2 == "5E04"){
-        cs2 <- cs1 %>% filter(single_member_district == "5E04")
-      }else if(input$loc.type2 == "2F08"){
-        cs2 <- cs1 %>% filter(single_member_district == "2F08")
-      }else if(input$loc.type2 == "1A04"){
-        cs2 <- cs1 %>% filter(single_member_district == "1A04")
-      }else if(input$loc.type2 == "5E05"){
-        cs2 <- cs1 %>% filter(single_member_district == "5E05")
-      }else if(input$loc.type2 == "5C01"){
-        cs2 <- cs1 %>% filter(single_member_district == "5C01")
-      }else if(input$loc.type2 == "3C06"){
-        cs2 <- cs1 %>% filter(single_member_district == "3C06")
-      }else if(input$loc.type2 == "6A01"){
-        cs2 <- cs1 %>% filter(single_member_district == "6A01")
-      }else if(input$loc.type2 == "2B05"){
-        cs2 <- cs1 %>% filter(single_member_district == "2B05")
-      }else if(input$loc.type2 == "3D02"){
-        cs2 <- cs1 %>% filter(single_member_district == "3D02")
-      }else if(input$loc.type2 == "3C03"){
-        cs2 <- cs1 %>% filter(single_member_district == "3C03")
-      }else if(input$loc.type2 == "5B01"){
-        cs2 <- cs1 %>% filter(single_member_district == "5B01")
-      }else if(input$loc.type2 == "5C06"){
-        cs2 <- cs1 %>% filter(single_member_district == "5C06")
-      }else if(input$loc.type2 == "5E01"){
-        cs2 <- cs1 %>% filter(single_member_district == "5E01")
-      }else if(input$loc.type2 == "4C08"){
-        cs2 <- cs1 %>% filter(single_member_district == "4C08")
-      }else if(input$loc.type2 == "3E05"){
-        cs2 <- cs1 %>% filter(single_member_district == "3E05")
-      }else if(input$loc.type2 == "3C09"){
-        cs2 <- cs1 %>% filter(single_member_district == "3C09")
-      }else if(input$loc.type2 == "4C03"){
-        cs2 <- cs1 %>% filter(single_member_district == "4C03")
-      }else if(input$loc.type2 == "2E01"){
-        cs2 <- cs1 %>% filter(single_member_district == "2E01")
-      }else if(input$loc.type2 == "3C08"){
-        cs2 <- cs1 %>% filter(single_member_district == "3C08")
-      }else if(input$loc.type2 == "6B05"){
-        cs2 <- cs1 %>% filter(single_member_district == "6B05")
-      }else if(input$loc.type2 == "5C04"){
-        cs2 <- cs1 %>% filter(single_member_district == "5C04")
-      }else if(input$loc.type2 == "6D07"){
-        cs2 <- cs1 %>% filter(single_member_district == "6D07")
-      }else if(input$loc.type2 == "6C03"){
-        cs2 <- cs1 %>% filter(single_member_district == "6C03")
-      }else if(input$loc.type2 == "6B02"){
-        cs2 <- cs1 %>% filter(single_member_district == "6B02")
-      }else if(input$loc.type2 == "5D05"){
-        cs2 <- cs1 %>% filter(single_member_district == "5D05")
-      }else if(input$loc.type2 == "6A03"){
-        cs2 <- cs1 %>% filter(single_member_district == "6A03")
-      }else if(input$loc.type2 == "6B09"){
-        cs2 <- cs1 %>% filter(single_member_district == "6B09")
-      }else if(input$loc.type2 == "8A03"){
-        cs2 <- cs1 %>% filter(single_member_district == "8A03")
-      }else if(input$loc.type2 == "6B07"){
-        cs2 <- cs1 %>% filter(single_member_district == "6B07")
-      }else if(input$loc.type2 == "6B06"){
-        cs2 <- cs1 %>% filter(single_member_district == "6B06")
-      }else if(input$loc.type2 == "6A02"){
-        cs2 <- cs1 %>% filter(single_member_district == "6A02")
-      }else if(input$loc.type2 == "6A08"){
-        cs2 <- cs1 %>% filter(single_member_district == "6A08")
-      }else if(input$loc.type2 == "4D03"){
-        cs2 <- cs1 %>% filter(single_member_district == "4D03")
-      }else if(input$loc.type2 == "4B04"){
-        cs2 <- cs1 %>% filter(single_member_district == "4B04")
-      }else if(input$loc.type2 == "4A08"){
-        cs2 <- cs1 %>% filter(single_member_district == "4A08")
-      }else if(input$loc.type2 == "3D03"){
-        cs2 <- cs1 %>% filter(single_member_district == "3D03")
-      }else if(input$loc.type2 == "3G05"){
-        cs2 <- cs1 %>% filter(single_member_district == "3G05")
-      }else if(input$loc.type2 == "4A07"){
-        cs2 <- cs1 %>% filter(single_member_district == "4A07")
-      }else if(input$loc.type2 == "3E02"){
-        cs2 <- cs1 %>% filter(single_member_district == "3E02")
-      }else if(input$loc.type2 == "3F03"){
-        cs2 <- cs1 %>% filter(single_member_district == "3F03")
-      }else if(input$loc.type2 == "4B06"){
-        cs2 <- cs1 %>% filter(single_member_district == "4B06")
-      }else if(input$loc.type2 == "4A04"){
-        cs2 <- cs1 %>% filter(single_member_district == "4A04")
-      }else if(input$loc.type2 == "4A06"){
-        cs2 <- cs1 %>% filter(single_member_district == "4A06")
-      }else if(input$loc.type2 == "3E04"){
-        cs2 <- cs1 %>% filter(single_member_district == "3E04")
-      }else if(input$loc.type2 == "4A02"){
-        cs2 <- cs1 %>% filter(single_member_district == "4A02")
-      }else if(input$loc.type2 == "5A08"){
-        cs2 <- cs1 %>% filter(single_member_district == "5A08")
-      }else if(input$loc.type2 == "3G04"){
-        cs2 <- cs1 %>% filter(single_member_district == "3G04")
-      }
-    }else if(input$loc.type == "Voter Precinct"){
-      if(input$loc.type2 == "129"){
-        cs2 <- cs1 %>% filter(voter_precinct == "129")
-      }else if(input$loc.type2 == "125"){
-        cs2 <- cs1 %>% filter(voter_precinct == "125")
-      }else if(input$loc.type2 == "126"){
-        cs2 <- cs1 %>% filter(voter_precinct == "126")
-      }else if(input$loc.type2 == "121"){
-        cs2 <- cs1 %>% filter(voter_precinct == "121")
-      }else if(input$loc.type2 == "122"){
-        cs2 <- cs1 %>% filter(voter_precinct == "122")
-      }else if(input$loc.type2 == "120"){
-        cs2 <- cs1 %>% filter(voter_precinct == "120")
-      }else if(input$loc.type2 == "123"){
-        cs2 <- cs1 %>% filter(voter_precinct == "123")
-      }else if(input$loc.type2 == "2"){
-        cs2 <- cs1 %>% filter(voter_precinct == "2")
-      }else if(input$loc.type2 == "3"){
-        cs2 <- cs1 %>% filter(voter_precinct == "3")
-      }else if(input$loc.type2 == "102"){
-        cs2 <- cs1 %>% filter(voter_precinct == "102")
-      }else if(input$loc.type2 == "94"){
-        cs2 <- cs1 %>% filter(voter_precinct == "94")
-      }else if(input$loc.type2 == "110"){
-        cs2 <- cs1 %>% filter(voter_precinct == "110")
-      }else if(input$loc.type2 == "139"){
-        cs2 <- cs1 %>% filter(voter_precinct == "139")
-      }else if(input$loc.type2 == "105"){
-        cs2 <- cs1 %>% filter(voter_precinct == "105")
-      }else if(input$loc.type2 == "106"){
-        cs2 <- cs1 %>% filter(voter_precinct == "106")
-      }else if(input$loc.type2 == "93"){
-        cs2 <- cs1 %>% filter(voter_precinct == "93")
-      }else if(input$loc.type2 == "97"){
-        cs2 <- cs1 %>% filter(voter_precinct == "97")
-      }else if(input$loc.type2 == "95"){
-        cs2 <- cs1 %>% filter(voter_precinct == "95")
-      }else if(input$loc.type2 == "132"){
-        cs2 <- cs1 %>% filter(voter_precinct == "132")
-      }else if(input$loc.type2 == "128"){
-        cs2 <- cs1 %>% filter(voter_precinct == "128")
-      }else if(input$loc.type2 == "127"){
-        cs2 <- cs1 %>% filter(voter_precinct == "127")
-      }else if(input$loc.type2 == "76"){
-        cs2 <- cs1 %>% filter(voter_precinct == "76")
-      }else if(input$loc.type2 == "130"){
-        cs2 <- cs1 %>% filter(voter_precinct == "130")
-      }else if(input$loc.type2 == "75"){
-        cs2 <- cs1 %>% filter(voter_precinct == "75")
-      }else if(input$loc.type2 == "135"){
-        cs2 <- cs1 %>% filter(voter_precinct == "135")
-      }else if(input$loc.type2 == "141"){
-        cs2 <- cs1 %>% filter(voter_precinct == "141")
-      }else if(input$loc.type2 == "20"){
-        cs2 <- cs1 %>% filter(voter_precinct == "20")
-      }else if(input$loc.type2 == "22"){
-        cs2 <- cs1 %>% filter(voter_precinct == "22")
-      }else if(input$loc.type2 == "72"){
-        cs2 <- cs1 %>% filter(voter_precinct == "72")
-      }else if(input$loc.type2 == "1"){
-        cs2 <- cs1 %>% filter(voter_precinct == "1")
-      }else if(input$loc.type2 == "73"){
-        cs2 <- cs1 %>% filter(voter_precinct == "73")
-      }else if(input$loc.type2 == "42"){
-        cs2 <- cs1 %>% filter(voter_precinct == "42")
-      }else if(input$loc.type2 == "19"){
-        cs2 <- cs1 %>% filter(voter_precinct == "19")
-      }else if(input$loc.type2 == "69"){
-        cs2 <- cs1 %>% filter(voter_precinct == "69")
-      }else if(input$loc.type2 == "29"){
-        cs2 <- cs1 %>% filter(voter_precinct == "29")
-      }else if(input$loc.type2 == "82"){
-        cs2 <- cs1 %>% filter(voter_precinct == "82")
-      }else if(input$loc.type2 == "17"){
-        cs2 <- cs1 %>% filter(voter_precinct == "17")
-      }else if(input$loc.type2 == "9"){
-        cs2 <- cs1 %>% filter(voter_precinct == "9")
-      }else if(input$loc.type2 == "26"){
-        cs2 <- cs1 %>% filter(voter_precinct == "26")
-      }else if(input$loc.type2 == "74"){
-        cs2 <- cs1 %>% filter(voter_precinct == "74")
-      }else if(input$loc.type2 == "45"){
-        cs2 <- cs1 %>% filter(voter_precinct == "45")
-      }else if(input$loc.type2 == "30"){
-        cs2 <- cs1 %>% filter(voter_precinct == "30")
-      }else if(input$loc.type2 == "27"){
-        cs2 <- cs1 %>% filter(voter_precinct == "27")
-      }else if(input$loc.type2 == "48"){
-        cs2 <- cs1 %>% filter(voter_precinct == "48")
-      }else if(input$loc.type2 == "67"){
-        cs2 <- cs1 %>% filter(voter_precinct == "67")
-      }else if(input$loc.type2 == "6"){
-        cs2 <- cs1 %>% filter(voter_precinct == "6")
-      }else if(input$loc.type2 == "12"){
-        cs2 <- cs1 %>% filter(voter_precinct == "12")
-      }else if(input$loc.type2 == "88"){
-        cs2 <- cs1 %>% filter(voter_precinct == "88")
-      }else if(input$loc.type2 == "131"){
-        cs2 <- cs1 %>% filter(voter_precinct == "131")
-      }else if(input$loc.type2 == "85"){
-        cs2 <- cs1 %>% filter(voter_precinct == "85")
-      }else if(input$loc.type2 == "89"){
-        cs2 <- cs1 %>% filter(voter_precinct == "89")
-      }else if(input$loc.type2 == "79"){
-        cs2 <- cs1 %>% filter(voter_precinct == "79")
-      }else if(input$loc.type2 == "91"){
-        cs2 <- cs1 %>% filter(voter_precinct == "91")
-      }else if(input$loc.type2 == "133"){
-        cs2 <- cs1 %>% filter(voter_precinct == "133")
-      }else if(input$loc.type2 == "81"){
-        cs2 <- cs1 %>% filter(voter_precinct == "81")
-      }else if(input$loc.type2 == "71"){
-        cs2 <- cs1 %>% filter(voter_precinct == "71")
-      }else if(input$loc.type2 == "86"){
-        cs2 <- cs1 %>% filter(voter_precinct == "86")
-      }else if(input$loc.type2 == "56"){
-        cs2 <- cs1 %>% filter(voter_precinct == "56")
-      }else if(input$loc.type2 == "59"){
-        cs2 <- cs1 %>% filter(voter_precinct == "59")
-      }else if(input$loc.type2 == "50"){
-        cs2 <- cs1 %>% filter(voter_precinct == "50")
-      }else if(input$loc.type2 == "61"){
-        cs2 <- cs1 %>% filter(voter_precinct == "61")
-      }else if(input$loc.type2 == "31"){
-        cs2 <- cs1 %>% filter(voter_precinct == "31")
-      }else if(input$loc.type2 == "138"){
-        cs2 <- cs1 %>% filter(voter_precinct == "138")
-      }else if(input$loc.type2 == "57"){
-        cs2 <- cs1 %>% filter(voter_precinct == "57")
-      }else if(input$loc.type2 == "60"){
-        cs2 <- cs1 %>% filter(voter_precinct == "60")
-      }else if(input$loc.type2 == "53"){
-        cs2 <- cs1 %>% filter(voter_precinct == "53")
-      }else if(input$loc.type2 == "32"){
-        cs2 <- cs1 %>% filter(voter_precinct == "32")
-      }else if(input$loc.type2 == "62"){
-        cs2 <- cs1 %>% filter(voter_precinct == "62")
-      }else if(input$loc.type2 == "66"){
-        cs2 <- cs1 %>% filter(voter_precinct == "66")
-      }else if(input$loc.type2 == "51"){
-        cs2 <- cs1 %>% filter(voter_precinct == "51")
-      }
+      
+      merge(p2, p1, by = "stat")
     }
-    
-    df1 <- data.frame(stat = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
-               Ozone = c(round(summary(cs2$ozone_loc_aqi), digits = 2)),
-               SO2 = c(round(summary(cs2$so2_loc_aqi), digits = 2)),
-               PM2.5 = c(round(summary(cs2$pm2.5_loc_aqi), digits = 2)),
-               NO2 = c(round(summary(cs2$no2_loc_aqi), digits = 2)))
-    
-    if(input$ozone1 == TRUE){
-      if(input$so2.1 == TRUE){
-        if(input$pm2.5.1 == TRUE){
-          if(input$no2.1 == TRUE){
-            p2 <- df1[,c(1, 2, 3, 4, 5)]
-          }else if(input$no2.1 == FALSE){
-            p2 <- df1[,c(1, 2, 3, 4)]
+  })
+  output$airtable2 <- renderTable({
+    if(input$lastweek == TRUE){
+      ls1 <- traffic.flow %>% 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
+                                         " ", 
+                                         as.character(input$hour), 
+                                         ":00:00")) - 604800)
+      
+      if(input$loc.type == "Quadrant"){
+        if(input$loc.type2 == "SE"){
+          ls2 <- ls1 %>% filter(quadrant == "SE")
+        }else if(input$loc.type2 == "SW"){
+          ls2 <- ls1 %>% filter(quadrant == "SW")
+        }else if(input$loc.type2 == "NE"){
+          ls2 <- ls1 %>% filter(quadrant == "NE")
+        }else if(input$loc.type2 == "NW"){
+          ls2 <- ls1 %>% filter(quadrant == "NW")
+        }
+      }else if(input$loc.type == "Ward"){
+        if(input$loc.type2 == "1"){
+          ls2 <- ls1 %>% filter(ward == "1")
+        }else if(input$loc.type2 == "2"){
+          ls2 <- ls1 %>% filter(ward == "2")
+        }else if(input$loc.type2 == "3"){
+          ls2 <- ls1 %>% filter(ward == "3")
+        }else if(input$loc.type2 == "4"){
+          ls2 <- ls1 %>% filter(ward == "4")
+        }else if(input$loc.type2 == "5"){
+          ls2 <- ls1 %>% filter(ward == "5")
+        }else if(input$loc.type2 == "6"){
+          ls2 <- ls1 %>% filter(ward == "6")
+        }else if(input$loc.type2 == "7"){
+          ls2 <- ls1 %>% filter(ward == "7")
+        }else if(input$loc.type2 == "8"){
+          ls2 <- ls1 %>% filter(ward == "8")
+        }
+      }else if(input$loc.type == "Zip Code"){
+        if(input$loc.type2 == "20227"){
+          ls2 <- ls1 %>% filter(zip_code == "20227")
+        }else if(input$loc.type2 == "20032"){
+          ls2 <- ls1 %>% filter(zip_code == "20032")
+        }else if(input$loc.type2 == "20037"){
+          ls2 <- ls1 %>% filter(zip_code == "20037")
+        }else if(input$loc.type2 == "20019"){
+          ls2 <- ls1 %>% filter(zip_code == "20019")
+        }else if(input$loc.type2 == "20020"){
+          ls2 <- ls1 %>% filter(zip_code == "20020")
+        }else if(input$loc.type2 == "20018"){
+          ls2 <- ls1 %>% filter(zip_code == "20018")
+        }else if(input$loc.type2 == "20024"){
+          ls2 <- ls1 %>% filter(zip_code == "20024")
+        }else if(input$loc.type2 == "20002"){
+          ls2 <- ls1 %>% filter(zip_code == "20002")
+        }else if(input$loc.type2 == "20003"){
+          ls2 <- ls1 %>% filter(zip_code == "20003")
+        }else if(input$loc.type2 == "20001"){
+          ls2 <- ls1 %>% filter(zip_code == "20001")
+        }else if(input$loc.type2 == "20005"){
+          ls2 <- ls1 %>% filter(zip_code == "20005")
+        }else if(input$loc.type2 == "20009"){
+          ls2 <- ls1 %>% filter(zip_code == "20009")
+        }else if(input$loc.type2 == "20017"){
+          ls2 <- ls1 %>% filter(zip_code == "20017")
+        }else if(input$loc.type2 == "20010"){
+          ls2 <- ls1 %>% filter(zip_code == "20010")
+        }else if(input$loc.type2 == "20016"){
+          ls2 <- ls1 %>% filter(zip_code == "20016")
+        }else if(input$loc.type2 == "20008"){
+          ls2 <- ls1 %>% filter(zip_code == "20008")
+        }else if(input$loc.type2 == "20011"){
+          ls2 <- ls1 %>% filter(zip_code == "20011")
+        }else if(input$loc.type2 == "20007"){
+          ls2 <- ls1 %>% filter(zip_code == "20007")
+        }else if(input$loc.type2 == "20374"){
+          ls2 <- ls1 %>% filter(zip_code == "20374")
+        }else if(input$loc.type2 == "20015"){
+          ls2 <- ls1 %>% filter(zip_code == "20015")
+        }else if(input$loc.type2 == "20012"){
+          ls2 <- ls1 %>% filter(zip_code == "20012")
+        }
+      }else if(input$loc.type == "Advisory Neighborhood Commission"){
+        if(input$loc.type2 == "2A"){
+          ls2 <- ls1 %>% filter(anc == "2A")
+        }else if(input$loc.type2 == "8D"){
+          ls2 <- ls1 %>% filter(anc == "8D")
+        }else if(input$loc.type2 == "8E"){
+          ls2 <- ls1 %>% filter(anc == "8E")
+        }else if(input$loc.type2 == "8C"){
+          ls2 <- ls1 %>% filter(anc == "8C")
+        }else if(input$loc.type2 == "7F"){
+          ls2 <- ls1 %>% filter(anc == "7F")
+        }else if(input$loc.type2 == "7C"){
+          ls2 <- ls1 %>% filter(anc == "7C")
+        }else if(input$loc.type2 == "7E"){
+          ls2 <- ls1 %>% filter(anc == "7E")
+        }else if(input$loc.type2 == "5C"){
+          ls2 <- ls1 %>% filter(anc == "5C")
+        }else if(input$loc.type2 == "6D"){
+          ls2 <- ls1 %>% filter(anc == "6D")
+        }else if(input$loc.type2 == "5D"){
+          ls2 <- ls1 %>% filter(anc == "5D")
+        }else if(input$loc.type2 == "6B"){
+          ls2 <- ls1 %>% filter(anc == "6B")
+        }else if(input$loc.type2 == "5E"){
+          ls2 <- ls1 %>% filter(anc == "5E")
+        }else if(input$loc.type2 == "2F"){
+          ls2 <- ls1 %>% filter(anc == "2F")
+        }else if(input$loc.type2 == "2B"){
+          ls2 <- ls1 %>% filter(anc == "2B")
+        }else if(input$loc.type2 == "1B"){
+          ls2 <- ls1 %>% filter(anc == "1B")
+        }else if(input$loc.type2 == "6E"){
+          ls2 <- ls1 %>% filter(anc == "6E")
+        }else if(input$loc.type2 == "5B"){
+          ls2 <- ls1 %>% filter(anc == "5B")
+        }else if(input$loc.type2 == "1A"){
+          ls2 <- ls1 %>% filter(anc == "1A")
+        }else if(input$loc.type2 == "3C"){
+          ls2 <- ls1 %>% filter(anc == "3C")
+        }else if(input$loc.type2 == "6A"){
+          ls2 <- ls1 %>% filter(anc == "6A")
+        }else if(input$loc.type2 == "3D"){
+          ls2 <- ls1 %>% filter(anc == "3D")
+        }else if(input$loc.type2 == "4C"){
+          ls2 <- ls1 %>% filter(anc == "4C")
+        }else if(input$loc.type2 == "3E"){
+          ls2 <- ls1 %>% filter(anc == "3E")
+        }else if(input$loc.type2 == "2E"){
+          ls2 <- ls1 %>% filter(anc == "2E")
+        }else if(input$loc.type2 == "6C"){
+          ls2 <- ls1 %>% filter(anc == "6C")
+        }else if(input$loc.type2 == "8A"){
+          ls2 <- ls1 %>% filter(anc == "8A")
+        }else if(input$loc.type2 == "4D"){
+          ls2 <- ls1 %>% filter(anc == "4D")
+        }else if(input$loc.type2 == "4B"){
+          ls2 <- ls1 %>% filter(anc == "4B")
+        }else if(input$loc.type2 == "4A"){
+          ls2 <- ls1 %>% filter(anc == "4A")
+        }else if(input$loc.type2 == "3G"){
+          ls2 <- ls1 %>% filter(anc == "3G")
+        }else if(input$loc.type2 == "3F"){
+          ls2 <- ls1 %>% filter(anc == "3F")
+        }else if(input$loc.type2 == "5A"){
+          ls2 <- ls1 %>% filter(anc == "5A")
+        }
+      }else if(input$loc.type == "Census Tract"){
+        if(input$loc.type2 == "006202"){
+          ls2 <- ls1 %>% filter(census_tract == "006202")
+        }else if(input$loc.type2 == "009811"){
+          ls2 <- ls1 %>% filter(census_tract == "009811")
+        }else if(input$loc.type2 == "009807"){
+          ls2 <- ls1 %>% filter(census_tract == "009807")
+        }else if(input$loc.type2 == "009700"){
+          ls2 <- ls1 %>% filter(census_tract == "009700")
+        }else if(input$loc.type2 == "009804"){
+          ls2 <- ls1 %>% filter(census_tract == "009804")
+        }else if(input$loc.type2 == "007304"){
+          ls2 <- ls1 %>% filter(census_tract == "007304")
+        }else if(input$loc.type2 == "007301"){
+          ls2 <- ls1 %>% filter(census_tract == "007301")
+        }else if(input$loc.type2 == "010400"){
+          ls2 <- ls1 %>% filter(census_tract == "010400")
+        }else if(input$loc.type2 == "010800"){
+          ls2 <- ls1 %>% filter(census_tract == "010800")
+        }else if(input$loc.type2 == "005600"){
+          ls2 <- ls1 %>% filter(census_tract == "005600")
+        }else if(input$loc.type2 == "009603"){
+          ls2 <- ls1 %>% filter(census_tract == "009603")
+        }else if(input$loc.type2 == "007809"){
+          ls2 <- ls1 %>% filter(census_tract == "007809")
+        }else if(input$loc.type2 == "009902"){
+          ls2 <- ls1 %>% filter(census_tract == "009902")
+        }else if(input$loc.type2 == "009000"){
+          ls2 <- ls1 %>% filter(census_tract == "009000")
+        }else if(input$loc.type2 == "009905"){
+          ls2 <- ls1 %>% filter(census_tract == "009905")
+        }else if(input$loc.type2 == "007707"){
+          ls2 <- ls1 %>% filter(census_tract == "007707")
+        }else if(input$loc.type2 == "007806"){
+          ls2 <- ls1 %>% filter(census_tract == "007806")
+        }else if(input$loc.type2 == "007804"){
+          ls2 <- ls1 %>% filter(census_tract == "007804")
+        }else if(input$loc.type2 == "007807"){
+          ls2 <- ls1 %>% filter(census_tract == "007807")
+        }else if(input$loc.type2 == "007708"){
+          ls2 <- ls1 %>% filter(census_tract == "007708")
+        }else if(input$loc.type2 == "010500"){
+          ls2 <- ls1 %>% filter(census_tract == "010500")
+        }else if(input$loc.type2 == "006400"){
+          ls2 <- ls1 %>% filter(census_tract == "006400")
+        }else if(input$loc.type2 == "008803"){
+          ls2 <- ls1 %>% filter(census_tract == "008803")
+        }else if(input$loc.type2 == "010200"){
+          ls2 <- ls1 %>% filter(census_tract == "010200")
+        }else if(input$loc.type2 == "006500"){
+          ls2 <- ls1 %>% filter(census_tract == "006500")
+        }else if(input$loc.type2 == "008702"){
+          ls2 <- ls1 %>% filter(census_tract == "008702")
+        }else if(input$loc.type2 == "003301"){
+          ls2 <- ls1 %>% filter(census_tract == "003301")
+        }else if(input$loc.type2 == "004902"){
+          ls2 <- ls1 %>% filter(census_tract == "004902")
+        }else if(input$loc.type2 == "004201"){
+          ls2 <- ls1 %>% filter(census_tract == "004201")
+        }else if(input$loc.type2 == "003400"){
+          ls2 <- ls1 %>% filter(census_tract == "003400")
+        }else if(input$loc.type2 == "004400"){
+          ls2 <- ls1 %>% filter(census_tract == "004400")
+        }else if(input$loc.type2 == "011100"){
+          ls2 <- ls1 %>% filter(census_tract == "011100")
+        }else if(input$loc.type2 == "004702"){
+          ls2 <- ls1 %>% filter(census_tract == "004702")
+        }else if(input$loc.type2 == "009302"){
+          ls2 <- ls1 %>% filter(census_tract == "009302")
+        }else if(input$loc.type2 == "008701"){
+          ls2 <- ls1 %>% filter(census_tract == "008701")
+        }else if(input$loc.type2 == "010100"){
+          ls2 <- ls1 %>% filter(census_tract == "010100")
+        }else if(input$loc.type2 == "002900"){
+          ls2 <- ls1 %>% filter(census_tract == "002900")
+        }else if(input$loc.type2 == "004600"){
+          ls2 <- ls1 %>% filter(census_tract == "004600")
+        }else if(input$loc.type2 == "009400"){
+          ls2 <- ls1 %>% filter(census_tract == "009400")
+        }else if(input$loc.type2 == "001002"){
+          ls2 <- ls1 %>% filter(census_tract == "001002")
+        }else if(input$loc.type2 == "010600"){
+          ls2 <- ls1 %>% filter(census_tract == "010600")
+        }else if(input$loc.type2 == "000901"){
+          ls2 <- ls1 %>% filter(census_tract == "000901")
+        }else if(input$loc.type2 == "000502"){
+          ls2 <- ls1 %>% filter(census_tract == "000502")
+        }else if(input$loc.type2 == "009102"){
+          ls2 <- ls1 %>% filter(census_tract == "009102")
+        }else if(input$loc.type2 == "009201"){
+          ls2 <- ls1 %>% filter(census_tract == "009201")
+        }else if(input$loc.type2 == "002400"){
+          ls2 <- ls1 %>% filter(census_tract == "002400")
+        }else if(input$loc.type2 == "001001"){
+          ls2 <- ls1 %>% filter(census_tract == "001001")
+        }else if(input$loc.type2 == "000600"){
+          ls2 <- ls1 %>% filter(census_tract == "000600")
+        }else if(input$loc.type2 == "002501"){
+          ls2 <- ls1 %>% filter(census_tract == "002501")
+        }else if(input$loc.type2 == "009503"){
+          ls2 <- ls1 %>% filter(census_tract == "009503")
+        }else if(input$loc.type2 == "000300"){
+          ls2 <- ls1 %>% filter(census_tract == "000300")
+        }else if(input$loc.type2 == "000400"){
+          ls2 <- ls1 %>% filter(census_tract == "000400")
+        }else if(input$loc.type2 == "006700"){
+          ls2 <- ls1 %>% filter(census_tract == "006700")
+        }else if(input$loc.type2 == "007200"){
+          ls2 <- ls1 %>% filter(census_tract == "007200")
+        }else if(input$loc.type2 == "008302"){
+          ls2 <- ls1 %>% filter(census_tract == "008302")
+        }else if(input$loc.type2 == "006600"){
+          ls2 <- ls1 %>% filter(census_tract == "006600")
+        }else if(input$loc.type2 == "008904"){
+          ls2 <- ls1 %>% filter(census_tract == "008904")
+        }else if(input$loc.type2 == "008100"){
+          ls2 <- ls1 %>% filter(census_tract == "008100")
+        }else if(input$loc.type2 == "006802"){
+          ls2 <- ls1 %>% filter(census_tract == "006802")
+        }else if(input$loc.type2 == "007601"){
+          ls2 <- ls1 %>% filter(census_tract == "007601")
+        }else if(input$loc.type2 == "007100"){
+          ls2 <- ls1 %>% filter(census_tract == "007100")
+        }else if(input$loc.type2 == "008200"){
+          ls2 <- ls1 %>% filter(census_tract == "008200")
+        }else if(input$loc.type2 == "008001"){
+          ls2 <- ls1 %>% filter(census_tract == "008001")
+        }else if(input$loc.type2 == "008002"){
+          ls2 <- ls1 %>% filter(census_tract == "008002")
+        }else if(input$loc.type2 == "002101"){
+          ls2 <- ls1 %>% filter(census_tract == "002101")
+        }else if(input$loc.type2 == "001901"){
+          ls2 <- ls1 %>% filter(census_tract == "001901")
+        }else if(input$loc.type2 == "002600"){
+          ls2 <- ls1 %>% filter(census_tract == "002600")
+        }else if(input$loc.type2 == "001401"){
+          ls2 <- ls1 %>% filter(census_tract == "001401")
+        }else if(input$loc.type2 == "001803"){
+          ls2 <- ls1 %>% filter(census_tract == "001803")
+        }else if(input$loc.type2 == "001301"){
+          ls2 <- ls1 %>% filter(census_tract == "001301")
+        }else if(input$loc.type2 == "002102"){
+          ls2 <- ls1 %>% filter(census_tract == "002102")
+        }else if(input$loc.type2 == "001804"){
+          ls2 <- ls1 %>% filter(census_tract == "001804")
+        }else if(input$loc.type2 == "002001"){
+          ls2 <- ls1 %>% filter(census_tract == "002001")
+        }else if(input$loc.type2 == "001902"){
+          ls2 <- ls1 %>% filter(census_tract == "001902")
+        }else if(input$loc.type2 == "001100"){
+          ls2 <- ls1 %>% filter(census_tract == "001100")
+        }else if(input$loc.type2 == "001600"){
+          ls2 <- ls1 %>% filter(census_tract == "001600")
+        }else if(input$loc.type2 == "009509"){
+          ls2 <- ls1 %>% filter(census_tract == "009509")
+        }else if(input$loc.type2 == "001500"){
+          ls2 <- ls1 %>% filter(census_tract == "001500")
+        }
+      }else if(input$loc.type == "Single Member District"){
+        if(input$loc.type2 == "2A01"){
+          ls2 <- ls1 %>% filter(single_member_district == "2A01")
+        }else if(input$loc.type2 == "8D03"){
+          ls2 <- ls1 %>% filter(single_member_district == "8D03")
+        }else if(input$loc.type2 == "8D01"){
+          ls2 <- ls1 %>% filter(single_member_district == "8D01")
+        }else if(input$loc.type2 == "8D06"){
+          ls2 <- ls1 %>% filter(single_member_district == "8D06")
+        }else if(input$loc.type2 == "8E05"){
+          ls2 <- ls1 %>% filter(single_member_district == "8E05")
+        }else if(input$loc.type2 == "8C07"){
+          ls2 <- ls1 %>% filter(single_member_district == "8C07")
+        }else if(input$loc.type2 == "8E04"){
+          ls2 <- ls1 %>% filter(single_member_district == "8E04")
+        }else if(input$loc.type2 == "8C05"){
+          ls2 <- ls1 %>% filter(single_member_district == "8C05")
+        }else if(input$loc.type2 == "8C03"){
+          ls2 <- ls1 %>% filter(single_member_district == "8C03")
+        }else if(input$loc.type2 == "2A07"){
+          ls2 <- ls1 %>% filter(single_member_district == "2A07")
+        }else if(input$loc.type2 == "2A03"){
+          ls2 <- ls1 %>% filter(single_member_district == "2A03")
+        }else if(input$loc.type2 == "7F01"){
+          ls2 <- ls1 %>% filter(single_member_district == "7F01")
+        }else if(input$loc.type2 == "7C04"){
+          ls2 <- ls1 %>% filter(single_member_district == "7C04")
+        }else if(input$loc.type2 == "7E02"){
+          ls2 <- ls1 %>% filter(single_member_district == "7E02")
+        }else if(input$loc.type2 == "5C03"){
+          ls2 <- ls1 %>% filter(single_member_district == "5C03")
+        }else if(input$loc.type2 == "7E06"){
+          ls2 <- ls1 %>% filter(single_member_district == "7E06")
+        }else if(input$loc.type2 == "7E01"){
+          ls2 <- ls1 %>% filter(single_member_district == "7E01")
+        }else if(input$loc.type2 == "7C07"){
+          ls2 <- ls1 %>% filter(single_member_district == "7C07")
+        }else if(input$loc.type2 == "7C03"){
+          ls2 <- ls1 %>% filter(single_member_district == "7C03")
+        }else if(input$loc.type2 == "7C06"){
+          ls2 <- ls1 %>% filter(single_member_district == "7C06")
+        }else if(input$loc.type2 == "7F06"){
+          ls2 <- ls1 %>% filter(single_member_district == "7F06")
+        }else if(input$loc.type2 == "6D03"){
+          ls2 <- ls1 %>% filter(single_member_district == "6D03")
+        }else if(input$loc.type2 == "6D06"){
+          ls2 <- ls1 %>% filter(single_member_district == "6D06")
+        }else if(input$loc.type2 == "5D01"){
+          ls2 <- ls1 %>% filter(single_member_district == "5D01")
+        }else if(input$loc.type2 == "6D05"){
+          ls2 <- ls1 %>% filter(single_member_district == "6D05")
+        }else if(input$loc.type2 == "6B01"){
+          ls2 <- ls1 %>% filter(single_member_district == "6B01")
+        }else if(input$loc.type2 == "5E03"){
+          ls2 <- ls1 %>% filter(single_member_district == "5E03")
+        }else if(input$loc.type2 == "5E08"){
+          ls2 <- ls1 %>% filter(single_member_district == "5E08")
+        }else if(input$loc.type2 == "2F06"){
+          ls2 <- ls1 %>% filter(single_member_district == "2F06")
+        }else if(input$loc.type2 == "2B09"){
+          ls2 <- ls1 %>% filter(single_member_district == "2B09")
+        }else if(input$loc.type2 == "1B01"){
+          ls2 <- ls1 %>% filter(single_member_district == "1B01")
+        }else if(input$loc.type2 == "1B02"){
+          ls2 <- ls1 %>% filter(single_member_district == "1B02")
+        }else if(input$loc.type2 == "5C02"){
+          ls2 <- ls1 %>% filter(single_member_district == "5C02")
+        }else if(input$loc.type2 == "6E07"){
+          ls2 <- ls1 %>% filter(single_member_district == "6E07")
+        }else if(input$loc.type2 == "5B03"){
+          ls2 <- ls1 %>% filter(single_member_district == "5B03")
+        }else if(input$loc.type2 == "5E04"){
+          ls2 <- ls1 %>% filter(single_member_district == "5E04")
+        }else if(input$loc.type2 == "2F08"){
+          ls2 <- ls1 %>% filter(single_member_district == "2F08")
+        }else if(input$loc.type2 == "1A04"){
+          ls2 <- ls1 %>% filter(single_member_district == "1A04")
+        }else if(input$loc.type2 == "5E05"){
+          ls2 <- ls1 %>% filter(single_member_district == "5E05")
+        }else if(input$loc.type2 == "5C01"){
+          ls2 <- ls1 %>% filter(single_member_district == "5C01")
+        }else if(input$loc.type2 == "3C06"){
+          ls2 <- ls1 %>% filter(single_member_district == "3C06")
+        }else if(input$loc.type2 == "6A01"){
+          ls2 <- ls1 %>% filter(single_member_district == "6A01")
+        }else if(input$loc.type2 == "2B05"){
+          ls2 <- ls1 %>% filter(single_member_district == "2B05")
+        }else if(input$loc.type2 == "3D02"){
+          ls2 <- ls1 %>% filter(single_member_district == "3D02")
+        }else if(input$loc.type2 == "3C03"){
+          ls2 <- ls1 %>% filter(single_member_district == "3C03")
+        }else if(input$loc.type2 == "5B01"){
+          ls2 <- ls1 %>% filter(single_member_district == "5B01")
+        }else if(input$loc.type2 == "5C06"){
+          ls2 <- ls1 %>% filter(single_member_district == "5C06")
+        }else if(input$loc.type2 == "5E01"){
+          ls2 <- ls1 %>% filter(single_member_district == "5E01")
+        }else if(input$loc.type2 == "4C08"){
+          ls2 <- ls1 %>% filter(single_member_district == "4C08")
+        }else if(input$loc.type2 == "3E05"){
+          ls2 <- ls1 %>% filter(single_member_district == "3E05")
+        }else if(input$loc.type2 == "3C09"){
+          ls2 <- ls1 %>% filter(single_member_district == "3C09")
+        }else if(input$loc.type2 == "4C03"){
+          ls2 <- ls1 %>% filter(single_member_district == "4C03")
+        }else if(input$loc.type2 == "2E01"){
+          ls2 <- ls1 %>% filter(single_member_district == "2E01")
+        }else if(input$loc.type2 == "3C08"){
+          ls2 <- ls1 %>% filter(single_member_district == "3C08")
+        }else if(input$loc.type2 == "6B05"){
+          ls2 <- ls1 %>% filter(single_member_district == "6B05")
+        }else if(input$loc.type2 == "5C04"){
+          ls2 <- ls1 %>% filter(single_member_district == "5C04")
+        }else if(input$loc.type2 == "6D07"){
+          ls2 <- ls1 %>% filter(single_member_district == "6D07")
+        }else if(input$loc.type2 == "6C03"){
+          ls2 <- ls1 %>% filter(single_member_district == "6C03")
+        }else if(input$loc.type2 == "6B02"){
+          ls2 <- ls1 %>% filter(single_member_district == "6B02")
+        }else if(input$loc.type2 == "5D05"){
+          ls2 <- ls1 %>% filter(single_member_district == "5D05")
+        }else if(input$loc.type2 == "6A03"){
+          ls2 <- ls1 %>% filter(single_member_district == "6A03")
+        }else if(input$loc.type2 == "6B09"){
+          ls2 <- ls1 %>% filter(single_member_district == "6B09")
+        }else if(input$loc.type2 == "8A03"){
+          ls2 <- ls1 %>% filter(single_member_district == "8A03")
+        }else if(input$loc.type2 == "6B07"){
+          ls2 <- ls1 %>% filter(single_member_district == "6B07")
+        }else if(input$loc.type2 == "6B06"){
+          ls2 <- ls1 %>% filter(single_member_district == "6B06")
+        }else if(input$loc.type2 == "6A02"){
+          ls2 <- ls1 %>% filter(single_member_district == "6A02")
+        }else if(input$loc.type2 == "6A08"){
+          ls2 <- ls1 %>% filter(single_member_district == "6A08")
+        }else if(input$loc.type2 == "4D03"){
+          ls2 <- ls1 %>% filter(single_member_district == "4D03")
+        }else if(input$loc.type2 == "4B04"){
+          ls2 <- ls1 %>% filter(single_member_district == "4B04")
+        }else if(input$loc.type2 == "4A08"){
+          ls2 <- ls1 %>% filter(single_member_district == "4A08")
+        }else if(input$loc.type2 == "3D03"){
+          ls2 <- ls1 %>% filter(single_member_district == "3D03")
+        }else if(input$loc.type2 == "3G05"){
+          ls2 <- ls1 %>% filter(single_member_district == "3G05")
+        }else if(input$loc.type2 == "4A07"){
+          ls2 <- ls1 %>% filter(single_member_district == "4A07")
+        }else if(input$loc.type2 == "3E02"){
+          ls2 <- ls1 %>% filter(single_member_district == "3E02")
+        }else if(input$loc.type2 == "3F03"){
+          ls2 <- ls1 %>% filter(single_member_district == "3F03")
+        }else if(input$loc.type2 == "4B06"){
+          ls2 <- ls1 %>% filter(single_member_district == "4B06")
+        }else if(input$loc.type2 == "4A04"){
+          ls2 <- ls1 %>% filter(single_member_district == "4A04")
+        }else if(input$loc.type2 == "4A06"){
+          ls2 <- ls1 %>% filter(single_member_district == "4A06")
+        }else if(input$loc.type2 == "3E04"){
+          ls2 <- ls1 %>% filter(single_member_district == "3E04")
+        }else if(input$loc.type2 == "4A02"){
+          ls2 <- ls1 %>% filter(single_member_district == "4A02")
+        }else if(input$loc.type2 == "5A08"){
+          ls2 <- ls1 %>% filter(single_member_district == "5A08")
+        }else if(input$loc.type2 == "3G04"){
+          ls2 <- ls1 %>% filter(single_member_district == "3G04")
+        }
+      }else if(input$loc.type == "Voter Precinct"){
+        if(input$loc.type2 == "129"){
+          ls2 <- ls1 %>% filter(voter_precinct == "129")
+        }else if(input$loc.type2 == "125"){
+          ls2 <- ls1 %>% filter(voter_precinct == "125")
+        }else if(input$loc.type2 == "126"){
+          ls2 <- ls1 %>% filter(voter_precinct == "126")
+        }else if(input$loc.type2 == "121"){
+          ls2 <- ls1 %>% filter(voter_precinct == "121")
+        }else if(input$loc.type2 == "122"){
+          ls2 <- ls1 %>% filter(voter_precinct == "122")
+        }else if(input$loc.type2 == "120"){
+          ls2 <- ls1 %>% filter(voter_precinct == "120")
+        }else if(input$loc.type2 == "123"){
+          ls2 <- ls1 %>% filter(voter_precinct == "123")
+        }else if(input$loc.type2 == "2"){
+          ls2 <- ls1 %>% filter(voter_precinct == "2")
+        }else if(input$loc.type2 == "3"){
+          ls2 <- ls1 %>% filter(voter_precinct == "3")
+        }else if(input$loc.type2 == "102"){
+          ls2 <- ls1 %>% filter(voter_precinct == "102")
+        }else if(input$loc.type2 == "94"){
+          ls2 <- ls1 %>% filter(voter_precinct == "94")
+        }else if(input$loc.type2 == "110"){
+          ls2 <- ls1 %>% filter(voter_precinct == "110")
+        }else if(input$loc.type2 == "139"){
+          ls2 <- ls1 %>% filter(voter_precinct == "139")
+        }else if(input$loc.type2 == "105"){
+          ls2 <- ls1 %>% filter(voter_precinct == "105")
+        }else if(input$loc.type2 == "106"){
+          ls2 <- ls1 %>% filter(voter_precinct == "106")
+        }else if(input$loc.type2 == "93"){
+          ls2 <- ls1 %>% filter(voter_precinct == "93")
+        }else if(input$loc.type2 == "97"){
+          ls2 <- ls1 %>% filter(voter_precinct == "97")
+        }else if(input$loc.type2 == "95"){
+          ls2 <- ls1 %>% filter(voter_precinct == "95")
+        }else if(input$loc.type2 == "132"){
+          ls2 <- ls1 %>% filter(voter_precinct == "132")
+        }else if(input$loc.type2 == "128"){
+          ls2 <- ls1 %>% filter(voter_precinct == "128")
+        }else if(input$loc.type2 == "127"){
+          ls2 <- ls1 %>% filter(voter_precinct == "127")
+        }else if(input$loc.type2 == "76"){
+          ls2 <- ls1 %>% filter(voter_precinct == "76")
+        }else if(input$loc.type2 == "130"){
+          ls2 <- ls1 %>% filter(voter_precinct == "130")
+        }else if(input$loc.type2 == "75"){
+          ls2 <- ls1 %>% filter(voter_precinct == "75")
+        }else if(input$loc.type2 == "135"){
+          ls2 <- ls1 %>% filter(voter_precinct == "135")
+        }else if(input$loc.type2 == "141"){
+          ls2 <- ls1 %>% filter(voter_precinct == "141")
+        }else if(input$loc.type2 == "20"){
+          ls2 <- ls1 %>% filter(voter_precinct == "20")
+        }else if(input$loc.type2 == "22"){
+          ls2 <- ls1 %>% filter(voter_precinct == "22")
+        }else if(input$loc.type2 == "72"){
+          ls2 <- ls1 %>% filter(voter_precinct == "72")
+        }else if(input$loc.type2 == "1"){
+          ls2 <- ls1 %>% filter(voter_precinct == "1")
+        }else if(input$loc.type2 == "73"){
+          ls2 <- ls1 %>% filter(voter_precinct == "73")
+        }else if(input$loc.type2 == "42"){
+          ls2 <- ls1 %>% filter(voter_precinct == "42")
+        }else if(input$loc.type2 == "19"){
+          ls2 <- ls1 %>% filter(voter_precinct == "19")
+        }else if(input$loc.type2 == "69"){
+          ls2 <- ls1 %>% filter(voter_precinct == "69")
+        }else if(input$loc.type2 == "29"){
+          ls2 <- ls1 %>% filter(voter_precinct == "29")
+        }else if(input$loc.type2 == "82"){
+          ls2 <- ls1 %>% filter(voter_precinct == "82")
+        }else if(input$loc.type2 == "17"){
+          ls2 <- ls1 %>% filter(voter_precinct == "17")
+        }else if(input$loc.type2 == "9"){
+          ls2 <- ls1 %>% filter(voter_precinct == "9")
+        }else if(input$loc.type2 == "26"){
+          ls2 <- ls1 %>% filter(voter_precinct == "26")
+        }else if(input$loc.type2 == "74"){
+          ls2 <- ls1 %>% filter(voter_precinct == "74")
+        }else if(input$loc.type2 == "45"){
+          ls2 <- ls1 %>% filter(voter_precinct == "45")
+        }else if(input$loc.type2 == "30"){
+          ls2 <- ls1 %>% filter(voter_precinct == "30")
+        }else if(input$loc.type2 == "27"){
+          ls2 <- ls1 %>% filter(voter_precinct == "27")
+        }else if(input$loc.type2 == "48"){
+          ls2 <- ls1 %>% filter(voter_precinct == "48")
+        }else if(input$loc.type2 == "67"){
+          ls2 <- ls1 %>% filter(voter_precinct == "67")
+        }else if(input$loc.type2 == "6"){
+          ls2 <- ls1 %>% filter(voter_precinct == "6")
+        }else if(input$loc.type2 == "12"){
+          ls2 <- ls1 %>% filter(voter_precinct == "12")
+        }else if(input$loc.type2 == "88"){
+          ls2 <- ls1 %>% filter(voter_precinct == "88")
+        }else if(input$loc.type2 == "131"){
+          ls2 <- ls1 %>% filter(voter_precinct == "131")
+        }else if(input$loc.type2 == "85"){
+          ls2 <- ls1 %>% filter(voter_precinct == "85")
+        }else if(input$loc.type2 == "89"){
+          ls2 <- ls1 %>% filter(voter_precinct == "89")
+        }else if(input$loc.type2 == "79"){
+          ls2 <- ls1 %>% filter(voter_precinct == "79")
+        }else if(input$loc.type2 == "91"){
+          ls2 <- ls1 %>% filter(voter_precinct == "91")
+        }else if(input$loc.type2 == "133"){
+          ls2 <- ls1 %>% filter(voter_precinct == "133")
+        }else if(input$loc.type2 == "81"){
+          ls2 <- ls1 %>% filter(voter_precinct == "81")
+        }else if(input$loc.type2 == "71"){
+          ls2 <- ls1 %>% filter(voter_precinct == "71")
+        }else if(input$loc.type2 == "86"){
+          ls2 <- ls1 %>% filter(voter_precinct == "86")
+        }else if(input$loc.type2 == "56"){
+          ls2 <- ls1 %>% filter(voter_precinct == "56")
+        }else if(input$loc.type2 == "59"){
+          ls2 <- ls1 %>% filter(voter_precinct == "59")
+        }else if(input$loc.type2 == "50"){
+          ls2 <- ls1 %>% filter(voter_precinct == "50")
+        }else if(input$loc.type2 == "61"){
+          ls2 <- ls1 %>% filter(voter_precinct == "61")
+        }else if(input$loc.type2 == "31"){
+          ls2 <- ls1 %>% filter(voter_precinct == "31")
+        }else if(input$loc.type2 == "138"){
+          ls2 <- ls1 %>% filter(voter_precinct == "138")
+        }else if(input$loc.type2 == "57"){
+          ls2 <- ls1 %>% filter(voter_precinct == "57")
+        }else if(input$loc.type2 == "60"){
+          ls2 <- ls1 %>% filter(voter_precinct == "60")
+        }else if(input$loc.type2 == "53"){
+          ls2 <- ls1 %>% filter(voter_precinct == "53")
+        }else if(input$loc.type2 == "32"){
+          ls2 <- ls1 %>% filter(voter_precinct == "32")
+        }else if(input$loc.type2 == "62"){
+          ls2 <- ls1 %>% filter(voter_precinct == "62")
+        }else if(input$loc.type2 == "66"){
+          ls2 <- ls1 %>% filter(voter_precinct == "66")
+        }else if(input$loc.type2 == "51"){
+          ls2 <- ls1 %>% filter(voter_precinct == "51")
+        }
+      }
+      
+      df1 <- data.frame(stat = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
+                        Ozone = c(round(summary(ls2$ozone_loc_aqi), digits = 2)),
+                        SO2 = c(round(summary(ls2$so2_loc_aqi), digits = 2)),
+                        PM2.5 = c(round(summary(ls2$pm2.5_loc_aqi), digits = 2)),
+                        NO2 = c(round(summary(ls2$no2_loc_aqi), digits = 2)))
+      
+      if(input$ozone1 == TRUE){
+        if(input$so2.1 == TRUE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 2, 3, 4, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 2, 3, 4)]
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 2, 3, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 2, 3)]
+            }
           }
-        }else if(input$pm2.5.1 == FALSE){
-          if(input$no2.1 == TRUE){
-            p2 <- df1[,c(1, 2, 3, 5)]
-          }else if(input$no2.1 == FALSE){
-            p2 <- df1[,c(1, 2, 3)]
+        }else if(input$so2.1 == FALSE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 2, 4, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 2, 4)]
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 2, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 2)]
+            }
           }
         }
-      }else if(input$so2.1 == FALSE){
-        if(input$pm2.5.1 == TRUE){
-          if(input$no2.1 == TRUE){
-            p2 <- df1[,c(1, 2, 4, 5)]
-          }else if(input$no2.1 == FALSE){
-            p2 <- df1[,c(1, 2, 4)]
+      }else if(input$ozone1 == FALSE){
+        if(input$so2.1 == TRUE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 3, 4, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 3, 4)]
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 3, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 3)]
+            }
           }
-        }else if(input$pm2.5.1 == FALSE){
-          if(input$no2.1 == TRUE){
-            p2 <- df1[,c(1, 2, 5)]
-          }else if(input$no2.1 == FALSE){
-            p2 <- df1[,c(1, 2)]
+        }else if(input$so2.1 == FALSE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 4, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1, 4)]
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              p2 <- df1[,c(1, 5)]
+            }else if(input$no2.1 == FALSE){
+              p2 <- df1[,c(1)]
+            }
           }
         }
       }
-    }else if(input$ozone1 == FALSE){
-      if(input$so2.1 == TRUE){
-        if(input$pm2.5.1 == TRUE){
-          if(input$no2.1 == TRUE){
-            p2 <- df1[,c(1, 3, 4, 5)]
-          }else if(input$no2.1 == FALSE){
-            p2 <- df1[,c(1, 3, 4)]
+      
+      df1 <- data.frame(stat = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
+                        C.Speed = c(round(summary(ls2$current_speed), digits = 2)),
+                        FF.Speed = c(round(summary(ls2$free_flow_speed), digits = 2)),
+                        C.Travel.Time = c(round(summary(ls2$current_travel_time), digits = 2)),
+                        FF.Travel.Time = c(round(summary(ls2$free_flow_travel_time), digits = 2)))
+      
+      if(input$cspeed == TRUE){
+        if(input$ffspeed == TRUE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 2, 3, 4, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 2, 3, 4)]
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 2, 3, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 2, 3)]
+            }
           }
-        }else if(input$pm2.5.1 == FALSE){
-          if(input$no2.1 == TRUE){
-            p2 <- df1[,c(1, 3, 5)]
-          }else if(input$no2.1 == FALSE){
-            p2 <- df1[,c(1, 3)]
+        }else if(input$ffspeed == FALSE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 2, 4, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 2, 4)]
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 2, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 2)]
+            }
           }
         }
-      }else if(input$so2.1 == FALSE){
-        if(input$pm2.5.1 == TRUE){
-          if(input$no2.1 == TRUE){
-            p2 <- df1[,c(1, 4, 5)]
-          }else if(input$no2.1 == FALSE){
-            p2 <- df1[,c(1, 4)]
+      }else if(input$cspeed == FALSE){
+        if(input$ffspeed == TRUE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 3, 4, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 3, 4)]
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 3, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 3)]
+            }
           }
-        }else if(input$pm2.5.1 == FALSE){
-          if(input$no2.1 == TRUE){
-            p2 <- df1[,c(1, 5)]
-          }else if(input$no2.1 == FALSE){
-            p2 <- df1[,c(1)]
+        }else if(input$ffspeed == FALSE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 4, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1, 4)]
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              p1 <- df1[,c(1, 5)]
+            }else if(input$fftravel == FALSE){
+              p1 <- df1[,c(1)]
+            }
           }
         }
       }
+      
+      merge(p2, p1, by = "stat")
     }
-    
-    df1 <- data.frame(stat = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
-                      C.Speed = c(round(summary(cs2$current_speed), digits = 2)),
-                      FF.Speed = c(round(summary(cs2$free_flow_speed), digits = 2)),
-                      C.Travel.Time = c(round(summary(cs2$current_travel_time), digits = 2)),
-                      FF.Travel.Time = c(round(summary(cs2$free_flow_travel_time), digits = 2)))
-    
-    if(input$cspeed == TRUE){
-      if(input$ffspeed == TRUE){
-        if(input$ctravel == TRUE){
-          if(input$fftravel == TRUE){
-            p1 <- df1[,c(1, 2, 3, 4, 5)]
-          }else if(input$fftravel == FALSE){
-            p1 <- df1[,c(1, 2, 3, 4)]
+  })
+  
+  output$airtable.graph <- renderPlot({
+    if(input$currenttime == TRUE & input$lastweek == TRUE){
+      cs1 <- traffic.flow %>% 
+        filter(date == parse_datetime(str_c(as.character(input$date1), 
+                                            " ", 
+                                            as.character(input$hour), 
+                                            ":00:00")))
+      
+      ls1 <- traffic.flow %>% 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
+                                         " ", 
+                                         as.character(input$hour), 
+                                         ":00:00")) - 604800)
+      
+      com.s1 <- rbind(cs1, ls1)
+      
+      if(input$loc.type == "Quadrant"){
+        if(input$loc.type2 == "SE"){
+          cs2 <- com.s1 %>% filter(quadrant == "SE")
+        }else if(input$loc.type2 == "SW"){
+          cs2 <- com.s1 %>% filter(quadrant == "SW")
+        }else if(input$loc.type2 == "NE"){
+          cs2 <- com.s1 %>% filter(quadrant == "NE")
+        }else if(input$loc.type2 == "NW"){
+          cs2 <- com.s1 %>% filter(quadrant == "NW")
+        }
+      }else if(input$loc.type == "Ward"){
+        if(input$loc.type2 == "1"){
+          cs2 <- com.s1 %>% filter(ward == "1")
+        }else if(input$loc.type2 == "2"){
+          cs2 <- com.s1 %>% filter(ward == "2")
+        }else if(input$loc.type2 == "3"){
+          cs2 <- com.s1 %>% filter(ward == "3")
+        }else if(input$loc.type2 == "4"){
+          cs2 <- com.s1 %>% filter(ward == "4")
+        }else if(input$loc.type2 == "5"){
+          cs2 <- com.s1 %>% filter(ward == "5")
+        }else if(input$loc.type2 == "6"){
+          cs2 <- com.s1 %>% filter(ward == "6")
+        }else if(input$loc.type2 == "7"){
+          cs2 <- com.s1 %>% filter(ward == "7")
+        }else if(input$loc.type2 == "8"){
+          cs2 <- com.s1 %>% filter(ward == "8")
+        }
+      }else if(input$loc.type == "Zip Code"){
+        if(input$loc.type2 == "20227"){
+          cs2 <- com.s1 %>% filter(zip_code == "20227")
+        }else if(input$loc.type2 == "20032"){
+          cs2 <- com.s1 %>% filter(zip_code == "20032")
+        }else if(input$loc.type2 == "20037"){
+          cs2 <- com.s1 %>% filter(zip_code == "20037")
+        }else if(input$loc.type2 == "20019"){
+          cs2 <- com.s1 %>% filter(zip_code == "20019")
+        }else if(input$loc.type2 == "20020"){
+          cs2 <- com.s1 %>% filter(zip_code == "20020")
+        }else if(input$loc.type2 == "20018"){
+          cs2 <- com.s1 %>% filter(zip_code == "20018")
+        }else if(input$loc.type2 == "20024"){
+          cs2 <- com.s1 %>% filter(zip_code == "20024")
+        }else if(input$loc.type2 == "20002"){
+          cs2 <- com.s1 %>% filter(zip_code == "20002")
+        }else if(input$loc.type2 == "20003"){
+          cs2 <- com.s1 %>% filter(zip_code == "20003")
+        }else if(input$loc.type2 == "20001"){
+          cs2 <- com.s1 %>% filter(zip_code == "20001")
+        }else if(input$loc.type2 == "20005"){
+          cs2 <- com.s1 %>% filter(zip_code == "20005")
+        }else if(input$loc.type2 == "20009"){
+          cs2 <- com.s1 %>% filter(zip_code == "20009")
+        }else if(input$loc.type2 == "20017"){
+          cs2 <- com.s1 %>% filter(zip_code == "20017")
+        }else if(input$loc.type2 == "20010"){
+          cs2 <- com.s1 %>% filter(zip_code == "20010")
+        }else if(input$loc.type2 == "20016"){
+          cs2 <- com.s1 %>% filter(zip_code == "20016")
+        }else if(input$loc.type2 == "20008"){
+          cs2 <- com.s1 %>% filter(zip_code == "20008")
+        }else if(input$loc.type2 == "20011"){
+          cs2 <- com.s1 %>% filter(zip_code == "20011")
+        }else if(input$loc.type2 == "20007"){
+          cs2 <- com.s1 %>% filter(zip_code == "20007")
+        }else if(input$loc.type2 == "20374"){
+          cs2 <- com.s1 %>% filter(zip_code == "20374")
+        }else if(input$loc.type2 == "20015"){
+          cs2 <- com.s1 %>% filter(zip_code == "20015")
+        }else if(input$loc.type2 == "20012"){
+          cs2 <- com.s1 %>% filter(zip_code == "20012")
+        }
+      }else if(input$loc.type == "Advisory Neighborhood Commission"){
+        if(input$loc.type2 == "2A"){
+          cs2 <- com.s1 %>% filter(anc == "2A")
+        }else if(input$loc.type2 == "8D"){
+          cs2 <- com.s1 %>% filter(anc == "8D")
+        }else if(input$loc.type2 == "8E"){
+          cs2 <- com.s1 %>% filter(anc == "8E")
+        }else if(input$loc.type2 == "8C"){
+          cs2 <- com.s1 %>% filter(anc == "8C")
+        }else if(input$loc.type2 == "7F"){
+          cs2 <- com.s1 %>% filter(anc == "7F")
+        }else if(input$loc.type2 == "7C"){
+          cs2 <- com.s1 %>% filter(anc == "7C")
+        }else if(input$loc.type2 == "7E"){
+          cs2 <- com.s1 %>% filter(anc == "7E")
+        }else if(input$loc.type2 == "5C"){
+          cs2 <- com.s1 %>% filter(anc == "5C")
+        }else if(input$loc.type2 == "6D"){
+          cs2 <- com.s1 %>% filter(anc == "6D")
+        }else if(input$loc.type2 == "5D"){
+          cs2 <- com.s1 %>% filter(anc == "5D")
+        }else if(input$loc.type2 == "6B"){
+          cs2 <- com.s1 %>% filter(anc == "6B")
+        }else if(input$loc.type2 == "5E"){
+          cs2 <- com.s1 %>% filter(anc == "5E")
+        }else if(input$loc.type2 == "2F"){
+          cs2 <- com.s1 %>% filter(anc == "2F")
+        }else if(input$loc.type2 == "2B"){
+          cs2 <- com.s1 %>% filter(anc == "2B")
+        }else if(input$loc.type2 == "1B"){
+          cs2 <- com.s1 %>% filter(anc == "1B")
+        }else if(input$loc.type2 == "6E"){
+          cs2 <- com.s1 %>% filter(anc == "6E")
+        }else if(input$loc.type2 == "5B"){
+          cs2 <- com.s1 %>% filter(anc == "5B")
+        }else if(input$loc.type2 == "1A"){
+          cs2 <- com.s1 %>% filter(anc == "1A")
+        }else if(input$loc.type2 == "3C"){
+          cs2 <- com.s1 %>% filter(anc == "3C")
+        }else if(input$loc.type2 == "6A"){
+          cs2 <- com.s1 %>% filter(anc == "6A")
+        }else if(input$loc.type2 == "3D"){
+          cs2 <- com.s1 %>% filter(anc == "3D")
+        }else if(input$loc.type2 == "4C"){
+          cs2 <- com.s1 %>% filter(anc == "4C")
+        }else if(input$loc.type2 == "3E"){
+          cs2 <- com.s1 %>% filter(anc == "3E")
+        }else if(input$loc.type2 == "2E"){
+          cs2 <- com.s1 %>% filter(anc == "2E")
+        }else if(input$loc.type2 == "6C"){
+          cs2 <- com.s1 %>% filter(anc == "6C")
+        }else if(input$loc.type2 == "8A"){
+          cs2 <- com.s1 %>% filter(anc == "8A")
+        }else if(input$loc.type2 == "4D"){
+          cs2 <- com.s1 %>% filter(anc == "4D")
+        }else if(input$loc.type2 == "4B"){
+          cs2 <- com.s1 %>% filter(anc == "4B")
+        }else if(input$loc.type2 == "4A"){
+          cs2 <- com.s1 %>% filter(anc == "4A")
+        }else if(input$loc.type2 == "3G"){
+          cs2 <- com.s1 %>% filter(anc == "3G")
+        }else if(input$loc.type2 == "3F"){
+          cs2 <- com.s1 %>% filter(anc == "3F")
+        }else if(input$loc.type2 == "5A"){
+          cs2 <- com.s1 %>% filter(anc == "5A")
+        }
+      }else if(input$loc.type == "Census Tract"){
+        if(input$loc.type2 == "006202"){
+          cs2 <- com.s1 %>% filter(census_tract == "006202")
+        }else if(input$loc.type2 == "009811"){
+          cs2 <- com.s1 %>% filter(census_tract == "009811")
+        }else if(input$loc.type2 == "009807"){
+          cs2 <- com.s1 %>% filter(census_tract == "009807")
+        }else if(input$loc.type2 == "009700"){
+          cs2 <- com.s1 %>% filter(census_tract == "009700")
+        }else if(input$loc.type2 == "009804"){
+          cs2 <- com.s1 %>% filter(census_tract == "009804")
+        }else if(input$loc.type2 == "007304"){
+          cs2 <- com.s1 %>% filter(census_tract == "007304")
+        }else if(input$loc.type2 == "007301"){
+          cs2 <- com.s1 %>% filter(census_tract == "007301")
+        }else if(input$loc.type2 == "010400"){
+          cs2 <- com.s1 %>% filter(census_tract == "010400")
+        }else if(input$loc.type2 == "010800"){
+          cs2 <- com.s1 %>% filter(census_tract == "010800")
+        }else if(input$loc.type2 == "005600"){
+          cs2 <- com.s1 %>% filter(census_tract == "005600")
+        }else if(input$loc.type2 == "009603"){
+          cs2 <- com.s1 %>% filter(census_tract == "009603")
+        }else if(input$loc.type2 == "007809"){
+          cs2 <- com.s1 %>% filter(census_tract == "007809")
+        }else if(input$loc.type2 == "009902"){
+          cs2 <- com.s1 %>% filter(census_tract == "009902")
+        }else if(input$loc.type2 == "009000"){
+          cs2 <- com.s1 %>% filter(census_tract == "009000")
+        }else if(input$loc.type2 == "009905"){
+          cs2 <- com.s1 %>% filter(census_tract == "009905")
+        }else if(input$loc.type2 == "007707"){
+          cs2 <- com.s1 %>% filter(census_tract == "007707")
+        }else if(input$loc.type2 == "007806"){
+          cs2 <- com.s1 %>% filter(census_tract == "007806")
+        }else if(input$loc.type2 == "007804"){
+          cs2 <- com.s1 %>% filter(census_tract == "007804")
+        }else if(input$loc.type2 == "007807"){
+          cs2 <- com.s1 %>% filter(census_tract == "007807")
+        }else if(input$loc.type2 == "007708"){
+          cs2 <- com.s1 %>% filter(census_tract == "007708")
+        }else if(input$loc.type2 == "010500"){
+          cs2 <- com.s1 %>% filter(census_tract == "010500")
+        }else if(input$loc.type2 == "006400"){
+          cs2 <- com.s1 %>% filter(census_tract == "006400")
+        }else if(input$loc.type2 == "008803"){
+          cs2 <- com.s1 %>% filter(census_tract == "008803")
+        }else if(input$loc.type2 == "010200"){
+          cs2 <- com.s1 %>% filter(census_tract == "010200")
+        }else if(input$loc.type2 == "006500"){
+          cs2 <- com.s1 %>% filter(census_tract == "006500")
+        }else if(input$loc.type2 == "008702"){
+          cs2 <- com.s1 %>% filter(census_tract == "008702")
+        }else if(input$loc.type2 == "003301"){
+          cs2 <- com.s1 %>% filter(census_tract == "003301")
+        }else if(input$loc.type2 == "004902"){
+          cs2 <- com.s1 %>% filter(census_tract == "004902")
+        }else if(input$loc.type2 == "004201"){
+          cs2 <- com.s1 %>% filter(census_tract == "004201")
+        }else if(input$loc.type2 == "003400"){
+          cs2 <- com.s1 %>% filter(census_tract == "003400")
+        }else if(input$loc.type2 == "004400"){
+          cs2 <- com.s1 %>% filter(census_tract == "004400")
+        }else if(input$loc.type2 == "011100"){
+          cs2 <- com.s1 %>% filter(census_tract == "011100")
+        }else if(input$loc.type2 == "004702"){
+          cs2 <- com.s1 %>% filter(census_tract == "004702")
+        }else if(input$loc.type2 == "009302"){
+          cs2 <- com.s1 %>% filter(census_tract == "009302")
+        }else if(input$loc.type2 == "008701"){
+          cs2 <- com.s1 %>% filter(census_tract == "008701")
+        }else if(input$loc.type2 == "010100"){
+          cs2 <- com.s1 %>% filter(census_tract == "010100")
+        }else if(input$loc.type2 == "002900"){
+          cs2 <- com.s1 %>% filter(census_tract == "002900")
+        }else if(input$loc.type2 == "004600"){
+          cs2 <- com.s1 %>% filter(census_tract == "004600")
+        }else if(input$loc.type2 == "009400"){
+          cs2 <- com.s1 %>% filter(census_tract == "009400")
+        }else if(input$loc.type2 == "001002"){
+          cs2 <- com.s1 %>% filter(census_tract == "001002")
+        }else if(input$loc.type2 == "010600"){
+          cs2 <- com.s1 %>% filter(census_tract == "010600")
+        }else if(input$loc.type2 == "000901"){
+          cs2 <- com.s1 %>% filter(census_tract == "000901")
+        }else if(input$loc.type2 == "000502"){
+          cs2 <- com.s1 %>% filter(census_tract == "000502")
+        }else if(input$loc.type2 == "009102"){
+          cs2 <- com.s1 %>% filter(census_tract == "009102")
+        }else if(input$loc.type2 == "009201"){
+          cs2 <- com.s1 %>% filter(census_tract == "009201")
+        }else if(input$loc.type2 == "002400"){
+          cs2 <- com.s1 %>% filter(census_tract == "002400")
+        }else if(input$loc.type2 == "001001"){
+          cs2 <- com.s1 %>% filter(census_tract == "001001")
+        }else if(input$loc.type2 == "000600"){
+          cs2 <- com.s1 %>% filter(census_tract == "000600")
+        }else if(input$loc.type2 == "002501"){
+          cs2 <- com.s1 %>% filter(census_tract == "002501")
+        }else if(input$loc.type2 == "009503"){
+          cs2 <- com.s1 %>% filter(census_tract == "009503")
+        }else if(input$loc.type2 == "000300"){
+          cs2 <- com.s1 %>% filter(census_tract == "000300")
+        }else if(input$loc.type2 == "000400"){
+          cs2 <- com.s1 %>% filter(census_tract == "000400")
+        }else if(input$loc.type2 == "006700"){
+          cs2 <- com.s1 %>% filter(census_tract == "006700")
+        }else if(input$loc.type2 == "007200"){
+          cs2 <- com.s1 %>% filter(census_tract == "007200")
+        }else if(input$loc.type2 == "008302"){
+          cs2 <- com.s1 %>% filter(census_tract == "008302")
+        }else if(input$loc.type2 == "006600"){
+          cs2 <- com.s1 %>% filter(census_tract == "006600")
+        }else if(input$loc.type2 == "008904"){
+          cs2 <- com.s1 %>% filter(census_tract == "008904")
+        }else if(input$loc.type2 == "008100"){
+          cs2 <- com.s1 %>% filter(census_tract == "008100")
+        }else if(input$loc.type2 == "006802"){
+          cs2 <- com.s1 %>% filter(census_tract == "006802")
+        }else if(input$loc.type2 == "007601"){
+          cs2 <- com.s1 %>% filter(census_tract == "007601")
+        }else if(input$loc.type2 == "007100"){
+          cs2 <- com.s1 %>% filter(census_tract == "007100")
+        }else if(input$loc.type2 == "008200"){
+          cs2 <- com.s1 %>% filter(census_tract == "008200")
+        }else if(input$loc.type2 == "008001"){
+          cs2 <- com.s1 %>% filter(census_tract == "008001")
+        }else if(input$loc.type2 == "008002"){
+          cs2 <- com.s1 %>% filter(census_tract == "008002")
+        }else if(input$loc.type2 == "002101"){
+          cs2 <- com.s1 %>% filter(census_tract == "002101")
+        }else if(input$loc.type2 == "001901"){
+          cs2 <- com.s1 %>% filter(census_tract == "001901")
+        }else if(input$loc.type2 == "002600"){
+          cs2 <- com.s1 %>% filter(census_tract == "002600")
+        }else if(input$loc.type2 == "001401"){
+          cs2 <- com.s1 %>% filter(census_tract == "001401")
+        }else if(input$loc.type2 == "001803"){
+          cs2 <- com.s1 %>% filter(census_tract == "001803")
+        }else if(input$loc.type2 == "001301"){
+          cs2 <- com.s1 %>% filter(census_tract == "001301")
+        }else if(input$loc.type2 == "002102"){
+          cs2 <- com.s1 %>% filter(census_tract == "002102")
+        }else if(input$loc.type2 == "001804"){
+          cs2 <- com.s1 %>% filter(census_tract == "001804")
+        }else if(input$loc.type2 == "002001"){
+          cs2 <- com.s1 %>% filter(census_tract == "002001")
+        }else if(input$loc.type2 == "001902"){
+          cs2 <- com.s1 %>% filter(census_tract == "001902")
+        }else if(input$loc.type2 == "001100"){
+          cs2 <- com.s1 %>% filter(census_tract == "001100")
+        }else if(input$loc.type2 == "001600"){
+          cs2 <- com.s1 %>% filter(census_tract == "001600")
+        }else if(input$loc.type2 == "009509"){
+          cs2 <- com.s1 %>% filter(census_tract == "009509")
+        }else if(input$loc.type2 == "001500"){
+          cs2 <- com.s1 %>% filter(census_tract == "001500")
+        }
+      }else if(input$loc.type == "Single Member District"){
+        if(input$loc.type2 == "2A01"){
+          cs2 <- com.s1 %>% filter(single_member_district == "2A01")
+        }else if(input$loc.type2 == "8D03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "8D03")
+        }else if(input$loc.type2 == "8D01"){
+          cs2 <- com.s1 %>% filter(single_member_district == "8D01")
+        }else if(input$loc.type2 == "8D06"){
+          cs2 <- com.s1 %>% filter(single_member_district == "8D06")
+        }else if(input$loc.type2 == "8E05"){
+          cs2 <- com.s1 %>% filter(single_member_district == "8E05")
+        }else if(input$loc.type2 == "8C07"){
+          cs2 <- com.s1 %>% filter(single_member_district == "8C07")
+        }else if(input$loc.type2 == "8E04"){
+          cs2 <- com.s1 %>% filter(single_member_district == "8E04")
+        }else if(input$loc.type2 == "8C05"){
+          cs2 <- com.s1 %>% filter(single_member_district == "8C05")
+        }else if(input$loc.type2 == "8C03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "8C03")
+        }else if(input$loc.type2 == "2A07"){
+          cs2 <- com.s1 %>% filter(single_member_district == "2A07")
+        }else if(input$loc.type2 == "2A03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "2A03")
+        }else if(input$loc.type2 == "7F01"){
+          cs2 <- com.s1 %>% filter(single_member_district == "7F01")
+        }else if(input$loc.type2 == "7C04"){
+          cs2 <- com.s1 %>% filter(single_member_district == "7C04")
+        }else if(input$loc.type2 == "7E02"){
+          cs2 <- com.s1 %>% filter(single_member_district == "7E02")
+        }else if(input$loc.type2 == "5C03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5C03")
+        }else if(input$loc.type2 == "7E06"){
+          cs2 <- com.s1 %>% filter(single_member_district == "7E06")
+        }else if(input$loc.type2 == "7E01"){
+          cs2 <- com.s1 %>% filter(single_member_district == "7E01")
+        }else if(input$loc.type2 == "7C07"){
+          cs2 <- com.s1 %>% filter(single_member_district == "7C07")
+        }else if(input$loc.type2 == "7C03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "7C03")
+        }else if(input$loc.type2 == "7C06"){
+          cs2 <- com.s1 %>% filter(single_member_district == "7C06")
+        }else if(input$loc.type2 == "7F06"){
+          cs2 <- com.s1 %>% filter(single_member_district == "7F06")
+        }else if(input$loc.type2 == "6D03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6D03")
+        }else if(input$loc.type2 == "6D06"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6D06")
+        }else if(input$loc.type2 == "5D01"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5D01")
+        }else if(input$loc.type2 == "6D05"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6D05")
+        }else if(input$loc.type2 == "6B01"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6B01")
+        }else if(input$loc.type2 == "5E03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5E03")
+        }else if(input$loc.type2 == "5E08"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5E08")
+        }else if(input$loc.type2 == "2F06"){
+          cs2 <- com.s1 %>% filter(single_member_district == "2F06")
+        }else if(input$loc.type2 == "2B09"){
+          cs2 <- com.s1 %>% filter(single_member_district == "2B09")
+        }else if(input$loc.type2 == "1B01"){
+          cs2 <- com.s1 %>% filter(single_member_district == "1B01")
+        }else if(input$loc.type2 == "1B02"){
+          cs2 <- com.s1 %>% filter(single_member_district == "1B02")
+        }else if(input$loc.type2 == "5C02"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5C02")
+        }else if(input$loc.type2 == "6E07"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6E07")
+        }else if(input$loc.type2 == "5B03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5B03")
+        }else if(input$loc.type2 == "5E04"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5E04")
+        }else if(input$loc.type2 == "2F08"){
+          cs2 <- com.s1 %>% filter(single_member_district == "2F08")
+        }else if(input$loc.type2 == "1A04"){
+          cs2 <- com.s1 %>% filter(single_member_district == "1A04")
+        }else if(input$loc.type2 == "5E05"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5E05")
+        }else if(input$loc.type2 == "5C01"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5C01")
+        }else if(input$loc.type2 == "3C06"){
+          cs2 <- com.s1 %>% filter(single_member_district == "3C06")
+        }else if(input$loc.type2 == "6A01"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6A01")
+        }else if(input$loc.type2 == "2B05"){
+          cs2 <- com.s1 %>% filter(single_member_district == "2B05")
+        }else if(input$loc.type2 == "3D02"){
+          cs2 <- com.s1 %>% filter(single_member_district == "3D02")
+        }else if(input$loc.type2 == "3C03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "3C03")
+        }else if(input$loc.type2 == "5B01"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5B01")
+        }else if(input$loc.type2 == "5C06"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5C06")
+        }else if(input$loc.type2 == "5E01"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5E01")
+        }else if(input$loc.type2 == "4C08"){
+          cs2 <- com.s1 %>% filter(single_member_district == "4C08")
+        }else if(input$loc.type2 == "3E05"){
+          cs2 <- com.s1 %>% filter(single_member_district == "3E05")
+        }else if(input$loc.type2 == "3C09"){
+          cs2 <- com.s1 %>% filter(single_member_district == "3C09")
+        }else if(input$loc.type2 == "4C03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "4C03")
+        }else if(input$loc.type2 == "2E01"){
+          cs2 <- com.s1 %>% filter(single_member_district == "2E01")
+        }else if(input$loc.type2 == "3C08"){
+          cs2 <- com.s1 %>% filter(single_member_district == "3C08")
+        }else if(input$loc.type2 == "6B05"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6B05")
+        }else if(input$loc.type2 == "5C04"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5C04")
+        }else if(input$loc.type2 == "6D07"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6D07")
+        }else if(input$loc.type2 == "6C03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6C03")
+        }else if(input$loc.type2 == "6B02"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6B02")
+        }else if(input$loc.type2 == "5D05"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5D05")
+        }else if(input$loc.type2 == "6A03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6A03")
+        }else if(input$loc.type2 == "6B09"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6B09")
+        }else if(input$loc.type2 == "8A03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "8A03")
+        }else if(input$loc.type2 == "6B07"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6B07")
+        }else if(input$loc.type2 == "6B06"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6B06")
+        }else if(input$loc.type2 == "6A02"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6A02")
+        }else if(input$loc.type2 == "6A08"){
+          cs2 <- com.s1 %>% filter(single_member_district == "6A08")
+        }else if(input$loc.type2 == "4D03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "4D03")
+        }else if(input$loc.type2 == "4B04"){
+          cs2 <- com.s1 %>% filter(single_member_district == "4B04")
+        }else if(input$loc.type2 == "4A08"){
+          cs2 <- com.s1 %>% filter(single_member_district == "4A08")
+        }else if(input$loc.type2 == "3D03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "3D03")
+        }else if(input$loc.type2 == "3G05"){
+          cs2 <- com.s1 %>% filter(single_member_district == "3G05")
+        }else if(input$loc.type2 == "4A07"){
+          cs2 <- com.s1 %>% filter(single_member_district == "4A07")
+        }else if(input$loc.type2 == "3E02"){
+          cs2 <- com.s1 %>% filter(single_member_district == "3E02")
+        }else if(input$loc.type2 == "3F03"){
+          cs2 <- com.s1 %>% filter(single_member_district == "3F03")
+        }else if(input$loc.type2 == "4B06"){
+          cs2 <- com.s1 %>% filter(single_member_district == "4B06")
+        }else if(input$loc.type2 == "4A04"){
+          cs2 <- com.s1 %>% filter(single_member_district == "4A04")
+        }else if(input$loc.type2 == "4A06"){
+          cs2 <- com.s1 %>% filter(single_member_district == "4A06")
+        }else if(input$loc.type2 == "3E04"){
+          cs2 <- com.s1 %>% filter(single_member_district == "3E04")
+        }else if(input$loc.type2 == "4A02"){
+          cs2 <- com.s1 %>% filter(single_member_district == "4A02")
+        }else if(input$loc.type2 == "5A08"){
+          cs2 <- com.s1 %>% filter(single_member_district == "5A08")
+        }else if(input$loc.type2 == "3G04"){
+          cs2 <- com.s1 %>% filter(single_member_district == "3G04")
+        }
+      }else if(input$loc.type == "Voter Precinct"){
+        if(input$loc.type2 == "129"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "129")
+        }else if(input$loc.type2 == "125"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "125")
+        }else if(input$loc.type2 == "126"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "126")
+        }else if(input$loc.type2 == "121"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "121")
+        }else if(input$loc.type2 == "122"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "122")
+        }else if(input$loc.type2 == "120"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "120")
+        }else if(input$loc.type2 == "123"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "123")
+        }else if(input$loc.type2 == "2"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "2")
+        }else if(input$loc.type2 == "3"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "3")
+        }else if(input$loc.type2 == "102"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "102")
+        }else if(input$loc.type2 == "94"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "94")
+        }else if(input$loc.type2 == "110"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "110")
+        }else if(input$loc.type2 == "139"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "139")
+        }else if(input$loc.type2 == "105"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "105")
+        }else if(input$loc.type2 == "106"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "106")
+        }else if(input$loc.type2 == "93"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "93")
+        }else if(input$loc.type2 == "97"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "97")
+        }else if(input$loc.type2 == "95"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "95")
+        }else if(input$loc.type2 == "132"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "132")
+        }else if(input$loc.type2 == "128"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "128")
+        }else if(input$loc.type2 == "127"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "127")
+        }else if(input$loc.type2 == "76"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "76")
+        }else if(input$loc.type2 == "130"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "130")
+        }else if(input$loc.type2 == "75"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "75")
+        }else if(input$loc.type2 == "135"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "135")
+        }else if(input$loc.type2 == "141"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "141")
+        }else if(input$loc.type2 == "20"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "20")
+        }else if(input$loc.type2 == "22"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "22")
+        }else if(input$loc.type2 == "72"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "72")
+        }else if(input$loc.type2 == "1"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "1")
+        }else if(input$loc.type2 == "73"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "73")
+        }else if(input$loc.type2 == "42"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "42")
+        }else if(input$loc.type2 == "19"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "19")
+        }else if(input$loc.type2 == "69"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "69")
+        }else if(input$loc.type2 == "29"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "29")
+        }else if(input$loc.type2 == "82"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "82")
+        }else if(input$loc.type2 == "17"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "17")
+        }else if(input$loc.type2 == "9"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "9")
+        }else if(input$loc.type2 == "26"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "26")
+        }else if(input$loc.type2 == "74"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "74")
+        }else if(input$loc.type2 == "45"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "45")
+        }else if(input$loc.type2 == "30"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "30")
+        }else if(input$loc.type2 == "27"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "27")
+        }else if(input$loc.type2 == "48"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "48")
+        }else if(input$loc.type2 == "67"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "67")
+        }else if(input$loc.type2 == "6"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "6")
+        }else if(input$loc.type2 == "12"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "12")
+        }else if(input$loc.type2 == "88"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "88")
+        }else if(input$loc.type2 == "131"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "131")
+        }else if(input$loc.type2 == "85"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "85")
+        }else if(input$loc.type2 == "89"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "89")
+        }else if(input$loc.type2 == "79"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "79")
+        }else if(input$loc.type2 == "91"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "91")
+        }else if(input$loc.type2 == "133"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "133")
+        }else if(input$loc.type2 == "81"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "81")
+        }else if(input$loc.type2 == "71"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "71")
+        }else if(input$loc.type2 == "86"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "86")
+        }else if(input$loc.type2 == "56"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "56")
+        }else if(input$loc.type2 == "59"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "59")
+        }else if(input$loc.type2 == "50"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "50")
+        }else if(input$loc.type2 == "61"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "61")
+        }else if(input$loc.type2 == "31"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "31")
+        }else if(input$loc.type2 == "138"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "138")
+        }else if(input$loc.type2 == "57"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "57")
+        }else if(input$loc.type2 == "60"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "60")
+        }else if(input$loc.type2 == "53"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "53")
+        }else if(input$loc.type2 == "32"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "32")
+        }else if(input$loc.type2 == "62"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "62")
+        }else if(input$loc.type2 == "66"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "66")
+        }else if(input$loc.type2 == "51"){
+          cs2 <- com.s1 %>% filter(voter_precinct == "51")
+        }
+      }
+      
+      cs3 <- cs2 %>% 
+        group_by(date) %>% 
+        summarize(Ozone = mean(ozone_loc_aqi, na.rm = TRUE),
+                  SO2 = mean(so2_loc_aqi, na.rm = TRUE),
+                  PM2.5 = mean(pm2.5_loc_aqi, na.rm = TRUE),
+                  NO2 = mean(no2_loc_aqi, na.rm = TRUE))
+      
+      if(input$ozone1 == TRUE){
+        if(input$so2.1 == TRUE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              cs3 <- cs3[,c(1, 2, 3, 4, 5)]
+            }else if(input$no2.1 == FALSE){
+              cs3 <- cs3[,c(1, 2, 3, 4)]
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              cs3 <- cs3[,c(1, 2, 3, 5)]
+            }else if(input$no2.1 == FALSE){
+              cs3 <- cs3[,c(1, 2, 3)]
+            }
           }
-        }else if(input$ctravel == FALSE){
-          if(input$fftravel == TRUE){
-            p1 <- df1[,c(1, 2, 3, 5)]
-          }else if(input$fftravel == FALSE){
-            p1 <- df1[,c(1, 2, 3)]
+        }else if(input$so2.1 == FALSE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              cs3 <- cs3[,c(1, 2, 4, 5)]
+            }else if(input$no2.1 == FALSE){
+              cs3 <- cs3[,c(1, 2, 4)]
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              cs3 <- cs3[,c(1, 2, 5)]
+            }else if(input$no2.1 == FALSE){
+              cs3 <- cs3[,c(1, 2)]
+            }
           }
         }
-      }else if(input$ffspeed == FALSE){
-        if(input$ctravel == TRUE){
-          if(input$fftravel == TRUE){
-            p1 <- df1[,c(1, 2, 4, 5)]
-          }else if(input$fftravel == FALSE){
-            p1 <- df1[,c(1, 2, 4)]
+      }else if(input$ozone1 == FALSE){
+        if(input$so2.1 == TRUE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              cs3 <- cs3[,c(1, 3, 4, 5)]
+            }else if(input$no2.1 == FALSE){
+              cs3 <- cs3[,c(1, 3, 4)]
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              cs3 <- cs3[,c(1, 3, 5)]
+            }else if(input$no2.1 == FALSE){
+              cs3 <- cs3[,c(1, 3)]
+            }
           }
-        }else if(input$ctravel == FALSE){
-          if(input$fftravel == TRUE){
-            p1 <- df1[,c(1, 2, 5)]
-          }else if(input$fftravel == FALSE){
-            p1 <- df1[,c(1, 2)]
+        }else if(input$so2.1 == FALSE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              cs3 <- cs3[,c(1, 4, 5)]
+            }else if(input$no2.1 == FALSE){
+              cs3 <- cs3[,c(1, 4)]
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              cs3 <- cs3[,c(1, 5)]
+            }else if(input$no2.1 == FALSE){
+              cs3 <- cs3[,c(1)]
+            }
           }
         }
       }
-    }else if(input$cspeed == FALSE){
-      if(input$ffspeed == TRUE){
-        if(input$ctravel == TRUE){
-          if(input$fftravel == TRUE){
-            p1 <- df1[,c(1, 3, 4, 5)]
-          }else if(input$fftravel == FALSE){
-            p1 <- df1[,c(1, 3, 4)]
+      
+      cs3 <- pivot_longer(cs3, -date, names_to = "param")
+      
+      cs3$date <- str_c(substr(cs3$date, start = 1, stop = 10), " T",
+                        substr(cs3$date, start = 12, stop = 13))
+      
+      p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
+        geom_bar(stat = "identity", , position = "dodge") +
+        labs(x = "Air Quality Parameters", y = "AQI", fill = "Date")
+      
+      cs4 <- cs2 %>% 
+        group_by(date) %>% 
+        summarize(Current_Speed = mean(current_speed, na.rm = TRUE),
+                  Free_Flow_Speed = mean(free_flow_speed, na.rm = TRUE),
+                  Current_Travel_Time = mean(current_travel_time, na.rm = TRUE),
+                  Free_Flow_Travel_Time = mean(free_flow_travel_time, na.rm = TRUE))
+      
+      if(input$cspeed == TRUE){
+        if(input$ffspeed == TRUE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              cs4 <- cs4[,c(1, 2, 3, 4, 5)]
+            }else if(input$fftravel == FALSE){
+              cs4 <- cs4[,c(1, 2, 3, 4)]
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              cs4 <- cs4[,c(1, 2, 3, 5)]
+            }else if(input$fftravel == FALSE){
+              cs4 <- cs4[,c(1, 2, 3)]
+            }
           }
-        }else if(input$ctravel == FALSE){
-          if(input$fftravel == TRUE){
-            p1 <- df1[,c(1, 3, 5)]
-          }else if(input$fftravel == FALSE){
-            p1 <- df1[,c(1, 3)]
+        }else if(input$ffspeed == FALSE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              cs4 <- cs4[,c(1, 2, 4, 5)]
+            }else if(input$fftravel == FALSE){
+              cs4 <- cs4[,c(1, 2, 4)]
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              cs4 <- cs4[,c(1, 2, 5)]
+            }else if(input$fftravel == FALSE){
+              cs4 <- cs4[,c(1, 2)]
+            }
           }
         }
-      }else if(input$ffspeed == FALSE){
-        if(input$ctravel == TRUE){
-          if(input$fftravel == TRUE){
-            p1 <- df1[,c(1, 4, 5)]
-          }else if(input$fftravel == FALSE){
-            p1 <- df1[,c(1, 4)]
+      }else if(input$cspeed == FALSE){
+        if(input$ffspeed == TRUE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              cs4 <- cs4[,c(1, 3, 4, 5)]
+            }else if(input$fftravel == FALSE){
+              cs4 <- cs4[,c(1, 3, 4)]
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              cs4 <- cs4[,c(1, 3, 5)]
+            }else if(input$fftravel == FALSE){
+              cs4 <- cs4[,c(1, 3)]
+            }
           }
-        }else if(input$ctravel == FALSE){
-          if(input$fftravel == TRUE){
-            p1 <- df1[,c(1, 5)]
-          }else if(input$fftravel == FALSE){
-            p1 <- df1[,c(1)]
+        }else if(input$ffspeed == FALSE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              cs4 <- cs4[,c(1, 4, 5)]
+            }else if(input$fftravel == FALSE){
+              cs4 <- cs4[,c(1, 4)]
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              cs4 <- cs4[,c(1, 5)]
+            }else if(input$fftravel == FALSE){
+              cs4 <- cs4[,c(1)]
+            }
           }
         }
       }
+      
+      cs4 <- pivot_longer(cs4, -date, names_to = "param")
+      
+      cs4$date <- str_c(substr(cs4$date, start = 1, stop = 10), " T",
+                        substr(cs4$date, start = 12, stop = 13))
+      
+      p1 <- ggplot(data = cs4, aes(x = param, y = value, fill = as.character(date))) +
+        geom_bar(stat = "identity", , position = "dodge") +
+        labs(x = "Traffic Parameters", y = "Traffic Value", fill = "Date")
+      
+      grid.arrange(p2, p1, ncol = 2)
     }
-    
-    merge(p2, p1, by = "stat")
-    
   })
   
   output$current.speed <- renderText({
@@ -1497,1203 +3057,1829 @@ server <- function(input, output) {
                                           " ", 
                                           as.character(input$hour), 
                                           ":00:00")))
+    
+    ls1 <- traffic.flow %>% 
+      filter(date == as_datetime(str_c(as.character(input$date1), 
+                                       " ", 
+                                       as.character(input$hour), 
+                                       ":00:00")) - 604800)
+    
     if(input$loc.type == "Quadrant"){
       if(input$loc.type2 == "SE"){
         cs2 <- mean(cs1$current_speed[cs1$quadrant == "SE"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$quadrant == "SE"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "SW"){
         cs2 <- mean(cs1$current_speed[cs1$quadrant == "SW"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$quadrant == "SW"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "NE"){
         cs2 <- mean(cs1$current_speed[cs1$quadrant == "NE"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$quadrant == "NE"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "NW"){
         cs2 <- mean(cs1$current_speed[cs1$quadrant == "NW"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$quadrant == "NW"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }
     }else if(input$loc.type == "Ward"){
       if(input$loc.type2 == "1"){
         cs2 <- mean(cs1$current_speed[cs1$ward == "1"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$ward == "1"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2"){
         cs2 <- mean(cs1$current_speed[cs1$ward == "2"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$ward == "2"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3"){
         cs2 <- mean(cs1$current_speed[cs1$ward == "3"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$ward == "3"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4"){
         cs2 <- mean(cs1$current_speed[cs1$ward == "4"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$ward == "4"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5"){
         cs2 <- mean(cs1$current_speed[cs1$ward == "5"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$ward == "5"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6"){
         cs2 <- mean(cs1$current_speed[cs1$ward == "6"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$ward == "6"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7"){
         cs2 <- mean(cs1$current_speed[cs1$ward == "7"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$ward == "7"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8"){
         cs2 <- mean(cs1$current_speed[cs1$ward == "8"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$ward == "8"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }
     }else if(input$loc.type == "Zip Code"){
       if(input$loc.type2 == "20227"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20227"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20227"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20032"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20032"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20032"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20037"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20037"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20037"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20019"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20019"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20019"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20020"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20020"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20020"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20018"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20018"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20018"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20024"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20024"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20024"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20002"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20002"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20002"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20003"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20003"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20003"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20001"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20001"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20001"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20005"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20005"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20005"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20009"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20009"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20009"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20017"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20017"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20017"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20010"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20010"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20010"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20016"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20016"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20016"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20008"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20008"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20008"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20011"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20011"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20011"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20007"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20007"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20007"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20374"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20374"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20374"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20015"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20015"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20015"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20012"){
         cs2 <- mean(cs1$current_speed[cs1$zip_code == "20012"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$zip_code == "20012"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }
     }else if(input$loc.type == "Advisory Neighborhood Commission"){
       if(input$loc.type2 == "2A"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "2A"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "2A"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8D"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "8D"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "8D"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8E"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "8E"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "8E"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8C"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "8C"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "8C"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7F"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "7F"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "7F"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7C"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "7C"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "7C"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7E"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "7E"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "7E"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5C"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "5C"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "5C"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6D"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "6D"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "6D"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5D"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "5D"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "5D"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "6B"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "6B"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5E"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "5E"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "5E"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2F"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "2F"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "2F"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2B"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "2B"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "2B"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "1B"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "1B"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "1B"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6E"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "6E"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "6E"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5B"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "5B"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "5B"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "1A"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "1A"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "1A"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3C"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "3C"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "3C"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6A"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "6A"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "6A"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3D"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "3D"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "3D"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4C"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "4C"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "4C"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3E"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "3E"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "3E"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2E"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "2E"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "2E"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6C"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "6C"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "6C"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8A"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "8A"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "8A"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4D"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "4D"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "4D"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4B"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "4B"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "4B"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4A"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "4A"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "4A"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3G"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "3G"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "3G"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3F"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "3F"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "3F"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5A"){
         cs2 <- mean(cs1$current_speed[cs1$anc == "5A"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$anc == "5A"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }
     }else if(input$loc.type == "Census Tract"){
       if(input$loc.type2 == "006202"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "006202"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "006202"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009811"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009811"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009811"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009807"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009807"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009807"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009700"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009700"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009700"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009804"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009804"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009804"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007304"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "007304"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "007304"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007301"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "007301"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "007301"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "010400"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "010400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "010400"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "010800"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "010800"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "010800"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "005600"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "005600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "005600"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009603"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009603"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009603"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007809"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "007809"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "007809"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009902"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009902"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009902"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009000"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009000"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009000"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009905"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009905"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009905"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007707"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "007707"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "007707"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007806"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "007806"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "007806"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007804"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "007804"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "007804"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007807"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "007807"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "007807"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007708"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "007708"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "007708"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "010500"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "010500"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "010500"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "006400"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "006400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "006400"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008803"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "008803"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "008803"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "010200"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "010200"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "010200"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "006500"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "006500"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "006500"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008702"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "008702"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "008702"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "003301"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "003301"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "003301"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "004902"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "004902"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "004902"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "004201"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "004201"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "004201"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "003400"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "003400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "003400"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "004400"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "004400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "004400"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "011100"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "011100"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "011100"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "004702"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "004702"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "004702"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009302"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009302"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009302"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008701"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "008701"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "008701"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "010100"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "010100"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "010100"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002900"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "002900"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "002900"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "004600"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "004600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "004600"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009400"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009400"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001002"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "001002"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "001002"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "010600"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "010600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "010600"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "000901"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "000901"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "000901"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "000502"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "000502"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "000502"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009102"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009102"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009102"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009201"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009201"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009201"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002400"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "002400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "002400"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001001"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "001001"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "001001"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "000600"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "000600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "000600"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002501"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "002501"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "002501"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009503"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009503"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009503"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "000300"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "000300"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "000300"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "000400"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "000400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "000400"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "006700"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "006700"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "006700"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007200"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "007200"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "007200"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008302"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "008302"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "008302"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "006600"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "006600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "006600"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008904"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "008904"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "008904"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008100"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "008100"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "008100"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "006802"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "006802"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "006802"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007601"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "007601"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "007601"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007100"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "007100"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "007100"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008200"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "008200"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "008200"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008001"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "008001"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "008001"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008002"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "008002"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "008002"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002101"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "002101"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "002101"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001901"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "001901"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "001901"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002600"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "002600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "002600"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001401"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "001401"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "001401"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001803"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "001803"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "001803"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001301"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "001301"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "001301"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002102"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "002102"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "002102"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001804"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "001804"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "001804"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002001"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "002001"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "002001"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001902"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "001902"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "001902"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001100"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "001100"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "001100"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001600"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "001600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "001600"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009509"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "009509"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "009509"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001500"){
         cs2 <- mean(cs1$current_speed[cs1$census_tract == "001500"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$census_tract == "001500"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }
     }else if(input$loc.type == "Single Member District"){
       if(input$loc.type2 == "2A01"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "2A01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "2A01"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8D03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "8D03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "8D03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8D01"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "8D01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "8D01"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8D06"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "8D06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "8D06"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8E05"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "8E05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "8E05"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8C07"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "8C07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "8C07"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8E04"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "8E04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "8E04"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8C05"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "8C05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "8C05"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8C03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "8C03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "8C03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2A07"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "2A07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "2A07"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2A03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "2A03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "2A03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7F01"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "7F01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "7F01"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7C04"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "7C04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "7C04"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7E02"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "7E02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "7E02"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5C03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5C03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5C03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7E06"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "7E06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "7E06"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7E01"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "7E01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "7E01"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7C07"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "7C07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "7C07"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7C03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "7C03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "7C03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7C06"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "7C06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "7C06"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7F06"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "7F06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "7F06"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6D03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6D03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6D03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6D06"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6D06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6D06"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5D01"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5D01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5D01"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6D05"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6D05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6D05"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B01"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6B01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6B01"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5E03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5E03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5E03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5E08"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5E08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5E08"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2F06"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "2F06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "2F06"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2B09"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "2B09"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "2B09"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "1B01"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "1B01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "1B01"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "1B02"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "1B02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "1B02"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5C02"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5C02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5C02"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6E07"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6E07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6E07"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5B03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5B03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5B03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5E04"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5E04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5E04"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2F08"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "2F08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "2F08"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "1A04"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "1A04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "1A04"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5E05"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5E05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5E05"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5C01"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5C01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5C01"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3C06"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "3C06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "3C06"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6A01"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6A01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6A01"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2B05"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "2B05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "2B05"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3D02"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "3D02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "3D02"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3C03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "3C03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "3C03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5B01"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5B01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5B01"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5C06"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5C06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5C06"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5E01"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5E01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5E01"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4C08"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "4C08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "4C08"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3E05"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "3E05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "3E05"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3C09"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "3C09"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "3C09"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4C03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "4C03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "4C03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2E01"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "2E01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "2E01"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3C08"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "3C08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "3C08"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B05"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6B05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6B05"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5C04"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5C04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5C04"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6D07"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6D07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6D07"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6C03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6C03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6C03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B02"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6B02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6B02"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5D05"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5D05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5D05"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6A03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6A03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6A03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B09"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6B09"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6B09"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8A03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "8A03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "8A03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B07"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6B07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6B07"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B06"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6B06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6B06"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6A02"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6A02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6A02"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6A08"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "6A08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "6A08"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4D03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "4D03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "4D03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4B04"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "4B04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "4B04"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4A08"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "4A08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "4A08"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3D03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "3D03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "3D03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3G05"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "3G05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "3G05"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4A07"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "4A07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "4A07"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3E02"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "3E02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "3E02"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3F03"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "3F03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "3F03"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4B06"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "4B06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "4B06"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4A04"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "4A04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "4A04"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4A06"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "4A06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "4A06"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3E04"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "3E04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "3E04"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4A02"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "4A02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "4A02"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5A08"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "5A08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "5A08"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3G04"){
         cs2 <- mean(cs1$current_speed[cs1$single_member_district == "3G04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$single_member_district == "3G04"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }
     }else if(input$loc.type == "Voter Precinct"){
       if(input$loc.type2 == "129"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "129"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "129"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "125"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "125"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "125"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "126"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "126"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "126"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "121"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "121"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "121"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "122"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "122"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "122"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "120"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "120"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "120"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "123"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "123"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "123"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "2"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "2"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "3"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "3"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "102"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "102"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "102"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "94"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "94"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "94"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "110"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "110"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "110"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "139"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "139"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "139"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "105"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "105"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "105"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "106"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "106"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "106"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "93"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "93"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "93"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "97"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "97"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "97"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "95"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "95"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "95"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "132"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "132"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "132"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "128"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "128"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "138"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "127"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "127"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "127"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "76"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "76"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "76"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "130"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "130"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "130"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "75"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "75"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "75"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "135"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "135"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "135"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "141"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "141"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "141"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "20"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "20"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "22"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "22"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "22"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "72"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "72"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "72"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "1"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "1"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "1"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "73"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "73"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "73"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "42"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "42"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "42"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "19"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "19"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "19"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "69"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "69"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "69"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "29"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "29"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "29"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "82"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "82"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "82"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "17"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "17"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "17"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "9"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "9"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "9"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "26"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "26"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "26"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "74"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "74"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "74"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "45"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "45"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "45"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "30"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "30"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "30"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "27"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "27"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "27"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "48"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "48"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "48"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "67"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "67"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "67"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "6"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "6"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "12"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "12"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "12"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "88"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "88"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "88"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "131"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "131"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "131"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "85"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "85"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "85"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "89"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "89"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "89"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "79"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "79"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "79"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "91"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "91"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "91"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "133"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "133"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "133"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "81"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "81"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "81"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "71"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "71"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "71"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "86"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "86"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "86"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "56"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "56"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "56"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "59"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "59"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "59"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "50"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "50"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "50"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "61"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "61"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "61"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "31"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "31"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "31"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "138"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "138"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "138"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "57"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "57"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "57"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "60"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "60"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "60"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "53"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "53"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "53"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "32"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "32"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "32"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "62"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "62"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "62"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "66"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "66"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "66"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "51"){
         cs2 <- mean(cs1$current_speed[cs1$voter_precinct == "51"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_speed[cs1$voter_precinct == "51"], na.rm = TRUE)
-        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", 
-              round(cs3, digits = 0), " mph)")
       }
     }
     
+    if(input$loc.type == "Quadrant"){
+      if(input$loc.type2 == "SE"){
+        ls2 <- mean(ls1$current_speed[ls1$quadrant == "SE"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$quadrant == "SE"], na.rm = TRUE)
+      }else if(input$loc.type2 == "SW"){
+        ls2 <- mean(ls1$current_speed[ls1$quadrant == "SW"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$quadrant == "SW"], na.rm = TRUE)
+      }else if(input$loc.type2 == "NE"){
+        ls2 <- mean(ls1$current_speed[ls1$quadrant == "NE"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$quadrant == "NE"], na.rm = TRUE)
+      }else if(input$loc.type2 == "NW"){
+        ls2 <- mean(ls1$current_speed[ls1$quadrant == "NW"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$quadrant == "NW"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Ward"){
+      if(input$loc.type2 == "1"){
+        ls2 <- mean(ls1$current_speed[ls1$ward == "1"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$ward == "1"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2"){
+        ls2 <- mean(ls1$current_speed[ls1$ward == "2"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$ward == "2"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3"){
+        ls2 <- mean(ls1$current_speed[ls1$ward == "3"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$ward == "3"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4"){
+        ls2 <- mean(ls1$current_speed[ls1$ward == "4"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$ward == "4"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5"){
+        ls2 <- mean(ls1$current_speed[ls1$ward == "5"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$ward == "5"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6"){
+        ls2 <- mean(ls1$current_speed[ls1$ward == "6"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$ward == "6"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7"){
+        ls2 <- mean(ls1$current_speed[ls1$ward == "7"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$ward == "7"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8"){
+        ls2 <- mean(ls1$current_speed[ls1$ward == "8"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$ward == "8"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Zip Code"){
+      if(input$loc.type2 == "20227"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20227"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20227"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20032"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20032"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20032"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20037"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20037"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20037"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20019"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20019"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20019"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20020"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20020"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20020"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20018"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20018"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20018"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20024"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20024"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20024"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20002"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20002"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20002"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20003"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20003"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20003"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20001"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20001"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20001"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20005"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20005"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20005"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20009"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20009"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20009"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20017"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20017"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20017"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20010"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20010"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20010"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20016"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20016"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20016"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20008"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20008"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20008"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20011"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20011"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20011"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20007"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20007"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20007"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20374"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20374"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20374"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20015"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20015"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20015"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20012"){
+        ls2 <- mean(ls1$current_speed[ls1$zip_code == "20012"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$zip_code == "20012"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Advisory Neighborhood Commission"){
+      if(input$loc.type2 == "2A"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "2A"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "2A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8D"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "8D"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "8D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8E"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "8E"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "8E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8C"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "8C"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "8C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7F"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "7F"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "7F"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "7C"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "7C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7E"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "7E"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "7E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "5C"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "5C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "6D"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "6D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5D"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "5D"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "5D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "6B"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "6B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "5E"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "5E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2F"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "2F"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "2F"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2B"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "2B"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "2B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1B"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "1B"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "1B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6E"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "6E"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "6E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5B"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "5B"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "5B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1A"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "1A"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "1A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "3C"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "3C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "6A"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "6A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3D"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "3D"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "3D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4C"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "4C"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "4C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3E"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "3E"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "3E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2E"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "2E"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "2E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6C"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "6C"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "6C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8A"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "8A"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "8A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4D"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "4D"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "4D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4B"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "4B"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "4B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "4A"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "4A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3G"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "3G"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "3G"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3F"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "3F"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "3F"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5A"){
+        ls2 <- mean(ls1$current_speed[ls1$anc == "5A"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$anc == "5A"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Census Tract"){
+      if(input$loc.type2 == "006202"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "006202"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "006202"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009811"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009811"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009811"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009807"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009807"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009807"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009700"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009700"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009700"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009804"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009804"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009804"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007304"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "007304"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "007304"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007301"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "007301"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "007301"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010400"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "010400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "010400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010800"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "010800"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "010800"], na.rm = TRUE)
+      }else if(input$loc.type2 == "005600"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "005600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "005600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009603"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009603"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009603"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007809"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "007809"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "007809"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009902"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009902"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009902"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009000"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009000"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009000"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009905"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009905"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009905"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007707"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "007707"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "007707"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007806"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "007806"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "007806"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007804"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "007804"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "007804"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007807"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "007807"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "007807"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007708"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "007708"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "007708"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010500"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "010500"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "010500"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006400"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "006400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "006400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008803"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "008803"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "008803"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010200"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "010200"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "010200"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006500"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "006500"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "006500"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008702"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "008702"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "008702"], na.rm = TRUE)
+      }else if(input$loc.type2 == "003301"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "003301"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "003301"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004902"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "004902"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "004902"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004201"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "004201"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "004201"], na.rm = TRUE)
+      }else if(input$loc.type2 == "003400"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "003400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "003400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004400"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "004400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "004400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "011100"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "011100"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "011100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004702"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "004702"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "004702"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009302"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009302"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009302"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008701"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "008701"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "008701"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010100"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "010100"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "010100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002900"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "002900"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "002900"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004600"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "004600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "004600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009400"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001002"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "001002"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "001002"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010600"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "010600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "010600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000901"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "000901"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "000901"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000502"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "000502"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "000502"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009102"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009102"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009102"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009201"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009201"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009201"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002400"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "002400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "002400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001001"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "001001"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "001001"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000600"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "000600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "000600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002501"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "002501"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "002501"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009503"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009503"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009503"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000300"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "000300"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "000300"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000400"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "000400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "000400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006700"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "006700"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "006700"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007200"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "007200"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "007200"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008302"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "008302"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "008302"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006600"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "006600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "006600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008904"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "008904"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "008904"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008100"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "008100"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "008100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006802"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "006802"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "006802"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007601"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "007601"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "007601"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007100"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "007100"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "007100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008200"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "008200"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "008200"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008001"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "008001"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "008001"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008002"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "008002"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "008002"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002101"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "002101"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "002101"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001901"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "001901"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "001901"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002600"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "002600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "002600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001401"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "001401"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "001401"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001803"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "001803"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "001803"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001301"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "001301"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "001301"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002102"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "002102"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "002102"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001804"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "001804"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "001804"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002001"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "002001"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "002001"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001902"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "001902"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "001902"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001100"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "001100"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "001100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001600"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "001600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "001600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009509"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "009509"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "009509"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001500"){
+        ls2 <- mean(ls1$current_speed[ls1$census_tract == "001500"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$census_tract == "001500"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Single Member District"){
+      if(input$loc.type2 == "2A01"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "2A01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "2A01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8D03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "8D03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "8D03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8D01"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "8D01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "8D01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8D06"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "8D06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "8D06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8E05"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "8E05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "8E05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8C07"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "8C07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "8C07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8E04"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "8E04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "8E04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8C05"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "8C05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "8C05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8C03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "8C03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "8C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2A07"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "2A07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "2A07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2A03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "2A03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "2A03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7F01"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "7F01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "7F01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C04"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "7C04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "7C04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7E02"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "7E02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "7E02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5C03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7E06"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "7E06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "7E06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7E01"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "7E01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "7E01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C07"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "7C07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "7C07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "7C03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "7C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C06"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "7C06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "7C06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7F06"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "7F06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "7F06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6D03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6D03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D06"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6D06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6D06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5D01"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5D01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5D01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D05"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6D05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6D05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B01"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6B01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6B01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5E03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5E03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E08"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5E08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5E08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2F06"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "2F06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "2F06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2B09"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "2B09"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "2B09"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1B01"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "1B01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "1B01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1B02"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "1B02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "1B02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C02"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5C02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5C02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6E07"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6E07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6E07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5B03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5B03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5B03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E04"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5E04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5E04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2F08"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "2F08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "2F08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1A04"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "1A04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "1A04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E05"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5E05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5E05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C01"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5C01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5C01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C06"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "3C06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "3C06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A01"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6A01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6A01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2B05"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "2B05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "2B05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3D02"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "3D02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "3D02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "3C03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "3C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5B01"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5B01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5B01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C06"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5C06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5C06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E01"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5E01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5E01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4C08"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "4C08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "4C08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3E05"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "3E05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "3E05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C09"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "3C09"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "3C09"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4C03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "4C03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "4C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2E01"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "2E01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "2E01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C08"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "3C08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "3C08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B05"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6B05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6B05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C04"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5C04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5C04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D07"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6D07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6D07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6C03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6C03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B02"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6B02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6B02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5D05"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5D05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5D05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6A03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6A03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B09"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6B09"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6B09"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8A03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "8A03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "8A03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B07"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6B07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6B07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B06"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6B06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6B06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A02"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6A02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6A02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A08"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "6A08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "6A08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4D03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "4D03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "4D03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4B04"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "4B04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "4B04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A08"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "4A08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "4A08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3D03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "3D03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "3D03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3G05"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "3G05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "3G05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A07"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "4A07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "4A07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3E02"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "3E02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "3E02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3F03"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "3F03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "3F03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4B06"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "4B06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "4B06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A04"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "4A04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "4A04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A06"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "4A06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "4A06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3E04"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "3E04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "3E04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A02"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "4A02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "4A02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5A08"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "5A08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "5A08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3G04"){
+        ls2 <- mean(ls1$current_speed[ls1$single_member_district == "3G04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$single_member_district == "3G04"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Voter Precinct"){
+      if(input$loc.type2 == "129"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "129"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "129"], na.rm = TRUE)
+      }else if(input$loc.type2 == "125"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "125"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "125"], na.rm = TRUE)
+      }else if(input$loc.type2 == "126"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "126"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "126"], na.rm = TRUE)
+      }else if(input$loc.type2 == "121"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "121"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "121"], na.rm = TRUE)
+      }else if(input$loc.type2 == "122"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "122"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "122"], na.rm = TRUE)
+      }else if(input$loc.type2 == "120"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "120"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "120"], na.rm = TRUE)
+      }else if(input$loc.type2 == "123"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "123"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "123"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "2"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "2"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "3"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "3"], na.rm = TRUE)
+      }else if(input$loc.type2 == "102"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "102"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "102"], na.rm = TRUE)
+      }else if(input$loc.type2 == "94"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "94"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "94"], na.rm = TRUE)
+      }else if(input$loc.type2 == "110"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "110"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "110"], na.rm = TRUE)
+      }else if(input$loc.type2 == "139"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "139"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "139"], na.rm = TRUE)
+      }else if(input$loc.type2 == "105"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "105"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "105"], na.rm = TRUE)
+      }else if(input$loc.type2 == "106"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "106"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "106"], na.rm = TRUE)
+      }else if(input$loc.type2 == "93"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "93"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "93"], na.rm = TRUE)
+      }else if(input$loc.type2 == "97"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "97"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "97"], na.rm = TRUE)
+      }else if(input$loc.type2 == "95"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "95"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "95"], na.rm = TRUE)
+      }else if(input$loc.type2 == "132"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "132"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "132"], na.rm = TRUE)
+      }else if(input$loc.type2 == "128"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "128"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "138"], na.rm = TRUE)
+      }else if(input$loc.type2 == "127"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "127"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "127"], na.rm = TRUE)
+      }else if(input$loc.type2 == "76"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "76"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "76"], na.rm = TRUE)
+      }else if(input$loc.type2 == "130"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "130"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "130"], na.rm = TRUE)
+      }else if(input$loc.type2 == "75"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "75"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "75"], na.rm = TRUE)
+      }else if(input$loc.type2 == "135"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "135"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "135"], na.rm = TRUE)
+      }else if(input$loc.type2 == "141"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "141"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "141"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "20"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "20"], na.rm = TRUE)
+      }else if(input$loc.type2 == "22"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "22"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "22"], na.rm = TRUE)
+      }else if(input$loc.type2 == "72"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "72"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "72"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "1"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "1"], na.rm = TRUE)
+      }else if(input$loc.type2 == "73"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "73"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "73"], na.rm = TRUE)
+      }else if(input$loc.type2 == "42"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "42"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "42"], na.rm = TRUE)
+      }else if(input$loc.type2 == "19"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "19"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "19"], na.rm = TRUE)
+      }else if(input$loc.type2 == "69"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "69"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "69"], na.rm = TRUE)
+      }else if(input$loc.type2 == "29"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "29"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "29"], na.rm = TRUE)
+      }else if(input$loc.type2 == "82"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "82"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "82"], na.rm = TRUE)
+      }else if(input$loc.type2 == "17"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "17"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "17"], na.rm = TRUE)
+      }else if(input$loc.type2 == "9"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "9"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "9"], na.rm = TRUE)
+      }else if(input$loc.type2 == "26"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "26"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "26"], na.rm = TRUE)
+      }else if(input$loc.type2 == "74"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "74"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "74"], na.rm = TRUE)
+      }else if(input$loc.type2 == "45"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "45"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "45"], na.rm = TRUE)
+      }else if(input$loc.type2 == "30"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "30"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "30"], na.rm = TRUE)
+      }else if(input$loc.type2 == "27"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "27"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "27"], na.rm = TRUE)
+      }else if(input$loc.type2 == "48"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "48"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "48"], na.rm = TRUE)
+      }else if(input$loc.type2 == "67"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "67"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "67"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "6"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "6"], na.rm = TRUE)
+      }else if(input$loc.type2 == "12"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "12"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "12"], na.rm = TRUE)
+      }else if(input$loc.type2 == "88"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "88"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "88"], na.rm = TRUE)
+      }else if(input$loc.type2 == "131"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "131"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "131"], na.rm = TRUE)
+      }else if(input$loc.type2 == "85"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "85"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "85"], na.rm = TRUE)
+      }else if(input$loc.type2 == "89"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "89"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "89"], na.rm = TRUE)
+      }else if(input$loc.type2 == "79"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "79"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "79"], na.rm = TRUE)
+      }else if(input$loc.type2 == "91"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "91"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "91"], na.rm = TRUE)
+      }else if(input$loc.type2 == "133"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "133"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "133"], na.rm = TRUE)
+      }else if(input$loc.type2 == "81"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "81"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "81"], na.rm = TRUE)
+      }else if(input$loc.type2 == "71"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "71"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "71"], na.rm = TRUE)
+      }else if(input$loc.type2 == "86"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "86"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "86"], na.rm = TRUE)
+      }else if(input$loc.type2 == "56"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "56"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "56"], na.rm = TRUE)
+      }else if(input$loc.type2 == "59"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "59"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "59"], na.rm = TRUE)
+      }else if(input$loc.type2 == "50"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "50"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "50"], na.rm = TRUE)
+      }else if(input$loc.type2 == "61"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "61"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "61"], na.rm = TRUE)
+      }else if(input$loc.type2 == "31"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "31"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "31"], na.rm = TRUE)
+      }else if(input$loc.type2 == "138"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "138"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "138"], na.rm = TRUE)
+      }else if(input$loc.type2 == "57"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "57"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "57"], na.rm = TRUE)
+      }else if(input$loc.type2 == "60"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "60"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "60"], na.rm = TRUE)
+      }else if(input$loc.type2 == "53"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "53"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "53"], na.rm = TRUE)
+      }else if(input$loc.type2 == "32"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "32"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "32"], na.rm = TRUE)
+      }else if(input$loc.type2 == "62"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "62"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "62"], na.rm = TRUE)
+      }else if(input$loc.type2 == "66"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "66"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "66"], na.rm = TRUE)
+      }else if(input$loc.type2 == "51"){
+        ls2 <- mean(ls1$current_speed[ls1$voter_precinct == "51"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_speed[ls1$voter_precinct == "51"], na.rm = TRUE)
+      }
+    }
+    
+    if(input$currenttime == TRUE){ 
+      if(input$lastweek == TRUE){
+        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph) | ", 
+              "Speed last week: ", round(ls2, digits = 0), " mph (Free flow speed: ", round(ls3, digits = 0), " mph)")
+      }else{
+        str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
+      }
+    }else{
+      if(input$lastweek == TRUE){
+        str_c("Speed last week: ", round(ls2, digits = 0), " mph (Free flow speed: ", round(ls3, digits = 0), " mph)")
+      }else{
+        
+      }
+    }
     
     
   })
@@ -2703,1203 +4889,1829 @@ server <- function(input, output) {
                                           " ", 
                                           as.character(input$hour), 
                                           ":00:00")))
+    
+    ls1 <- traffic.flow %>% 
+      filter(date == as_datetime(str_c(as.character(input$date1), 
+                                       " ", 
+                                       as.character(input$hour), 
+                                       ":00:00")) - 604800)
+    
     if(input$loc.type == "Quadrant"){
       if(input$loc.type2 == "SE"){
         cs2 <- mean(cs1$current_travel_time[cs1$quadrant == "SE"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$quadrant == "SE"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "SW"){
         cs2 <- mean(cs1$current_travel_time[cs1$quadrant == "SW"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$quadrant == "SW"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "NE"){
         cs2 <- mean(cs1$current_travel_time[cs1$quadrant == "NE"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$quadrant == "NE"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "NW"){
         cs2 <- mean(cs1$current_travel_time[cs1$quadrant == "NW"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$quadrant == "NW"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }
     }else if(input$loc.type == "Ward"){
       if(input$loc.type2 == "1"){
         cs2 <- mean(cs1$current_travel_time[cs1$ward == "1"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$ward == "1"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2"){
         cs2 <- mean(cs1$current_travel_time[cs1$ward == "2"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$ward == "2"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3"){
         cs2 <- mean(cs1$current_travel_time[cs1$ward == "3"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$ward == "3"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4"){
         cs2 <- mean(cs1$current_travel_time[cs1$ward == "4"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$ward == "4"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5"){
         cs2 <- mean(cs1$current_travel_time[cs1$ward == "5"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$ward == "5"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6"){
         cs2 <- mean(cs1$current_travel_time[cs1$ward == "6"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$ward == "6"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7"){
         cs2 <- mean(cs1$current_travel_time[cs1$ward == "7"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$ward == "7"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8"){
         cs2 <- mean(cs1$current_travel_time[cs1$ward == "8"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$ward == "8"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }
     }else if(input$loc.type == "Zip Code"){
       if(input$loc.type2 == "20227"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20227"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20227"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20032"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20032"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20032"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20037"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20037"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20037"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20019"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20019"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20019"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20020"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20020"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20020"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20018"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20018"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20018"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20024"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20024"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20024"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20002"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20002"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20002"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20003"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20003"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20003"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20001"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20001"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20001"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20005"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20005"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20005"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20009"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20009"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20009"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20017"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20017"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20017"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20010"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20010"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20010"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20016"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20016"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20016"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20008"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20008"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20008"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20011"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20011"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20011"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20007"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20007"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20007"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20374"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20374"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20374"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20015"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20015"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20015"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20012"){
         cs2 <- mean(cs1$current_travel_time[cs1$zip_code == "20012"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$zip_code == "20012"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }
     }else if(input$loc.type == "Advisory Neighborhood Commission"){
       if(input$loc.type2 == "2A"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "2A"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "2A"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8D"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "8D"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "8D"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8E"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "8E"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "8E"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8C"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "8C"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "8C"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7F"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "7F"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "7F"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7C"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "7C"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "7C"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7E"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "7E"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "7E"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5C"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "5C"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "5C"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6D"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "6D"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "6D"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5D"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "5D"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "5D"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "6B"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "6B"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5E"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "5E"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "5E"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2F"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "2F"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "2F"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2B"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "2B"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "2B"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "1B"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "1B"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "1B"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6E"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "6E"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "6E"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5B"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "5B"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "5B"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "1A"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "1A"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "1A"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3C"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "3C"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "3C"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6A"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "6A"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "6A"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3D"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "3D"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "3D"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4C"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "4C"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "4C"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3E"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "3E"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "3E"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2E"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "2E"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "2E"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6C"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "6C"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "6C"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8A"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "8A"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "8A"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4D"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "4D"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "4D"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4B"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "4B"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "4B"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4A"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "4A"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "4A"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3G"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "3G"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "3G"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3F"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "3F"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "3F"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5A"){
         cs2 <- mean(cs1$current_travel_time[cs1$anc == "5A"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$anc == "5A"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }
     }else if(input$loc.type == "Census Tract"){
       if(input$loc.type2 == "006202"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "006202"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "006202"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009811"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009811"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009811"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009807"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009807"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009807"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009700"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009700"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009700"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009804"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009804"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009804"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007304"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "007304"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "007304"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007301"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "007301"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "007301"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "010400"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "010400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "010400"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "010800"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "010800"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "010800"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "005600"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "005600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "005600"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009603"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009603"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009603"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007809"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "007809"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "007809"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009902"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009902"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009902"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009000"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009000"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009000"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009905"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009905"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009905"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007707"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "007707"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "007707"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007806"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "007806"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "007806"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007804"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "007804"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "007804"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007807"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "007807"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "007807"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007708"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "007708"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "007708"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "010500"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "010500"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "010500"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "006400"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "006400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "006400"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008803"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "008803"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "008803"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "010200"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "010200"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "010200"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "006500"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "006500"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "006500"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008702"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "008702"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "008702"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "003301"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "003301"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "003301"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "004902"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "004902"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "004902"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "004201"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "004201"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "004201"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "003400"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "003400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "003400"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "004400"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "004400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "004400"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "011100"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "011100"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "011100"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "004702"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "004702"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "004702"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009302"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009302"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009302"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008701"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "008701"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "008701"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "010100"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "010100"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "010100"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002900"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "002900"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "002900"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "004600"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "004600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "004600"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009400"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009400"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001002"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "001002"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "001002"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "010600"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "010600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "010600"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "000901"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "000901"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "000901"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "000502"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "000502"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "000502"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009102"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009102"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009102"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009201"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009201"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009201"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002400"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "002400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "002400"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001001"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "001001"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "001001"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "000600"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "000600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "000600"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002501"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "002501"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "002501"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009503"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009503"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009503"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "000300"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "000300"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "000300"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "000400"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "000400"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "000400"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "006700"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "006700"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "006700"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007200"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "007200"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "007200"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008302"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "008302"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "008302"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "006600"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "006600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "006600"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008904"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "008904"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "008904"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008100"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "008100"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "008100"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "006802"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "006802"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "006802"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007601"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "007601"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "007601"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "007100"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "007100"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "007100"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008200"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "008200"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "008200"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008001"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "008001"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "008001"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "008002"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "008002"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "008002"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002101"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "002101"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "002101"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001901"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "001901"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "001901"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002600"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "002600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "002600"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001401"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "001401"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "001401"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001803"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "001803"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "001803"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001301"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "001301"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "001301"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002102"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "002102"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "002102"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001804"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "001804"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "001804"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "002001"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "002001"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "002001"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001902"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "001902"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "001902"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001100"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "001100"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "001100"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001600"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "001600"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "001600"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "009509"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "009509"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "009509"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "001500"){
         cs2 <- mean(cs1$current_travel_time[cs1$census_tract == "001500"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$census_tract == "001500"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }
     }else if(input$loc.type == "Single Member District"){
       if(input$loc.type2 == "2A01"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "2A01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "2A01"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8D03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "8D03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "8D03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8D01"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "8D01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "8D01"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8D06"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "8D06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "8D06"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8E05"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "8E05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "8E05"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8C07"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "8C07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "8C07"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8E04"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "8E04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "8E04"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8C05"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "8C05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "8C05"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8C03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "8C03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "8C03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2A07"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "2A07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "2A07"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2A03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "2A03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "2A03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7F01"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "7F01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "7F01"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7C04"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "7C04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "7C04"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7E02"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "7E02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "7E02"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5C03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5C03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5C03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7E06"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "7E06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "7E06"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7E01"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "7E01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "7E01"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7C07"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "7C07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "7C07"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7C03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "7C03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "7C03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7C06"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "7C06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "7C06"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "7F06"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "7F06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "7F06"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6D03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6D03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6D03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6D06"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6D06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6D06"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5D01"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5D01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5D01"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6D05"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6D05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6D05"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B01"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6B01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6B01"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5E03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5E03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5E03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5E08"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5E08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5E08"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2F06"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "2F06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "2F06"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2B09"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "2B09"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "2B09"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "1B01"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "1B01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "1B01"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "1B02"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "1B02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "1B02"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5C02"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5C02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5C02"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6E07"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6E07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6E07"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5B03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5B03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5B03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5E04"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5E04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5E04"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2F08"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "2F08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "2F08"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "1A04"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "1A04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "1A04"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5E05"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5E05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5E05"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5C01"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5C01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5C01"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3C06"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "3C06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "3C06"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6A01"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6A01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6A01"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2B05"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "2B05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "2B05"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3D02"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "3D02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "3D02"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3C03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "3C03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "3C03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5B01"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5B01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5B01"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5C06"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5C06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5C06"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5E01"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5E01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5E01"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4C08"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "4C08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "4C08"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3E05"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "3E05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "3E05"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3C09"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "3C09"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "3C09"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4C03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "4C03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "4C03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2E01"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "2E01"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "2E01"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3C08"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "3C08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "3C08"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B05"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6B05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6B05"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5C04"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5C04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5C04"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6D07"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6D07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6D07"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6C03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6C03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6C03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B02"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6B02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6B02"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5D05"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5D05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5D05"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6A03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6A03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6A03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B09"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6B09"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6B09"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "8A03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "8A03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "8A03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B07"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6B07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6B07"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6B06"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6B06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6B06"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6A02"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6A02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6A02"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6A08"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "6A08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "6A08"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4D03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "4D03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "4D03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4B04"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "4B04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "4B04"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4A08"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "4A08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "4A08"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3D03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "3D03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "3D03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3G05"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "3G05"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "3G05"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4A07"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "4A07"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "4A07"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3E02"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "3E02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "3E02"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3F03"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "3F03"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "3F03"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4B06"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "4B06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "4B06"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4A04"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "4A04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "4A04"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4A06"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "4A06"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "4A06"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3E04"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "3E04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "3E04"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "4A02"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "4A02"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "4A02"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "5A08"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "5A08"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "5A08"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3G04"){
         cs2 <- mean(cs1$current_travel_time[cs1$single_member_district == "3G04"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$single_member_district == "3G04"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }
     }else if(input$loc.type == "Voter Precinct"){
       if(input$loc.type2 == "129"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "129"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "129"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "125"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "125"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "125"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "126"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "126"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "126"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "121"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "121"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "121"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "122"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "122"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "122"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "120"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "120"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "120"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "123"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "123"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "123"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "2"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "2"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "2"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "3"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "3"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "3"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "102"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "102"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "102"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "94"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "94"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "94"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "110"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "110"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "110"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "139"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "139"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "139"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "105"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "105"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "105"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "106"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "106"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "106"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "93"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "93"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "93"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "97"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "97"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "97"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "95"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "95"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "95"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "132"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "132"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "132"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "128"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "128"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "138"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "127"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "127"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "127"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "76"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "76"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "76"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "130"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "130"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "130"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "75"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "75"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "75"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "135"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "135"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "135"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "141"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "141"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "141"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "20"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "20"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "20"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "22"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "22"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "22"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "72"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "72"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "72"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "1"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "1"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "1"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "73"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "73"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "73"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "42"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "42"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "42"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "19"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "19"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "19"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "69"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "69"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "69"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "29"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "29"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "29"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "82"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "82"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "82"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "17"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "17"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "17"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "9"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "9"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "9"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "26"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "26"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "26"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "74"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "74"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "74"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "45"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "45"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "45"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "30"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "30"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "30"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "27"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "27"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "27"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "48"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "48"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "48"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "67"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "67"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "67"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "6"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "6"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "6"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "12"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "12"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "12"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "88"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "88"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "88"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "131"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "131"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "131"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "85"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "85"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "85"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "89"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "89"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "89"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "79"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "79"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "79"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "91"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "91"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "91"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "133"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "133"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "133"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "81"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "81"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "81"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "71"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "71"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "71"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "86"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "86"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "86"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "56"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "56"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "56"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "59"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "59"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "59"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "50"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "50"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "50"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "61"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "61"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "61"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "31"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "31"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "31"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "138"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "138"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "138"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "57"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "57"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "57"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "60"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "60"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "60"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "53"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "53"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "53"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "32"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "32"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "32"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "62"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "62"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "62"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "66"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "66"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "66"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }else if(input$loc.type2 == "51"){
         cs2 <- mean(cs1$current_travel_time[cs1$voter_precinct == "51"], na.rm = TRUE)
         cs3 <- mean(cs1$free_flow_travel_time[cs1$voter_precinct == "51"], na.rm = TRUE)
-        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", 
-              round(cs3, digits = 0), " mph)")
       }
     }
     
+    if(input$loc.type == "Quadrant"){
+      if(input$loc.type2 == "SE"){
+        ls2 <- mean(ls1$current_travel_time[ls1$quadrant == "SE"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$quadrant == "SE"], na.rm = TRUE)
+      }else if(input$loc.type2 == "SW"){
+        ls2 <- mean(ls1$current_travel_time[ls1$quadrant == "SW"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$quadrant == "SW"], na.rm = TRUE)
+      }else if(input$loc.type2 == "NE"){
+        ls2 <- mean(ls1$current_travel_time[ls1$quadrant == "NE"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$quadrant == "NE"], na.rm = TRUE)
+      }else if(input$loc.type2 == "NW"){
+        ls2 <- mean(ls1$current_travel_time[ls1$quadrant == "NW"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$quadrant == "NW"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Ward"){
+      if(input$loc.type2 == "1"){
+        ls2 <- mean(ls1$current_travel_time[ls1$ward == "1"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$ward == "1"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2"){
+        ls2 <- mean(ls1$current_travel_time[ls1$ward == "2"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$ward == "2"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3"){
+        ls2 <- mean(ls1$current_travel_time[ls1$ward == "3"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$ward == "3"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4"){
+        ls2 <- mean(ls1$current_travel_time[ls1$ward == "4"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$ward == "4"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5"){
+        ls2 <- mean(ls1$current_travel_time[ls1$ward == "5"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$ward == "5"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6"){
+        ls2 <- mean(ls1$current_travel_time[ls1$ward == "6"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$ward == "6"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7"){
+        ls2 <- mean(ls1$current_travel_time[ls1$ward == "7"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$ward == "7"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8"){
+        ls2 <- mean(ls1$current_travel_time[ls1$ward == "8"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$ward == "8"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Zip Code"){
+      if(input$loc.type2 == "20227"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20227"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20227"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20032"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20032"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20032"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20037"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20037"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20037"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20019"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20019"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20019"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20020"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20020"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20020"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20018"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20018"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20018"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20024"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20024"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20024"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20002"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20002"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20002"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20003"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20003"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20003"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20001"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20001"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20001"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20005"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20005"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20005"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20009"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20009"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20009"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20017"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20017"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20017"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20010"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20010"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20010"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20016"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20016"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20016"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20008"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20008"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20008"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20011"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20011"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20011"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20007"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20007"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20007"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20374"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20374"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20374"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20015"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20015"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20015"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20012"){
+        ls2 <- mean(ls1$current_travel_time[ls1$zip_code == "20012"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$zip_code == "20012"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Advisory Neighborhood Commission"){
+      if(input$loc.type2 == "2A"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "2A"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "2A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8D"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "8D"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "8D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8E"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "8E"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "8E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8C"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "8C"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "8C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7F"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "7F"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "7F"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "7C"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "7C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7E"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "7E"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "7E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "5C"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "5C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "6D"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "6D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5D"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "5D"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "5D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "6B"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "6B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "5E"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "5E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2F"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "2F"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "2F"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2B"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "2B"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "2B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1B"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "1B"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "1B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6E"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "6E"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "6E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5B"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "5B"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "5B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1A"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "1A"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "1A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "3C"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "3C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "6A"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "6A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3D"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "3D"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "3D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4C"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "4C"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "4C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3E"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "3E"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "3E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2E"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "2E"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "2E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6C"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "6C"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "6C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8A"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "8A"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "8A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4D"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "4D"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "4D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4B"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "4B"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "4B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "4A"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "4A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3G"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "3G"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "3G"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3F"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "3F"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "3F"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5A"){
+        ls2 <- mean(ls1$current_travel_time[ls1$anc == "5A"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$anc == "5A"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Census Tract"){
+      if(input$loc.type2 == "006202"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "006202"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "006202"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009811"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009811"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009811"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009807"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009807"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009807"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009700"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009700"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009700"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009804"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009804"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009804"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007304"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "007304"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "007304"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007301"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "007301"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "007301"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010400"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "010400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "010400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010800"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "010800"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "010800"], na.rm = TRUE)
+      }else if(input$loc.type2 == "005600"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "005600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "005600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009603"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009603"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009603"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007809"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "007809"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "007809"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009902"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009902"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009902"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009000"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009000"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009000"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009905"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009905"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009905"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007707"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "007707"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "007707"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007806"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "007806"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "007806"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007804"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "007804"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "007804"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007807"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "007807"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "007807"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007708"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "007708"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "007708"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010500"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "010500"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "010500"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006400"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "006400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "006400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008803"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "008803"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "008803"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010200"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "010200"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "010200"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006500"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "006500"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "006500"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008702"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "008702"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "008702"], na.rm = TRUE)
+      }else if(input$loc.type2 == "003301"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "003301"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "003301"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004902"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "004902"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "004902"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004201"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "004201"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "004201"], na.rm = TRUE)
+      }else if(input$loc.type2 == "003400"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "003400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "003400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004400"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "004400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "004400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "011100"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "011100"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "011100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004702"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "004702"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "004702"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009302"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009302"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009302"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008701"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "008701"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "008701"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010100"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "010100"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "010100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002900"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "002900"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "002900"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004600"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "004600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "004600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009400"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001002"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "001002"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "001002"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010600"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "010600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "010600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000901"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "000901"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "000901"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000502"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "000502"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "000502"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009102"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009102"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009102"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009201"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009201"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009201"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002400"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "002400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "002400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001001"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "001001"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "001001"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000600"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "000600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "000600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002501"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "002501"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "002501"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009503"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009503"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009503"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000300"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "000300"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "000300"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000400"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "000400"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "000400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006700"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "006700"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "006700"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007200"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "007200"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "007200"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008302"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "008302"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "008302"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006600"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "006600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "006600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008904"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "008904"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "008904"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008100"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "008100"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "008100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006802"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "006802"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "006802"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007601"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "007601"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "007601"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007100"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "007100"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "007100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008200"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "008200"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "008200"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008001"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "008001"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "008001"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008002"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "008002"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "008002"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002101"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "002101"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "002101"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001901"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "001901"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "001901"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002600"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "002600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "002600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001401"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "001401"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "001401"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001803"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "001803"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "001803"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001301"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "001301"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "001301"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002102"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "002102"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "002102"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001804"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "001804"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "001804"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002001"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "002001"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "002001"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001902"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "001902"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "001902"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001100"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "001100"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "001100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001600"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "001600"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "001600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009509"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "009509"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "009509"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001500"){
+        ls2 <- mean(ls1$current_travel_time[ls1$census_tract == "001500"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$census_tract == "001500"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Single Member District"){
+      if(input$loc.type2 == "2A01"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "2A01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "2A01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8D03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "8D03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "8D03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8D01"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "8D01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "8D01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8D06"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "8D06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "8D06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8E05"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "8E05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "8E05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8C07"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "8C07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "8C07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8E04"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "8E04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "8E04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8C05"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "8C05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "8C05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8C03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "8C03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "8C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2A07"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "2A07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "2A07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2A03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "2A03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "2A03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7F01"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "7F01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "7F01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C04"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "7C04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "7C04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7E02"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "7E02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "7E02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5C03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7E06"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "7E06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "7E06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7E01"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "7E01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "7E01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C07"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "7C07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "7C07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "7C03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "7C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C06"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "7C06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "7C06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7F06"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "7F06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "7F06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6D03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6D03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D06"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6D06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6D06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5D01"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5D01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5D01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D05"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6D05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6D05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B01"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6B01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6B01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5E03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5E03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E08"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5E08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5E08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2F06"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "2F06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "2F06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2B09"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "2B09"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "2B09"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1B01"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "1B01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "1B01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1B02"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "1B02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "1B02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C02"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5C02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5C02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6E07"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6E07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6E07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5B03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5B03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5B03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E04"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5E04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5E04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2F08"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "2F08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "2F08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1A04"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "1A04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "1A04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E05"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5E05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5E05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C01"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5C01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5C01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C06"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "3C06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "3C06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A01"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6A01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6A01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2B05"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "2B05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "2B05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3D02"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "3D02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "3D02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "3C03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "3C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5B01"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5B01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5B01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C06"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5C06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5C06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E01"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5E01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5E01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4C08"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "4C08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "4C08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3E05"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "3E05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "3E05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C09"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "3C09"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "3C09"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4C03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "4C03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "4C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2E01"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "2E01"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "2E01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C08"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "3C08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "3C08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B05"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6B05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6B05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C04"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5C04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5C04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D07"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6D07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6D07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6C03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6C03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B02"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6B02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6B02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5D05"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5D05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5D05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6A03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6A03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B09"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6B09"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6B09"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8A03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "8A03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "8A03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B07"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6B07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6B07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B06"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6B06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6B06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A02"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6A02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6A02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A08"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "6A08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "6A08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4D03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "4D03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "4D03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4B04"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "4B04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "4B04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A08"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "4A08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "4A08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3D03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "3D03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "3D03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3G05"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "3G05"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "3G05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A07"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "4A07"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "4A07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3E02"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "3E02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "3E02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3F03"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "3F03"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "3F03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4B06"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "4B06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "4B06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A04"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "4A04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "4A04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A06"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "4A06"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "4A06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3E04"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "3E04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "3E04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A02"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "4A02"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "4A02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5A08"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "5A08"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "5A08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3G04"){
+        ls2 <- mean(ls1$current_travel_time[ls1$single_member_district == "3G04"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$single_member_district == "3G04"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Voter Precinct"){
+      if(input$loc.type2 == "129"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "129"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "129"], na.rm = TRUE)
+      }else if(input$loc.type2 == "125"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "125"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "125"], na.rm = TRUE)
+      }else if(input$loc.type2 == "126"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "126"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "126"], na.rm = TRUE)
+      }else if(input$loc.type2 == "121"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "121"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "121"], na.rm = TRUE)
+      }else if(input$loc.type2 == "122"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "122"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "122"], na.rm = TRUE)
+      }else if(input$loc.type2 == "120"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "120"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "120"], na.rm = TRUE)
+      }else if(input$loc.type2 == "123"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "123"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "123"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "2"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "2"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "3"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "3"], na.rm = TRUE)
+      }else if(input$loc.type2 == "102"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "102"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "102"], na.rm = TRUE)
+      }else if(input$loc.type2 == "94"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "94"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "94"], na.rm = TRUE)
+      }else if(input$loc.type2 == "110"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "110"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "110"], na.rm = TRUE)
+      }else if(input$loc.type2 == "139"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "139"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "139"], na.rm = TRUE)
+      }else if(input$loc.type2 == "105"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "105"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "105"], na.rm = TRUE)
+      }else if(input$loc.type2 == "106"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "106"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "106"], na.rm = TRUE)
+      }else if(input$loc.type2 == "93"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "93"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "93"], na.rm = TRUE)
+      }else if(input$loc.type2 == "97"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "97"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "97"], na.rm = TRUE)
+      }else if(input$loc.type2 == "95"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "95"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "95"], na.rm = TRUE)
+      }else if(input$loc.type2 == "132"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "132"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "132"], na.rm = TRUE)
+      }else if(input$loc.type2 == "128"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "128"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "138"], na.rm = TRUE)
+      }else if(input$loc.type2 == "127"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "127"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "127"], na.rm = TRUE)
+      }else if(input$loc.type2 == "76"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "76"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "76"], na.rm = TRUE)
+      }else if(input$loc.type2 == "130"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "130"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "130"], na.rm = TRUE)
+      }else if(input$loc.type2 == "75"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "75"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "75"], na.rm = TRUE)
+      }else if(input$loc.type2 == "135"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "135"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "135"], na.rm = TRUE)
+      }else if(input$loc.type2 == "141"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "141"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "141"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "20"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "20"], na.rm = TRUE)
+      }else if(input$loc.type2 == "22"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "22"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "22"], na.rm = TRUE)
+      }else if(input$loc.type2 == "72"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "72"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "72"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "1"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "1"], na.rm = TRUE)
+      }else if(input$loc.type2 == "73"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "73"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "73"], na.rm = TRUE)
+      }else if(input$loc.type2 == "42"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "42"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "42"], na.rm = TRUE)
+      }else if(input$loc.type2 == "19"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "19"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "19"], na.rm = TRUE)
+      }else if(input$loc.type2 == "69"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "69"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "69"], na.rm = TRUE)
+      }else if(input$loc.type2 == "29"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "29"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "29"], na.rm = TRUE)
+      }else if(input$loc.type2 == "82"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "82"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "82"], na.rm = TRUE)
+      }else if(input$loc.type2 == "17"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "17"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "17"], na.rm = TRUE)
+      }else if(input$loc.type2 == "9"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "9"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "9"], na.rm = TRUE)
+      }else if(input$loc.type2 == "26"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "26"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "26"], na.rm = TRUE)
+      }else if(input$loc.type2 == "74"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "74"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "74"], na.rm = TRUE)
+      }else if(input$loc.type2 == "45"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "45"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "45"], na.rm = TRUE)
+      }else if(input$loc.type2 == "30"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "30"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "30"], na.rm = TRUE)
+      }else if(input$loc.type2 == "27"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "27"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "27"], na.rm = TRUE)
+      }else if(input$loc.type2 == "48"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "48"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "48"], na.rm = TRUE)
+      }else if(input$loc.type2 == "67"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "67"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "67"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "6"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "6"], na.rm = TRUE)
+      }else if(input$loc.type2 == "12"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "12"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "12"], na.rm = TRUE)
+      }else if(input$loc.type2 == "88"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "88"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "88"], na.rm = TRUE)
+      }else if(input$loc.type2 == "131"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "131"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "131"], na.rm = TRUE)
+      }else if(input$loc.type2 == "85"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "85"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "85"], na.rm = TRUE)
+      }else if(input$loc.type2 == "89"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "89"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "89"], na.rm = TRUE)
+      }else if(input$loc.type2 == "79"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "79"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "79"], na.rm = TRUE)
+      }else if(input$loc.type2 == "91"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "91"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "91"], na.rm = TRUE)
+      }else if(input$loc.type2 == "133"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "133"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "133"], na.rm = TRUE)
+      }else if(input$loc.type2 == "81"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "81"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "81"], na.rm = TRUE)
+      }else if(input$loc.type2 == "71"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "71"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "71"], na.rm = TRUE)
+      }else if(input$loc.type2 == "86"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "86"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "86"], na.rm = TRUE)
+      }else if(input$loc.type2 == "56"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "56"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "56"], na.rm = TRUE)
+      }else if(input$loc.type2 == "59"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "59"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "59"], na.rm = TRUE)
+      }else if(input$loc.type2 == "50"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "50"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "50"], na.rm = TRUE)
+      }else if(input$loc.type2 == "61"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "61"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "61"], na.rm = TRUE)
+      }else if(input$loc.type2 == "31"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "31"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "31"], na.rm = TRUE)
+      }else if(input$loc.type2 == "138"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "138"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "138"], na.rm = TRUE)
+      }else if(input$loc.type2 == "57"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "57"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "57"], na.rm = TRUE)
+      }else if(input$loc.type2 == "60"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "60"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "60"], na.rm = TRUE)
+      }else if(input$loc.type2 == "53"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "53"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "53"], na.rm = TRUE)
+      }else if(input$loc.type2 == "32"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "32"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "32"], na.rm = TRUE)
+      }else if(input$loc.type2 == "62"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "62"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "62"], na.rm = TRUE)
+      }else if(input$loc.type2 == "66"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "66"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "66"], na.rm = TRUE)
+      }else if(input$loc.type2 == "51"){
+        ls2 <- mean(ls1$current_travel_time[ls1$voter_precinct == "51"], na.rm = TRUE)
+        ls3 <- mean(ls1$free_flow_travel_time[ls1$voter_precinct == "51"], na.rm = TRUE)
+      }
+    }
+    
+    if(input$currenttime == TRUE){ 
+      if(input$lastweek == TRUE){
+        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph) | ",
+              "Travel time last week: ", round(ls2, digits = 0), " mph (Free flow travel time: ", round(ls3, digits = 0), " mph)")
+      }else{
+        str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
+      }
+    }else{
+      if(input$lastweek == TRUE){
+        str_c("Travel time last week: ", round(ls2, digits = 0), " mph (Free flow travel time: ", round(ls3, digits = 0), " mph)")
+      }else{
+        
+      }
+    }
     
     
   })
@@ -3909,6 +6721,13 @@ server <- function(input, output) {
                                           " ", 
                                           as.character(input$hour), 
                                           ":00:00")))
+    
+    ls1 <- traffic.flow %>% 
+      filter(date == as_datetime(str_c(as.character(input$date1), 
+                                       " ", 
+                                       as.character(input$hour), 
+                                       ":00:00")) - 604800)
+    
     if(input$loc.type == "Quadrant"){
       if(input$loc.type2 == "SE"){
         cs2 <- mean(cs1$cat.average.num[cs1$quadrant == "SE"], na.rm = TRUE)
@@ -4515,1313 +7334,1961 @@ server <- function(input, output) {
       }
     }
     
+    if(input$loc.type == "Quadrant"){
+      if(input$loc.type2 == "SE"){
+        ls2 <- mean(ls1$cat.average.num[ls1$quadrant == "SE"], na.rm = TRUE)
+      }else if(input$loc.type2 == "SW"){
+        ls2 <- mean(ls1$cat.average.num[ls1$quadrant == "SW"], na.rm = TRUE)
+      }else if(input$loc.type2 == "NE"){
+        ls2 <- mean(ls1$cat.average.num[ls1$quadrant == "NE"], na.rm = TRUE)
+      }else if(input$loc.type2 == "NW"){
+        ls2 <- mean(ls1$cat.average.num[ls1$quadrant == "NW"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Ward"){
+      if(input$loc.type2 == "1"){
+        ls2 <- mean(ls1$cat.average.num[ls1$ward == "1"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2"){
+        ls2 <- mean(ls1$cat.average.num[ls1$ward == "2"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3"){
+        ls2 <- mean(ls1$cat.average.num[ls1$ward == "3"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4"){
+        ls2 <- mean(ls1$cat.average.num[ls1$ward == "4"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5"){
+        ls2 <- mean(ls1$cat.average.num[ls1$ward == "5"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6"){
+        ls2 <- mean(ls1$cat.average.num[ls1$ward == "6"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7"){
+        ls2 <- mean(ls1$cat.average.num[ls1$ward == "7"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8"){
+        ls2 <- mean(ls1$cat.average.num[ls1$ward == "8"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Zip Code"){
+      if(input$loc.type2 == "20227"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20227"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20032"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20032"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20037"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20037"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20019"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20019"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20020"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20020"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20018"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20018"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20024"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20024"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20002"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20002"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20003"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20003"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20001"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20001"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20005"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20005"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20009"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20009"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20017"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20017"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20010"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20010"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20016"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20016"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20008"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20008"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20011"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20011"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20007"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20007"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20374"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20374"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20015"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20015"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20012"){
+        ls2 <- mean(ls1$cat.average.num[ls1$zip_code == "20012"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Advisory Neighborhood Commission"){
+      if(input$loc.type2 == "2A"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "2A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8D"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "8D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8E"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "8E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8C"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "8C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7F"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "7F"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "7C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7E"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "7E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "5C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "6D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5D"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "5D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "6B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "5E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2F"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "2F"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2B"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "2B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1B"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "1B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6E"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "6E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5B"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "5B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1A"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "1A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "3C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "6A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3D"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "3D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4C"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "4C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3E"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "3E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2E"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "2E"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6C"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "6C"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8A"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "8A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4D"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "4D"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4B"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "4B"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "4A"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3G"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "3G"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3F"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "3F"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5A"){
+        ls2 <- mean(ls1$cat.average.num[ls1$anc == "5A"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Census Tract"){
+      if(input$loc.type2 == "006202"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "006202"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009811"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009811"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009807"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009807"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009700"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009700"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009804"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009804"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007304"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "007304"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007301"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "007301"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010400"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "010400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010800"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "010800"], na.rm = TRUE)
+      }else if(input$loc.type2 == "005600"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "005600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009603"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009603"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007809"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "007809"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009902"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009902"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009000"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009000"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009905"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009905"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007707"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "007707"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007806"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "007806"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007804"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "007804"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007807"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "007807"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007708"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "007708"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010500"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "010500"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006400"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "006400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008803"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "008803"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010200"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "010200"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006500"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "006500"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008702"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "008702"], na.rm = TRUE)
+      }else if(input$loc.type2 == "003301"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "003301"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004902"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "004902"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004201"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "004201"], na.rm = TRUE)
+      }else if(input$loc.type2 == "003400"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "003400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004400"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "004400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "011100"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "011100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004702"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "004702"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009302"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009302"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008701"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "008701"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010100"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "010100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002900"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "002900"], na.rm = TRUE)
+      }else if(input$loc.type2 == "004600"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "004600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009400"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001002"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "001002"], na.rm = TRUE)
+      }else if(input$loc.type2 == "010600"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "010600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000901"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "000901"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000502"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "000502"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009102"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009102"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009201"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009201"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002400"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "002400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001001"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "001001"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000600"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "000600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002501"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "002501"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009503"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009503"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000300"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "000300"], na.rm = TRUE)
+      }else if(input$loc.type2 == "000400"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "000400"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006700"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "006700"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007200"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "007200"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008302"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "008302"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006600"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "006600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008904"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "008904"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008100"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "008100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "006802"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "006802"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007601"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "007601"], na.rm = TRUE)
+      }else if(input$loc.type2 == "007100"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "007100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008200"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "008200"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008001"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "008001"], na.rm = TRUE)
+      }else if(input$loc.type2 == "008002"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "008002"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002101"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "002101"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001901"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "001901"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002600"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "002600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001401"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "001401"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001803"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "001803"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001301"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "001301"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002102"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "002102"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001804"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "001804"], na.rm = TRUE)
+      }else if(input$loc.type2 == "002001"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "002001"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001902"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "001902"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001100"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "001100"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001600"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "001600"], na.rm = TRUE)
+      }else if(input$loc.type2 == "009509"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "009509"], na.rm = TRUE)
+      }else if(input$loc.type2 == "001500"){
+        ls2 <- mean(ls1$cat.average.num[ls1$census_tract == "001500"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Single Member District"){
+      if(input$loc.type2 == "2A01"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "2A01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8D03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "8D03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8D01"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "8D01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8D06"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "8D06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8E05"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "8E05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8C07"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "8C07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8E04"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "8E04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8C05"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "8C05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8C03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "8C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2A07"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "2A07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2A03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "2A03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7F01"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "7F01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C04"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "7C04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7E02"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "7E02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7E06"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "7E06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7E01"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "7E01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C07"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "7C07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "7C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7C06"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "7C06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "7F06"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "7F06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6D03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D06"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6D06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5D01"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5D01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D05"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6D05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B01"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6B01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5E03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E08"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5E08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2F06"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "2F06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2B09"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "2B09"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1B01"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "1B01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1B02"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "1B02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C02"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5C02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6E07"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6E07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5B03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5B03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E04"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5E04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2F08"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "2F08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1A04"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "1A04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E05"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5E05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C01"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5C01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C06"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "3C06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A01"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6A01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2B05"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "2B05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3D02"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "3D02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "3C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5B01"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5B01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C06"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5C06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5E01"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5E01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4C08"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "4C08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3E05"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "3E05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C09"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "3C09"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4C03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "4C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2E01"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "2E01"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3C08"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "3C08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B05"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6B05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5C04"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5C04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6D07"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6D07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6C03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6C03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B02"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6B02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5D05"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5D05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6A03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B09"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6B09"], na.rm = TRUE)
+      }else if(input$loc.type2 == "8A03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "8A03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B07"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6B07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6B06"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6B06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A02"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6A02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6A08"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "6A08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4D03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "4D03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4B04"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "4B04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A08"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "4A08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3D03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "3D03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3G05"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "3G05"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A07"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "4A07"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3E02"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "3E02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3F03"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "3F03"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4B06"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "4B06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A04"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "4A04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A06"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "4A06"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3E04"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "3E04"], na.rm = TRUE)
+      }else if(input$loc.type2 == "4A02"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "4A02"], na.rm = TRUE)
+      }else if(input$loc.type2 == "5A08"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "5A08"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3G04"){
+        ls2 <- mean(ls1$cat.average.num[ls1$single_member_district == "3G04"], na.rm = TRUE)
+      }
+    }else if(input$loc.type == "Voter Precinct"){
+      if(input$loc.type2 == "129"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "129"], na.rm = TRUE)
+      }else if(input$loc.type2 == "125"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "125"], na.rm = TRUE)
+      }else if(input$loc.type2 == "126"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "126"], na.rm = TRUE)
+      }else if(input$loc.type2 == "121"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "121"], na.rm = TRUE)
+      }else if(input$loc.type2 == "122"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "122"], na.rm = TRUE)
+      }else if(input$loc.type2 == "120"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "120"], na.rm = TRUE)
+      }else if(input$loc.type2 == "123"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "123"], na.rm = TRUE)
+      }else if(input$loc.type2 == "2"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "2"], na.rm = TRUE)
+      }else if(input$loc.type2 == "3"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "3"], na.rm = TRUE)
+      }else if(input$loc.type2 == "102"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "102"], na.rm = TRUE)
+      }else if(input$loc.type2 == "94"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "94"], na.rm = TRUE)
+      }else if(input$loc.type2 == "110"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "110"], na.rm = TRUE)
+      }else if(input$loc.type2 == "139"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "139"], na.rm = TRUE)
+      }else if(input$loc.type2 == "105"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "105"], na.rm = TRUE)
+      }else if(input$loc.type2 == "106"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "106"], na.rm = TRUE)
+      }else if(input$loc.type2 == "93"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "93"], na.rm = TRUE)
+      }else if(input$loc.type2 == "97"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "97"], na.rm = TRUE)
+      }else if(input$loc.type2 == "95"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "95"], na.rm = TRUE)
+      }else if(input$loc.type2 == "132"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "132"], na.rm = TRUE)
+      }else if(input$loc.type2 == "128"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "128"], na.rm = TRUE)
+      }else if(input$loc.type2 == "127"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "127"], na.rm = TRUE)
+      }else if(input$loc.type2 == "76"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "76"], na.rm = TRUE)
+      }else if(input$loc.type2 == "130"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "130"], na.rm = TRUE)
+      }else if(input$loc.type2 == "75"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "75"], na.rm = TRUE)
+      }else if(input$loc.type2 == "135"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "135"], na.rm = TRUE)
+      }else if(input$loc.type2 == "141"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "141"], na.rm = TRUE)
+      }else if(input$loc.type2 == "20"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "20"], na.rm = TRUE)
+      }else if(input$loc.type2 == "22"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "22"], na.rm = TRUE)
+      }else if(input$loc.type2 == "72"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "72"], na.rm = TRUE)
+      }else if(input$loc.type2 == "1"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "1"], na.rm = TRUE)
+      }else if(input$loc.type2 == "73"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "73"], na.rm = TRUE)
+      }else if(input$loc.type2 == "42"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "42"], na.rm = TRUE)
+      }else if(input$loc.type2 == "19"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "19"], na.rm = TRUE)
+      }else if(input$loc.type2 == "69"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "69"], na.rm = TRUE)
+      }else if(input$loc.type2 == "29"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "29"], na.rm = TRUE)
+      }else if(input$loc.type2 == "82"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "82"], na.rm = TRUE)
+      }else if(input$loc.type2 == "17"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "17"], na.rm = TRUE)
+      }else if(input$loc.type2 == "9"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "9"], na.rm = TRUE)
+      }else if(input$loc.type2 == "26"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "26"], na.rm = TRUE)
+      }else if(input$loc.type2 == "74"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "74"], na.rm = TRUE)
+      }else if(input$loc.type2 == "45"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "45"], na.rm = TRUE)
+      }else if(input$loc.type2 == "30"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "30"], na.rm = TRUE)
+      }else if(input$loc.type2 == "27"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "27"], na.rm = TRUE)
+      }else if(input$loc.type2 == "48"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "48"], na.rm = TRUE)
+      }else if(input$loc.type2 == "67"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "67"], na.rm = TRUE)
+      }else if(input$loc.type2 == "6"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "6"], na.rm = TRUE)
+      }else if(input$loc.type2 == "12"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "12"], na.rm = TRUE)
+      }else if(input$loc.type2 == "88"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "88"], na.rm = TRUE)
+      }else if(input$loc.type2 == "131"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "131"], na.rm = TRUE)
+      }else if(input$loc.type2 == "85"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "85"], na.rm = TRUE)
+      }else if(input$loc.type2 == "89"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "89"], na.rm = TRUE)
+      }else if(input$loc.type2 == "79"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "79"], na.rm = TRUE)
+      }else if(input$loc.type2 == "91"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "91"], na.rm = TRUE)
+      }else if(input$loc.type2 == "133"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "133"], na.rm = TRUE)
+      }else if(input$loc.type2 == "81"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "81"], na.rm = TRUE)
+      }else if(input$loc.type2 == "71"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "71"], na.rm = TRUE)
+      }else if(input$loc.type2 == "86"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "86"], na.rm = TRUE)
+      }else if(input$loc.type2 == "56"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "56"], na.rm = TRUE)
+      }else if(input$loc.type2 == "59"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "59"], na.rm = TRUE)
+      }else if(input$loc.type2 == "50"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "50"], na.rm = TRUE)
+      }else if(input$loc.type2 == "61"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "61"], na.rm = TRUE)
+      }else if(input$loc.type2 == "31"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "31"], na.rm = TRUE)
+      }else if(input$loc.type2 == "138"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "138"], na.rm = TRUE)
+      }else if(input$loc.type2 == "57"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "57"], na.rm = TRUE)
+      }else if(input$loc.type2 == "60"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "60"], na.rm = TRUE)
+      }else if(input$loc.type2 == "53"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "53"], na.rm = TRUE)
+      }else if(input$loc.type2 == "32"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "32"], na.rm = TRUE)
+      }else if(input$loc.type2 == "62"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "62"], na.rm = TRUE)
+      }else if(input$loc.type2 == "66"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "66"], na.rm = TRUE)
+      }else if(input$loc.type2 == "51"){
+        ls2 <- mean(ls1$cat.average.num[ls1$voter_precinct == "51"], na.rm = TRUE)
+      }
+    }
+    
     if(is.numeric(cs2) == TRUE){
       cs2 <- round(cs2, digits = 0) 
     }else if(is.na(cs2) == TRUE){
       cs2 <- "NaN"
     }
     
+    if(is.numeric(ls2) == TRUE){
+      ls2 <- round(ls2, digits = 0) 
+    }else if(is.na(ls2) == TRUE){
+      ls2 <- "NaN"
+    }
+    
     if(cs2 == 1){
-      str_c("Current average air quality: ", "Good")
+      cs3 <- str_c("Current average air quality: ", "Good")
     }else if(cs2 == 2){
-      str_c("Current average air quality: ", "Moderate")
+      cs3 <- str_c("Current average air quality: ", "Moderate")
     }else if(cs2 == 3){
-      str_c("Current average air quality: ", "Unhealthy for sensitive groups")
+      cs3 <- str_c("Current average air quality: ", "Unhealthy for sensitive groups")
     }else if(cs2 == 4){
-      str_c("Current average air quality: ", "Unhealthy")
+      cs3 <- str_c("Current average air quality: ", "Unhealthy")
     }else if(cs2 == 5){
-      str_c("Current average air quality: ", "Very unhealthy")
+      cs3 <- str_c("Current average air quality: ", "Very unhealthy")
     }else if(cs2 == 6){
-      str_c("Current average air quality: ", "Hazardous")
+      cs3 <- str_c("Current average air quality: ", "Hazardous")
     }else if(cs2 == "NaN"){
-      str_c("Current average air quality: ", "NaN")
+      cs3 <- str_c("Current average air quality: ", "NaN")
+    }
+    
+    if(ls2 == 1){
+      ls3 <- str_c("Average air quality last week: ", "Good")
+    }else if(ls2 == 2){
+      ls3 <- str_c("Average air quality last week: ", "Moderate")
+    }else if(ls2 == 3){
+      ls3 <- str_c("Average air quality last week: ", "Unhealthy for sensitive groups")
+    }else if(ls2 == 4){
+      ls3 <- str_c("Average air quality last week: ", "Unhealthy")
+    }else if(ls2 == 5){
+      ls3 <- str_c("Average air quality last week: ", "Very unhealthy")
+    }else if(ls2 == 6){
+      ls3 <- str_c("Average air quality last week: ", "Hazardous")
+    }else if(ls2 == "NaN"){
+      ls3 <- str_c("Average air quality last week: ", "NaN")
+    }
+    
+    if(input$currenttime == TRUE){ 
+      if(input$lastweek == TRUE){ 
+        str_c(cs3, " | ", ls3)
+      }else{
+        cs3
+      }
+    }else{
+      if(input$lastweek == TRUE){ 
+        ls3
+      }else{
+        
+      }
     }
     
   })
   
   output$location.graph <- renderPlot({
-    if(input$loc.type == "Quadrant"){
-      if(input$loc.type2 == "SE"){
-        cs2 <- traffic.flow %>% filter(quadrant == "SE")
-      }else if(input$loc.type2 == "SW"){
-        cs2 <- traffic.flow %>% filter(quadrant == "SW")
-      }else if(input$loc.type2 == "NE"){
-        cs2 <- traffic.flow %>% filter(quadrant == "NE")
-      }else if(input$loc.type2 == "NW"){
-        cs2 <- traffic.flow %>% filter(quadrant == "NW")
+    if(input$historical == TRUE){
+      if(input$loc.type == "Quadrant"){
+        if(input$loc.type2 == "SE"){
+          cs2 <- traffic.flow %>% filter(quadrant == "SE")
+        }else if(input$loc.type2 == "SW"){
+          cs2 <- traffic.flow %>% filter(quadrant == "SW")
+        }else if(input$loc.type2 == "NE"){
+          cs2 <- traffic.flow %>% filter(quadrant == "NE")
+        }else if(input$loc.type2 == "NW"){
+          cs2 <- traffic.flow %>% filter(quadrant == "NW")
+        }
+      }else if(input$loc.type == "Ward"){
+        if(input$loc.type2 == "1"){
+          cs2 <- traffic.flow %>% filter(ward == "1")
+        }else if(input$loc.type2 == "2"){
+          cs2 <- traffic.flow %>% filter(ward == "2")
+        }else if(input$loc.type2 == "3"){
+          cs2 <- traffic.flow %>% filter(ward == "3")
+        }else if(input$loc.type2 == "4"){
+          cs2 <- traffic.flow %>% filter(ward == "4")
+        }else if(input$loc.type2 == "5"){
+          cs2 <- traffic.flow %>% filter(ward == "5")
+        }else if(input$loc.type2 == "6"){
+          cs2 <- traffic.flow %>% filter(ward == "6")
+        }else if(input$loc.type2 == "7"){
+          cs2 <- traffic.flow %>% filter(ward == "7")
+        }else if(input$loc.type2 == "8"){
+          cs2 <- traffic.flow %>% filter(ward == "8")
+        }
+      }else if(input$loc.type == "Zip Code"){
+        if(input$loc.type2 == "20227"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20227")
+        }else if(input$loc.type2 == "20032"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20032")
+        }else if(input$loc.type2 == "20037"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20037")
+        }else if(input$loc.type2 == "20019"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20019")
+        }else if(input$loc.type2 == "20020"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20020")
+        }else if(input$loc.type2 == "20018"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20018")
+        }else if(input$loc.type2 == "20024"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20024")
+        }else if(input$loc.type2 == "20002"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20002")
+        }else if(input$loc.type2 == "20003"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20003")
+        }else if(input$loc.type2 == "20001"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20001")
+        }else if(input$loc.type2 == "20005"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20005")
+        }else if(input$loc.type2 == "20009"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20009")
+        }else if(input$loc.type2 == "20017"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20017")
+        }else if(input$loc.type2 == "20010"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20010")
+        }else if(input$loc.type2 == "20016"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20016")
+        }else if(input$loc.type2 == "20008"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20008")
+        }else if(input$loc.type2 == "20011"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20011")
+        }else if(input$loc.type2 == "20007"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20007")
+        }else if(input$loc.type2 == "20374"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20374")
+        }else if(input$loc.type2 == "20015"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20015")
+        }else if(input$loc.type2 == "20012"){
+          cs2 <- traffic.flow %>% filter(zip_code == "20012")
+        }
+      }else if(input$loc.type == "Advisory Neighborhood Commission"){
+        if(input$loc.type2 == "2A"){
+          cs2 <- traffic.flow %>% filter(anc == "2A")
+        }else if(input$loc.type2 == "8D"){
+          cs2 <- traffic.flow %>% filter(anc == "8D")
+        }else if(input$loc.type2 == "8E"){
+          cs2 <- traffic.flow %>% filter(anc == "8E")
+        }else if(input$loc.type2 == "8C"){
+          cs2 <- traffic.flow %>% filter(anc == "8C")
+        }else if(input$loc.type2 == "7F"){
+          cs2 <- traffic.flow %>% filter(anc == "7F")
+        }else if(input$loc.type2 == "7C"){
+          cs2 <- traffic.flow %>% filter(anc == "7C")
+        }else if(input$loc.type2 == "7E"){
+          cs2 <- traffic.flow %>% filter(anc == "7E")
+        }else if(input$loc.type2 == "5C"){
+          cs2 <- traffic.flow %>% filter(anc == "5C")
+        }else if(input$loc.type2 == "6D"){
+          cs2 <- traffic.flow %>% filter(anc == "6D")
+        }else if(input$loc.type2 == "5D"){
+          cs2 <- traffic.flow %>% filter(anc == "5D")
+        }else if(input$loc.type2 == "6B"){
+          cs2 <- traffic.flow %>% filter(anc == "6B")
+        }else if(input$loc.type2 == "5E"){
+          cs2 <- traffic.flow %>% filter(anc == "5E")
+        }else if(input$loc.type2 == "2F"){
+          cs2 <- traffic.flow %>% filter(anc == "2F")
+        }else if(input$loc.type2 == "2B"){
+          cs2 <- traffic.flow %>% filter(anc == "2B")
+        }else if(input$loc.type2 == "1B"){
+          cs2 <- traffic.flow %>% filter(anc == "1B")
+        }else if(input$loc.type2 == "6E"){
+          cs2 <- traffic.flow %>% filter(anc == "6E")
+        }else if(input$loc.type2 == "5B"){
+          cs2 <- traffic.flow %>% filter(anc == "5B")
+        }else if(input$loc.type2 == "1A"){
+          cs2 <- traffic.flow %>% filter(anc == "1A")
+        }else if(input$loc.type2 == "3C"){
+          cs2 <- traffic.flow %>% filter(anc == "3C")
+        }else if(input$loc.type2 == "6A"){
+          cs2 <- traffic.flow %>% filter(anc == "6A")
+        }else if(input$loc.type2 == "3D"){
+          cs2 <- traffic.flow %>% filter(anc == "3D")
+        }else if(input$loc.type2 == "4C"){
+          cs2 <- traffic.flow %>% filter(anc == "4C")
+        }else if(input$loc.type2 == "3E"){
+          cs2 <- traffic.flow %>% filter(anc == "3E")
+        }else if(input$loc.type2 == "2E"){
+          cs2 <- traffic.flow %>% filter(anc == "2E")
+        }else if(input$loc.type2 == "6C"){
+          cs2 <- traffic.flow %>% filter(anc == "6C")
+        }else if(input$loc.type2 == "8A"){
+          cs2 <- traffic.flow %>% filter(anc == "8A")
+        }else if(input$loc.type2 == "4D"){
+          cs2 <- traffic.flow %>% filter(anc == "4D")
+        }else if(input$loc.type2 == "4B"){
+          cs2 <- traffic.flow %>% filter(anc == "4B")
+        }else if(input$loc.type2 == "4A"){
+          cs2 <- traffic.flow %>% filter(anc == "4A")
+        }else if(input$loc.type2 == "3G"){
+          cs2 <- traffic.flow %>% filter(anc == "3G")
+        }else if(input$loc.type2 == "3F"){
+          cs2 <- traffic.flow %>% filter(anc == "3F")
+        }else if(input$loc.type2 == "5A"){
+          cs2 <- traffic.flow %>% filter(anc == "5A")
+        }
+      }else if(input$loc.type == "Census Tract"){
+        if(input$loc.type2 == "006202"){
+          cs2 <- traffic.flow %>% filter(census_tract == "006202")
+        }else if(input$loc.type2 == "009811"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009811")
+        }else if(input$loc.type2 == "009807"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009807")
+        }else if(input$loc.type2 == "009700"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009700")
+        }else if(input$loc.type2 == "009804"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009804")
+        }else if(input$loc.type2 == "007304"){
+          cs2 <- traffic.flow %>% filter(census_tract == "007304")
+        }else if(input$loc.type2 == "007301"){
+          cs2 <- traffic.flow %>% filter(census_tract == "007301")
+        }else if(input$loc.type2 == "010400"){
+          cs2 <- traffic.flow %>% filter(census_tract == "010400")
+        }else if(input$loc.type2 == "010800"){
+          cs2 <- traffic.flow %>% filter(census_tract == "010800")
+        }else if(input$loc.type2 == "005600"){
+          cs2 <- traffic.flow %>% filter(census_tract == "005600")
+        }else if(input$loc.type2 == "009603"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009603")
+        }else if(input$loc.type2 == "007809"){
+          cs2 <- traffic.flow %>% filter(census_tract == "007809")
+        }else if(input$loc.type2 == "009902"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009902")
+        }else if(input$loc.type2 == "009000"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009000")
+        }else if(input$loc.type2 == "009905"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009905")
+        }else if(input$loc.type2 == "007707"){
+          cs2 <- traffic.flow %>% filter(census_tract == "007707")
+        }else if(input$loc.type2 == "007806"){
+          cs2 <- traffic.flow %>% filter(census_tract == "007806")
+        }else if(input$loc.type2 == "007804"){
+          cs2 <- traffic.flow %>% filter(census_tract == "007804")
+        }else if(input$loc.type2 == "007807"){
+          cs2 <- traffic.flow %>% filter(census_tract == "007807")
+        }else if(input$loc.type2 == "007708"){
+          cs2 <- traffic.flow %>% filter(census_tract == "007708")
+        }else if(input$loc.type2 == "010500"){
+          cs2 <- traffic.flow %>% filter(census_tract == "010500")
+        }else if(input$loc.type2 == "006400"){
+          cs2 <- traffic.flow %>% filter(census_tract == "006400")
+        }else if(input$loc.type2 == "008803"){
+          cs2 <- traffic.flow %>% filter(census_tract == "008803")
+        }else if(input$loc.type2 == "010200"){
+          cs2 <- traffic.flow %>% filter(census_tract == "010200")
+        }else if(input$loc.type2 == "006500"){
+          cs2 <- traffic.flow %>% filter(census_tract == "006500")
+        }else if(input$loc.type2 == "008702"){
+          cs2 <- traffic.flow %>% filter(census_tract == "008702")
+        }else if(input$loc.type2 == "003301"){
+          cs2 <- traffic.flow %>% filter(census_tract == "003301")
+        }else if(input$loc.type2 == "004902"){
+          cs2 <- traffic.flow %>% filter(census_tract == "004902")
+        }else if(input$loc.type2 == "004201"){
+          cs2 <- traffic.flow %>% filter(census_tract == "004201")
+        }else if(input$loc.type2 == "003400"){
+          cs2 <- traffic.flow %>% filter(census_tract == "003400")
+        }else if(input$loc.type2 == "004400"){
+          cs2 <- traffic.flow %>% filter(census_tract == "004400")
+        }else if(input$loc.type2 == "011100"){
+          cs2 <- traffic.flow %>% filter(census_tract == "011100")
+        }else if(input$loc.type2 == "004702"){
+          cs2 <- traffic.flow %>% filter(census_tract == "004702")
+        }else if(input$loc.type2 == "009302"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009302")
+        }else if(input$loc.type2 == "008701"){
+          cs2 <- traffic.flow %>% filter(census_tract == "008701")
+        }else if(input$loc.type2 == "010100"){
+          cs2 <- traffic.flow %>% filter(census_tract == "010100")
+        }else if(input$loc.type2 == "002900"){
+          cs2 <- traffic.flow %>% filter(census_tract == "002900")
+        }else if(input$loc.type2 == "004600"){
+          cs2 <- traffic.flow %>% filter(census_tract == "004600")
+        }else if(input$loc.type2 == "009400"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009400")
+        }else if(input$loc.type2 == "001002"){
+          cs2 <- traffic.flow %>% filter(census_tract == "001002")
+        }else if(input$loc.type2 == "010600"){
+          cs2 <- traffic.flow %>% filter(census_tract == "010600")
+        }else if(input$loc.type2 == "000901"){
+          cs2 <- traffic.flow %>% filter(census_tract == "000901")
+        }else if(input$loc.type2 == "000502"){
+          cs2 <- traffic.flow %>% filter(census_tract == "000502")
+        }else if(input$loc.type2 == "009102"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009102")
+        }else if(input$loc.type2 == "009201"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009201")
+        }else if(input$loc.type2 == "002400"){
+          cs2 <- traffic.flow %>% filter(census_tract == "002400")
+        }else if(input$loc.type2 == "001001"){
+          cs2 <- traffic.flow %>% filter(census_tract == "001001")
+        }else if(input$loc.type2 == "000600"){
+          cs2 <- traffic.flow %>% filter(census_tract == "000600")
+        }else if(input$loc.type2 == "002501"){
+          cs2 <- traffic.flow %>% filter(census_tract == "002501")
+        }else if(input$loc.type2 == "009503"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009503")
+        }else if(input$loc.type2 == "000300"){
+          cs2 <- traffic.flow %>% filter(census_tract == "000300")
+        }else if(input$loc.type2 == "000400"){
+          cs2 <- traffic.flow %>% filter(census_tract == "000400")
+        }else if(input$loc.type2 == "006700"){
+          cs2 <- traffic.flow %>% filter(census_tract == "006700")
+        }else if(input$loc.type2 == "007200"){
+          cs2 <- traffic.flow %>% filter(census_tract == "007200")
+        }else if(input$loc.type2 == "008302"){
+          cs2 <- traffic.flow %>% filter(census_tract == "008302")
+        }else if(input$loc.type2 == "006600"){
+          cs2 <- traffic.flow %>% filter(census_tract == "006600")
+        }else if(input$loc.type2 == "008904"){
+          cs2 <- traffic.flow %>% filter(census_tract == "008904")
+        }else if(input$loc.type2 == "008100"){
+          cs2 <- traffic.flow %>% filter(census_tract == "008100")
+        }else if(input$loc.type2 == "006802"){
+          cs2 <- traffic.flow %>% filter(census_tract == "006802")
+        }else if(input$loc.type2 == "007601"){
+          cs2 <- traffic.flow %>% filter(census_tract == "007601")
+        }else if(input$loc.type2 == "007100"){
+          cs2 <- traffic.flow %>% filter(census_tract == "007100")
+        }else if(input$loc.type2 == "008200"){
+          cs2 <- traffic.flow %>% filter(census_tract == "008200")
+        }else if(input$loc.type2 == "008001"){
+          cs2 <- traffic.flow %>% filter(census_tract == "008001")
+        }else if(input$loc.type2 == "008002"){
+          cs2 <- traffic.flow %>% filter(census_tract == "008002")
+        }else if(input$loc.type2 == "002101"){
+          cs2 <- traffic.flow %>% filter(census_tract == "002101")
+        }else if(input$loc.type2 == "001901"){
+          cs2 <- traffic.flow %>% filter(census_tract == "001901")
+        }else if(input$loc.type2 == "002600"){
+          cs2 <- traffic.flow %>% filter(census_tract == "002600")
+        }else if(input$loc.type2 == "001401"){
+          cs2 <- traffic.flow %>% filter(census_tract == "001401")
+        }else if(input$loc.type2 == "001803"){
+          cs2 <- traffic.flow %>% filter(census_tract == "001803")
+        }else if(input$loc.type2 == "001301"){
+          cs2 <- traffic.flow %>% filter(census_tract == "001301")
+        }else if(input$loc.type2 == "002102"){
+          cs2 <- traffic.flow %>% filter(census_tract == "002102")
+        }else if(input$loc.type2 == "001804"){
+          cs2 <- traffic.flow %>% filter(census_tract == "001804")
+        }else if(input$loc.type2 == "002001"){
+          cs2 <- traffic.flow %>% filter(census_tract == "002001")
+        }else if(input$loc.type2 == "001902"){
+          cs2 <- traffic.flow %>% filter(census_tract == "001902")
+        }else if(input$loc.type2 == "001100"){
+          cs2 <- traffic.flow %>% filter(census_tract == "001100")
+        }else if(input$loc.type2 == "001600"){
+          cs2 <- traffic.flow %>% filter(census_tract == "001600")
+        }else if(input$loc.type2 == "009509"){
+          cs2 <- traffic.flow %>% filter(census_tract == "009509")
+        }else if(input$loc.type2 == "001500"){
+          cs2 <- traffic.flow %>% filter(census_tract == "001500")
+        }
+      }else if(input$loc.type == "Single Member District"){
+        if(input$loc.type2 == "2A01"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "2A01")
+        }else if(input$loc.type2 == "8D03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "8D03")
+        }else if(input$loc.type2 == "8D01"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "8D01")
+        }else if(input$loc.type2 == "8D06"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "8D06")
+        }else if(input$loc.type2 == "8E05"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "8E05")
+        }else if(input$loc.type2 == "8C07"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "8C07")
+        }else if(input$loc.type2 == "8E04"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "8E04")
+        }else if(input$loc.type2 == "8C05"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "8C05")
+        }else if(input$loc.type2 == "8C03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "8C03")
+        }else if(input$loc.type2 == "2A07"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "2A07")
+        }else if(input$loc.type2 == "2A03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "2A03")
+        }else if(input$loc.type2 == "7F01"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "7F01")
+        }else if(input$loc.type2 == "7C04"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "7C04")
+        }else if(input$loc.type2 == "7E02"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "7E02")
+        }else if(input$loc.type2 == "5C03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5C03")
+        }else if(input$loc.type2 == "7E06"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "7E06")
+        }else if(input$loc.type2 == "7E01"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "7E01")
+        }else if(input$loc.type2 == "7C07"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "7C07")
+        }else if(input$loc.type2 == "7C03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "7C03")
+        }else if(input$loc.type2 == "7C06"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "7C06")
+        }else if(input$loc.type2 == "7F06"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "7F06")
+        }else if(input$loc.type2 == "6D03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6D03")
+        }else if(input$loc.type2 == "6D06"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6D06")
+        }else if(input$loc.type2 == "5D01"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5D01")
+        }else if(input$loc.type2 == "6D05"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6D05")
+        }else if(input$loc.type2 == "6B01"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6B01")
+        }else if(input$loc.type2 == "5E03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5E03")
+        }else if(input$loc.type2 == "5E08"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5E08")
+        }else if(input$loc.type2 == "2F06"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "2F06")
+        }else if(input$loc.type2 == "2B09"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "2B09")
+        }else if(input$loc.type2 == "1B01"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "1B01")
+        }else if(input$loc.type2 == "1B02"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "1B02")
+        }else if(input$loc.type2 == "5C02"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5C02")
+        }else if(input$loc.type2 == "6E07"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6E07")
+        }else if(input$loc.type2 == "5B03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5B03")
+        }else if(input$loc.type2 == "5E04"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5E04")
+        }else if(input$loc.type2 == "2F08"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "2F08")
+        }else if(input$loc.type2 == "1A04"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "1A04")
+        }else if(input$loc.type2 == "5E05"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5E05")
+        }else if(input$loc.type2 == "5C01"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5C01")
+        }else if(input$loc.type2 == "3C06"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "3C06")
+        }else if(input$loc.type2 == "6A01"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6A01")
+        }else if(input$loc.type2 == "2B05"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "2B05")
+        }else if(input$loc.type2 == "3D02"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "3D02")
+        }else if(input$loc.type2 == "3C03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "3C03")
+        }else if(input$loc.type2 == "5B01"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5B01")
+        }else if(input$loc.type2 == "5C06"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5C06")
+        }else if(input$loc.type2 == "5E01"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5E01")
+        }else if(input$loc.type2 == "4C08"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "4C08")
+        }else if(input$loc.type2 == "3E05"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "3E05")
+        }else if(input$loc.type2 == "3C09"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "3C09")
+        }else if(input$loc.type2 == "4C03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "4C03")
+        }else if(input$loc.type2 == "2E01"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "2E01")
+        }else if(input$loc.type2 == "3C08"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "3C08")
+        }else if(input$loc.type2 == "6B05"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6B05")
+        }else if(input$loc.type2 == "5C04"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5C04")
+        }else if(input$loc.type2 == "6D07"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6D07")
+        }else if(input$loc.type2 == "6C03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6C03")
+        }else if(input$loc.type2 == "6B02"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6B02")
+        }else if(input$loc.type2 == "5D05"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5D05")
+        }else if(input$loc.type2 == "6A03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6A03")
+        }else if(input$loc.type2 == "6B09"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6B09")
+        }else if(input$loc.type2 == "8A03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "8A03")
+        }else if(input$loc.type2 == "6B07"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6B07")
+        }else if(input$loc.type2 == "6B06"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6B06")
+        }else if(input$loc.type2 == "6A02"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6A02")
+        }else if(input$loc.type2 == "6A08"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "6A08")
+        }else if(input$loc.type2 == "4D03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "4D03")
+        }else if(input$loc.type2 == "4B04"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "4B04")
+        }else if(input$loc.type2 == "4A08"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "4A08")
+        }else if(input$loc.type2 == "3D03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "3D03")
+        }else if(input$loc.type2 == "3G05"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "3G05")
+        }else if(input$loc.type2 == "4A07"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "4A07")
+        }else if(input$loc.type2 == "3E02"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "3E02")
+        }else if(input$loc.type2 == "3F03"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "3F03")
+        }else if(input$loc.type2 == "4B06"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "4B06")
+        }else if(input$loc.type2 == "4A04"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "4A04")
+        }else if(input$loc.type2 == "4A06"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "4A06")
+        }else if(input$loc.type2 == "3E04"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "3E04")
+        }else if(input$loc.type2 == "4A02"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "4A02")
+        }else if(input$loc.type2 == "5A08"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "5A08")
+        }else if(input$loc.type2 == "3G04"){
+          cs2 <- traffic.flow %>% filter(single_member_district == "3G04")
+        }
+      }else if(input$loc.type == "Voter Precinct"){
+        if(input$loc.type2 == "129"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "129")
+        }else if(input$loc.type2 == "125"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "125")
+        }else if(input$loc.type2 == "126"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "126")
+        }else if(input$loc.type2 == "121"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "121")
+        }else if(input$loc.type2 == "122"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "122")
+        }else if(input$loc.type2 == "120"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "120")
+        }else if(input$loc.type2 == "123"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "123")
+        }else if(input$loc.type2 == "2"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "2")
+        }else if(input$loc.type2 == "3"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "3")
+        }else if(input$loc.type2 == "102"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "102")
+        }else if(input$loc.type2 == "94"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "94")
+        }else if(input$loc.type2 == "110"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "110")
+        }else if(input$loc.type2 == "139"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "139")
+        }else if(input$loc.type2 == "105"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "105")
+        }else if(input$loc.type2 == "106"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "106")
+        }else if(input$loc.type2 == "93"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "93")
+        }else if(input$loc.type2 == "97"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "97")
+        }else if(input$loc.type2 == "95"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "95")
+        }else if(input$loc.type2 == "132"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "132")
+        }else if(input$loc.type2 == "128"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "128")
+        }else if(input$loc.type2 == "127"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "127")
+        }else if(input$loc.type2 == "76"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "76")
+        }else if(input$loc.type2 == "130"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "130")
+        }else if(input$loc.type2 == "75"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "75")
+        }else if(input$loc.type2 == "135"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "135")
+        }else if(input$loc.type2 == "141"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "141")
+        }else if(input$loc.type2 == "20"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "20")
+        }else if(input$loc.type2 == "22"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "22")
+        }else if(input$loc.type2 == "72"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "72")
+        }else if(input$loc.type2 == "1"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "1")
+        }else if(input$loc.type2 == "73"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "73")
+        }else if(input$loc.type2 == "42"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "42")
+        }else if(input$loc.type2 == "19"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "19")
+        }else if(input$loc.type2 == "69"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "69")
+        }else if(input$loc.type2 == "29"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "29")
+        }else if(input$loc.type2 == "82"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "82")
+        }else if(input$loc.type2 == "17"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "17")
+        }else if(input$loc.type2 == "9"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "9")
+        }else if(input$loc.type2 == "26"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "26")
+        }else if(input$loc.type2 == "74"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "74")
+        }else if(input$loc.type2 == "45"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "45")
+        }else if(input$loc.type2 == "30"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "30")
+        }else if(input$loc.type2 == "27"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "27")
+        }else if(input$loc.type2 == "48"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "48")
+        }else if(input$loc.type2 == "67"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "67")
+        }else if(input$loc.type2 == "6"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "6")
+        }else if(input$loc.type2 == "12"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "12")
+        }else if(input$loc.type2 == "88"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "88")
+        }else if(input$loc.type2 == "131"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "131")
+        }else if(input$loc.type2 == "85"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "85")
+        }else if(input$loc.type2 == "89"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "89")
+        }else if(input$loc.type2 == "79"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "79")
+        }else if(input$loc.type2 == "91"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "91")
+        }else if(input$loc.type2 == "133"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "133")
+        }else if(input$loc.type2 == "81"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "81")
+        }else if(input$loc.type2 == "71"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "71")
+        }else if(input$loc.type2 == "86"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "86")
+        }else if(input$loc.type2 == "56"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "56")
+        }else if(input$loc.type2 == "59"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "59")
+        }else if(input$loc.type2 == "50"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "50")
+        }else if(input$loc.type2 == "61"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "61")
+        }else if(input$loc.type2 == "31"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "31")
+        }else if(input$loc.type2 == "138"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "138")
+        }else if(input$loc.type2 == "57"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "57")
+        }else if(input$loc.type2 == "60"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "60")
+        }else if(input$loc.type2 == "53"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "53")
+        }else if(input$loc.type2 == "32"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "32")
+        }else if(input$loc.type2 == "62"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "62")
+        }else if(input$loc.type2 == "66"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "66")
+        }else if(input$loc.type2 == "51"){
+          cs2 <- traffic.flow %>% filter(voter_precinct == "51")
+        }
       }
-    }else if(input$loc.type == "Ward"){
-      if(input$loc.type2 == "1"){
-        cs2 <- traffic.flow %>% filter(ward == "1")
-      }else if(input$loc.type2 == "2"){
-        cs2 <- traffic.flow %>% filter(ward == "2")
-      }else if(input$loc.type2 == "3"){
-        cs2 <- traffic.flow %>% filter(ward == "3")
-      }else if(input$loc.type2 == "4"){
-        cs2 <- traffic.flow %>% filter(ward == "4")
-      }else if(input$loc.type2 == "5"){
-        cs2 <- traffic.flow %>% filter(ward == "5")
-      }else if(input$loc.type2 == "6"){
-        cs2 <- traffic.flow %>% filter(ward == "6")
-      }else if(input$loc.type2 == "7"){
-        cs2 <- traffic.flow %>% filter(ward == "7")
-      }else if(input$loc.type2 == "8"){
-        cs2 <- traffic.flow %>% filter(ward == "8")
+      
+      cs3 <- cs2 %>% 
+        group_by(date) %>% 
+        summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
+                  mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
+                  mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
+                  mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+      
+      cs4 <- cs2 %>% 
+        group_by(date) %>% 
+        summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
+                  mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
+                  mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
+                  mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+      
+      colors <- c("Ozone" = "blue", "SO2" = "red", "PM 2.5" = "Orange",
+                  "NO2" = "green")
+      
+      g <- cs3 %>% 
+        ggplot(data = ., aes(x = date)) +
+        labs(x = "Date", y = "Air Quality Index", 
+             title = str_c(input$loc.type, ": ", input$loc.type2),
+             color = "Parameter") +
+        scale_color_manual(values = colors)
+      g1 <- geom_line(aes(y = mean_ozone_loc_aqi, color = "Ozone"))
+      g2 <- geom_line(aes(y = mean_so2_loc_aqi, color = "SO2"))
+      g3 <- geom_line(aes(y = mean_pm2.5_loc_aqi, color = "PM 2.5"))
+      g4 <- geom_line(aes(y = mean_no2_loc_aqi, color = "NO2"))
+      
+      if(input$ozone1 == TRUE){
+        if(input$so2.1 == TRUE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              p1 <- g + g1 + g2 + g3 + g4
+            }else if(input$no2.1 == FALSE){
+              p1 <- g + g1 + g2 + g3
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              p1 <- g + g1 + g2 + g4
+            }else if(input$no2.1 == FALSE){
+              p1 <- g + g1 + g2
+            }
+          }
+        }else if(input$so2.1 == FALSE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              p1 <- g + g1 + g3 + g4
+            }else if(input$no2.1 == FALSE){
+              p1 <- g + g1 + g3
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              p1 <- g + g1 + g4
+            }else if(input$no2.1 == FALSE){
+              p1 <- g + g1
+            }
+          }
+        }
+      }else if(input$ozone1 == FALSE){
+        if(input$so2.1 == TRUE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              p1 <- g + g2 + g3 + g4
+            }else if(input$no2.1 == FALSE){
+              p1 <- g + g2 + g3
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              p1 <- g + g2 + g4
+            }else if(input$no2.1 == FALSE){
+              p1 <- g + g2
+            }
+          }
+        }else if(input$so2.1 == FALSE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              p1 <- g + g3 + g4
+            }else if(input$no2.1 == FALSE){
+              p1 <- g + g3
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              p1 <- g + g4 
+            }else if(input$no2.1 == FALSE){
+              p1 <- g
+            }
+          }
+        }
       }
-    }else if(input$loc.type == "Zip Code"){
-      if(input$loc.type2 == "20227"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20227")
-      }else if(input$loc.type2 == "20032"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20032")
-      }else if(input$loc.type2 == "20037"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20037")
-      }else if(input$loc.type2 == "20019"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20019")
-      }else if(input$loc.type2 == "20020"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20020")
-      }else if(input$loc.type2 == "20018"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20018")
-      }else if(input$loc.type2 == "20024"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20024")
-      }else if(input$loc.type2 == "20002"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20002")
-      }else if(input$loc.type2 == "20003"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20003")
-      }else if(input$loc.type2 == "20001"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20001")
-      }else if(input$loc.type2 == "20005"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20005")
-      }else if(input$loc.type2 == "20009"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20009")
-      }else if(input$loc.type2 == "20017"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20017")
-      }else if(input$loc.type2 == "20010"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20010")
-      }else if(input$loc.type2 == "20016"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20016")
-      }else if(input$loc.type2 == "20008"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20008")
-      }else if(input$loc.type2 == "20011"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20011")
-      }else if(input$loc.type2 == "20007"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20007")
-      }else if(input$loc.type2 == "20374"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20374")
-      }else if(input$loc.type2 == "20015"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20015")
-      }else if(input$loc.type2 == "20012"){
-        cs2 <- traffic.flow %>% filter(zip_code == "20012")
+      
+      colors <- c("Current Speed" = "blue", "Free Flow Speed" = "red", 
+                  "Current Travel Time" = "Orange",
+                  "Free Flow Travel Time" = "green")
+      
+      g <- cs4 %>% 
+        ggplot(data = ., aes(x = date)) +
+        labs(x = "Date", y = "Traffic Value",
+             title = str_c(input$loc.type, ": ", input$loc.type2),
+             color = "Parameter") +
+        scale_color_manual(values = colors)
+      g1 <- geom_line(aes(y = mean_current_speed, color = "Current Speed"))
+      g2 <- geom_line(aes(y = mean_free_flow_speed, color = "Free Flow Speed"))
+      g3 <- geom_line(aes(y = mean_current_travel_time, color = "Current Travel Time"))
+      g4 <- geom_line(aes(y = mean_free_flow_travel_time, color = "Free Flow Travel Time"))
+      
+      if(input$cspeed == TRUE){
+        if(input$ffspeed == TRUE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              p2 <- g + g1 + g2 + g3 + g4
+            }else if(input$fftravel == FALSE){
+              p2 <- g + g1 + g2 + g3
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              p2 <- g + g1 + g2 + g4
+            }else if(input$fftravel == FALSE){
+              p2 <- g + g1 + g2
+            }
+          }
+        }else if(input$ffspeed == FALSE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              p2 <- g + g1 + g3 + g4
+            }else if(input$fftravel == FALSE){
+              p2 <- g + g1 + g3
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              p2 <- g + g1 + g4
+            }else if(input$fftravel == FALSE){
+              p2 <- g + g1
+            }
+          }
+        }
+      }else if(input$cspeed == FALSE){
+        if(input$ffspeed == TRUE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              p2 <- g + g2 + g3 + g4
+            }else if(input$fftravel == FALSE){
+              p2 <- g + g2 + g3
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              p2 <- g + g2 + g4
+            }else if(input$fftravel == FALSE){
+              p2 <- g + g2
+            }
+          }
+        }else if(input$ffspeed == FALSE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              p2 <- g + g3 + g4
+            }else if(input$fftravel == FALSE){
+              p2 <- g + g3
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              p2 <- g + g4 
+            }else if(input$fftravel == FALSE){
+              p2 <- g
+            }
+          }
+        }
       }
-    }else if(input$loc.type == "Advisory Neighborhood Commission"){
-      if(input$loc.type2 == "2A"){
-        cs2 <- traffic.flow %>% filter(anc == "2A")
-      }else if(input$loc.type2 == "8D"){
-        cs2 <- traffic.flow %>% filter(anc == "8D")
-      }else if(input$loc.type2 == "8E"){
-        cs2 <- traffic.flow %>% filter(anc == "8E")
-      }else if(input$loc.type2 == "8C"){
-        cs2 <- traffic.flow %>% filter(anc == "8C")
-      }else if(input$loc.type2 == "7F"){
-        cs2 <- traffic.flow %>% filter(anc == "7F")
-      }else if(input$loc.type2 == "7C"){
-        cs2 <- traffic.flow %>% filter(anc == "7C")
-      }else if(input$loc.type2 == "7E"){
-        cs2 <- traffic.flow %>% filter(anc == "7E")
-      }else if(input$loc.type2 == "5C"){
-        cs2 <- traffic.flow %>% filter(anc == "5C")
-      }else if(input$loc.type2 == "6D"){
-        cs2 <- traffic.flow %>% filter(anc == "6D")
-      }else if(input$loc.type2 == "5D"){
-        cs2 <- traffic.flow %>% filter(anc == "5D")
-      }else if(input$loc.type2 == "6B"){
-        cs2 <- traffic.flow %>% filter(anc == "6B")
-      }else if(input$loc.type2 == "5E"){
-        cs2 <- traffic.flow %>% filter(anc == "5E")
-      }else if(input$loc.type2 == "2F"){
-        cs2 <- traffic.flow %>% filter(anc == "2F")
-      }else if(input$loc.type2 == "2B"){
-        cs2 <- traffic.flow %>% filter(anc == "2B")
-      }else if(input$loc.type2 == "1B"){
-        cs2 <- traffic.flow %>% filter(anc == "1B")
-      }else if(input$loc.type2 == "6E"){
-        cs2 <- traffic.flow %>% filter(anc == "6E")
-      }else if(input$loc.type2 == "5B"){
-        cs2 <- traffic.flow %>% filter(anc == "5B")
-      }else if(input$loc.type2 == "1A"){
-        cs2 <- traffic.flow %>% filter(anc == "1A")
-      }else if(input$loc.type2 == "3C"){
-        cs2 <- traffic.flow %>% filter(anc == "3C")
-      }else if(input$loc.type2 == "6A"){
-        cs2 <- traffic.flow %>% filter(anc == "6A")
-      }else if(input$loc.type2 == "3D"){
-        cs2 <- traffic.flow %>% filter(anc == "3D")
-      }else if(input$loc.type2 == "4C"){
-        cs2 <- traffic.flow %>% filter(anc == "4C")
-      }else if(input$loc.type2 == "3E"){
-        cs2 <- traffic.flow %>% filter(anc == "3E")
-      }else if(input$loc.type2 == "2E"){
-        cs2 <- traffic.flow %>% filter(anc == "2E")
-      }else if(input$loc.type2 == "6C"){
-        cs2 <- traffic.flow %>% filter(anc == "6C")
-      }else if(input$loc.type2 == "8A"){
-        cs2 <- traffic.flow %>% filter(anc == "8A")
-      }else if(input$loc.type2 == "4D"){
-        cs2 <- traffic.flow %>% filter(anc == "4D")
-      }else if(input$loc.type2 == "4B"){
-        cs2 <- traffic.flow %>% filter(anc == "4B")
-      }else if(input$loc.type2 == "4A"){
-        cs2 <- traffic.flow %>% filter(anc == "4A")
-      }else if(input$loc.type2 == "3G"){
-        cs2 <- traffic.flow %>% filter(anc == "3G")
-      }else if(input$loc.type2 == "3F"){
-        cs2 <- traffic.flow %>% filter(anc == "3F")
-      }else if(input$loc.type2 == "5A"){
-        cs2 <- traffic.flow %>% filter(anc == "5A")
-      }
-    }else if(input$loc.type == "Census Tract"){
-      if(input$loc.type2 == "006202"){
-        cs2 <- traffic.flow %>% filter(census_tract == "006202")
-      }else if(input$loc.type2 == "009811"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009811")
-      }else if(input$loc.type2 == "009807"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009807")
-      }else if(input$loc.type2 == "009700"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009700")
-      }else if(input$loc.type2 == "009804"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009804")
-      }else if(input$loc.type2 == "007304"){
-        cs2 <- traffic.flow %>% filter(census_tract == "007304")
-      }else if(input$loc.type2 == "007301"){
-        cs2 <- traffic.flow %>% filter(census_tract == "007301")
-      }else if(input$loc.type2 == "010400"){
-        cs2 <- traffic.flow %>% filter(census_tract == "010400")
-      }else if(input$loc.type2 == "010800"){
-        cs2 <- traffic.flow %>% filter(census_tract == "010800")
-      }else if(input$loc.type2 == "005600"){
-        cs2 <- traffic.flow %>% filter(census_tract == "005600")
-      }else if(input$loc.type2 == "009603"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009603")
-      }else if(input$loc.type2 == "007809"){
-        cs2 <- traffic.flow %>% filter(census_tract == "007809")
-      }else if(input$loc.type2 == "009902"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009902")
-      }else if(input$loc.type2 == "009000"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009000")
-      }else if(input$loc.type2 == "009905"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009905")
-      }else if(input$loc.type2 == "007707"){
-        cs2 <- traffic.flow %>% filter(census_tract == "007707")
-      }else if(input$loc.type2 == "007806"){
-        cs2 <- traffic.flow %>% filter(census_tract == "007806")
-      }else if(input$loc.type2 == "007804"){
-        cs2 <- traffic.flow %>% filter(census_tract == "007804")
-      }else if(input$loc.type2 == "007807"){
-        cs2 <- traffic.flow %>% filter(census_tract == "007807")
-      }else if(input$loc.type2 == "007708"){
-        cs2 <- traffic.flow %>% filter(census_tract == "007708")
-      }else if(input$loc.type2 == "010500"){
-        cs2 <- traffic.flow %>% filter(census_tract == "010500")
-      }else if(input$loc.type2 == "006400"){
-        cs2 <- traffic.flow %>% filter(census_tract == "006400")
-      }else if(input$loc.type2 == "008803"){
-        cs2 <- traffic.flow %>% filter(census_tract == "008803")
-      }else if(input$loc.type2 == "010200"){
-        cs2 <- traffic.flow %>% filter(census_tract == "010200")
-      }else if(input$loc.type2 == "006500"){
-        cs2 <- traffic.flow %>% filter(census_tract == "006500")
-      }else if(input$loc.type2 == "008702"){
-        cs2 <- traffic.flow %>% filter(census_tract == "008702")
-      }else if(input$loc.type2 == "003301"){
-        cs2 <- traffic.flow %>% filter(census_tract == "003301")
-      }else if(input$loc.type2 == "004902"){
-        cs2 <- traffic.flow %>% filter(census_tract == "004902")
-      }else if(input$loc.type2 == "004201"){
-        cs2 <- traffic.flow %>% filter(census_tract == "004201")
-      }else if(input$loc.type2 == "003400"){
-        cs2 <- traffic.flow %>% filter(census_tract == "003400")
-      }else if(input$loc.type2 == "004400"){
-        cs2 <- traffic.flow %>% filter(census_tract == "004400")
-      }else if(input$loc.type2 == "011100"){
-        cs2 <- traffic.flow %>% filter(census_tract == "011100")
-      }else if(input$loc.type2 == "004702"){
-        cs2 <- traffic.flow %>% filter(census_tract == "004702")
-      }else if(input$loc.type2 == "009302"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009302")
-      }else if(input$loc.type2 == "008701"){
-        cs2 <- traffic.flow %>% filter(census_tract == "008701")
-      }else if(input$loc.type2 == "010100"){
-        cs2 <- traffic.flow %>% filter(census_tract == "010100")
-      }else if(input$loc.type2 == "002900"){
-        cs2 <- traffic.flow %>% filter(census_tract == "002900")
-      }else if(input$loc.type2 == "004600"){
-        cs2 <- traffic.flow %>% filter(census_tract == "004600")
-      }else if(input$loc.type2 == "009400"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009400")
-      }else if(input$loc.type2 == "001002"){
-        cs2 <- traffic.flow %>% filter(census_tract == "001002")
-      }else if(input$loc.type2 == "010600"){
-        cs2 <- traffic.flow %>% filter(census_tract == "010600")
-      }else if(input$loc.type2 == "000901"){
-        cs2 <- traffic.flow %>% filter(census_tract == "000901")
-      }else if(input$loc.type2 == "000502"){
-        cs2 <- traffic.flow %>% filter(census_tract == "000502")
-      }else if(input$loc.type2 == "009102"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009102")
-      }else if(input$loc.type2 == "009201"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009201")
-      }else if(input$loc.type2 == "002400"){
-        cs2 <- traffic.flow %>% filter(census_tract == "002400")
-      }else if(input$loc.type2 == "001001"){
-        cs2 <- traffic.flow %>% filter(census_tract == "001001")
-      }else if(input$loc.type2 == "000600"){
-        cs2 <- traffic.flow %>% filter(census_tract == "000600")
-      }else if(input$loc.type2 == "002501"){
-        cs2 <- traffic.flow %>% filter(census_tract == "002501")
-      }else if(input$loc.type2 == "009503"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009503")
-      }else if(input$loc.type2 == "000300"){
-        cs2 <- traffic.flow %>% filter(census_tract == "000300")
-      }else if(input$loc.type2 == "000400"){
-        cs2 <- traffic.flow %>% filter(census_tract == "000400")
-      }else if(input$loc.type2 == "006700"){
-        cs2 <- traffic.flow %>% filter(census_tract == "006700")
-      }else if(input$loc.type2 == "007200"){
-        cs2 <- traffic.flow %>% filter(census_tract == "007200")
-      }else if(input$loc.type2 == "008302"){
-        cs2 <- traffic.flow %>% filter(census_tract == "008302")
-      }else if(input$loc.type2 == "006600"){
-        cs2 <- traffic.flow %>% filter(census_tract == "006600")
-      }else if(input$loc.type2 == "008904"){
-        cs2 <- traffic.flow %>% filter(census_tract == "008904")
-      }else if(input$loc.type2 == "008100"){
-        cs2 <- traffic.flow %>% filter(census_tract == "008100")
-      }else if(input$loc.type2 == "006802"){
-        cs2 <- traffic.flow %>% filter(census_tract == "006802")
-      }else if(input$loc.type2 == "007601"){
-        cs2 <- traffic.flow %>% filter(census_tract == "007601")
-      }else if(input$loc.type2 == "007100"){
-        cs2 <- traffic.flow %>% filter(census_tract == "007100")
-      }else if(input$loc.type2 == "008200"){
-        cs2 <- traffic.flow %>% filter(census_tract == "008200")
-      }else if(input$loc.type2 == "008001"){
-        cs2 <- traffic.flow %>% filter(census_tract == "008001")
-      }else if(input$loc.type2 == "008002"){
-        cs2 <- traffic.flow %>% filter(census_tract == "008002")
-      }else if(input$loc.type2 == "002101"){
-        cs2 <- traffic.flow %>% filter(census_tract == "002101")
-      }else if(input$loc.type2 == "001901"){
-        cs2 <- traffic.flow %>% filter(census_tract == "001901")
-      }else if(input$loc.type2 == "002600"){
-        cs2 <- traffic.flow %>% filter(census_tract == "002600")
-      }else if(input$loc.type2 == "001401"){
-        cs2 <- traffic.flow %>% filter(census_tract == "001401")
-      }else if(input$loc.type2 == "001803"){
-        cs2 <- traffic.flow %>% filter(census_tract == "001803")
-      }else if(input$loc.type2 == "001301"){
-        cs2 <- traffic.flow %>% filter(census_tract == "001301")
-      }else if(input$loc.type2 == "002102"){
-        cs2 <- traffic.flow %>% filter(census_tract == "002102")
-      }else if(input$loc.type2 == "001804"){
-        cs2 <- traffic.flow %>% filter(census_tract == "001804")
-      }else if(input$loc.type2 == "002001"){
-        cs2 <- traffic.flow %>% filter(census_tract == "002001")
-      }else if(input$loc.type2 == "001902"){
-        cs2 <- traffic.flow %>% filter(census_tract == "001902")
-      }else if(input$loc.type2 == "001100"){
-        cs2 <- traffic.flow %>% filter(census_tract == "001100")
-      }else if(input$loc.type2 == "001600"){
-        cs2 <- traffic.flow %>% filter(census_tract == "001600")
-      }else if(input$loc.type2 == "009509"){
-        cs2 <- traffic.flow %>% filter(census_tract == "009509")
-      }else if(input$loc.type2 == "001500"){
-        cs2 <- traffic.flow %>% filter(census_tract == "001500")
-      }
-    }else if(input$loc.type == "Single Member District"){
-      if(input$loc.type2 == "2A01"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "2A01")
-      }else if(input$loc.type2 == "8D03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "8D03")
-      }else if(input$loc.type2 == "8D01"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "8D01")
-      }else if(input$loc.type2 == "8D06"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "8D06")
-      }else if(input$loc.type2 == "8E05"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "8E05")
-      }else if(input$loc.type2 == "8C07"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "8C07")
-      }else if(input$loc.type2 == "8E04"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "8E04")
-      }else if(input$loc.type2 == "8C05"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "8C05")
-      }else if(input$loc.type2 == "8C03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "8C03")
-      }else if(input$loc.type2 == "2A07"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "2A07")
-      }else if(input$loc.type2 == "2A03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "2A03")
-      }else if(input$loc.type2 == "7F01"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "7F01")
-      }else if(input$loc.type2 == "7C04"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "7C04")
-      }else if(input$loc.type2 == "7E02"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "7E02")
-      }else if(input$loc.type2 == "5C03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5C03")
-      }else if(input$loc.type2 == "7E06"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "7E06")
-      }else if(input$loc.type2 == "7E01"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "7E01")
-      }else if(input$loc.type2 == "7C07"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "7C07")
-      }else if(input$loc.type2 == "7C03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "7C03")
-      }else if(input$loc.type2 == "7C06"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "7C06")
-      }else if(input$loc.type2 == "7F06"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "7F06")
-      }else if(input$loc.type2 == "6D03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6D03")
-      }else if(input$loc.type2 == "6D06"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6D06")
-      }else if(input$loc.type2 == "5D01"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5D01")
-      }else if(input$loc.type2 == "6D05"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6D05")
-      }else if(input$loc.type2 == "6B01"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6B01")
-      }else if(input$loc.type2 == "5E03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5E03")
-      }else if(input$loc.type2 == "5E08"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5E08")
-      }else if(input$loc.type2 == "2F06"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "2F06")
-      }else if(input$loc.type2 == "2B09"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "2B09")
-      }else if(input$loc.type2 == "1B01"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "1B01")
-      }else if(input$loc.type2 == "1B02"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "1B02")
-      }else if(input$loc.type2 == "5C02"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5C02")
-      }else if(input$loc.type2 == "6E07"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6E07")
-      }else if(input$loc.type2 == "5B03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5B03")
-      }else if(input$loc.type2 == "5E04"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5E04")
-      }else if(input$loc.type2 == "2F08"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "2F08")
-      }else if(input$loc.type2 == "1A04"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "1A04")
-      }else if(input$loc.type2 == "5E05"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5E05")
-      }else if(input$loc.type2 == "5C01"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5C01")
-      }else if(input$loc.type2 == "3C06"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "3C06")
-      }else if(input$loc.type2 == "6A01"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6A01")
-      }else if(input$loc.type2 == "2B05"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "2B05")
-      }else if(input$loc.type2 == "3D02"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "3D02")
-      }else if(input$loc.type2 == "3C03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "3C03")
-      }else if(input$loc.type2 == "5B01"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5B01")
-      }else if(input$loc.type2 == "5C06"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5C06")
-      }else if(input$loc.type2 == "5E01"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5E01")
-      }else if(input$loc.type2 == "4C08"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "4C08")
-      }else if(input$loc.type2 == "3E05"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "3E05")
-      }else if(input$loc.type2 == "3C09"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "3C09")
-      }else if(input$loc.type2 == "4C03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "4C03")
-      }else if(input$loc.type2 == "2E01"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "2E01")
-      }else if(input$loc.type2 == "3C08"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "3C08")
-      }else if(input$loc.type2 == "6B05"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6B05")
-      }else if(input$loc.type2 == "5C04"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5C04")
-      }else if(input$loc.type2 == "6D07"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6D07")
-      }else if(input$loc.type2 == "6C03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6C03")
-      }else if(input$loc.type2 == "6B02"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6B02")
-      }else if(input$loc.type2 == "5D05"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5D05")
-      }else if(input$loc.type2 == "6A03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6A03")
-      }else if(input$loc.type2 == "6B09"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6B09")
-      }else if(input$loc.type2 == "8A03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "8A03")
-      }else if(input$loc.type2 == "6B07"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6B07")
-      }else if(input$loc.type2 == "6B06"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6B06")
-      }else if(input$loc.type2 == "6A02"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6A02")
-      }else if(input$loc.type2 == "6A08"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "6A08")
-      }else if(input$loc.type2 == "4D03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "4D03")
-      }else if(input$loc.type2 == "4B04"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "4B04")
-      }else if(input$loc.type2 == "4A08"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "4A08")
-      }else if(input$loc.type2 == "3D03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "3D03")
-      }else if(input$loc.type2 == "3G05"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "3G05")
-      }else if(input$loc.type2 == "4A07"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "4A07")
-      }else if(input$loc.type2 == "3E02"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "3E02")
-      }else if(input$loc.type2 == "3F03"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "3F03")
-      }else if(input$loc.type2 == "4B06"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "4B06")
-      }else if(input$loc.type2 == "4A04"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "4A04")
-      }else if(input$loc.type2 == "4A06"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "4A06")
-      }else if(input$loc.type2 == "3E04"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "3E04")
-      }else if(input$loc.type2 == "4A02"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "4A02")
-      }else if(input$loc.type2 == "5A08"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "5A08")
-      }else if(input$loc.type2 == "3G04"){
-        cs2 <- traffic.flow %>% filter(single_member_district == "3G04")
-      }
-    }else if(input$loc.type == "Voter Precinct"){
-      if(input$loc.type2 == "129"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "129")
-      }else if(input$loc.type2 == "125"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "125")
-      }else if(input$loc.type2 == "126"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "126")
-      }else if(input$loc.type2 == "121"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "121")
-      }else if(input$loc.type2 == "122"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "122")
-      }else if(input$loc.type2 == "120"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "120")
-      }else if(input$loc.type2 == "123"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "123")
-      }else if(input$loc.type2 == "2"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "2")
-      }else if(input$loc.type2 == "3"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "3")
-      }else if(input$loc.type2 == "102"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "102")
-      }else if(input$loc.type2 == "94"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "94")
-      }else if(input$loc.type2 == "110"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "110")
-      }else if(input$loc.type2 == "139"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "139")
-      }else if(input$loc.type2 == "105"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "105")
-      }else if(input$loc.type2 == "106"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "106")
-      }else if(input$loc.type2 == "93"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "93")
-      }else if(input$loc.type2 == "97"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "97")
-      }else if(input$loc.type2 == "95"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "95")
-      }else if(input$loc.type2 == "132"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "132")
-      }else if(input$loc.type2 == "128"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "128")
-      }else if(input$loc.type2 == "127"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "127")
-      }else if(input$loc.type2 == "76"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "76")
-      }else if(input$loc.type2 == "130"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "130")
-      }else if(input$loc.type2 == "75"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "75")
-      }else if(input$loc.type2 == "135"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "135")
-      }else if(input$loc.type2 == "141"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "141")
-      }else if(input$loc.type2 == "20"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "20")
-      }else if(input$loc.type2 == "22"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "22")
-      }else if(input$loc.type2 == "72"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "72")
-      }else if(input$loc.type2 == "1"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "1")
-      }else if(input$loc.type2 == "73"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "73")
-      }else if(input$loc.type2 == "42"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "42")
-      }else if(input$loc.type2 == "19"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "19")
-      }else if(input$loc.type2 == "69"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "69")
-      }else if(input$loc.type2 == "29"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "29")
-      }else if(input$loc.type2 == "82"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "82")
-      }else if(input$loc.type2 == "17"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "17")
-      }else if(input$loc.type2 == "9"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "9")
-      }else if(input$loc.type2 == "26"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "26")
-      }else if(input$loc.type2 == "74"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "74")
-      }else if(input$loc.type2 == "45"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "45")
-      }else if(input$loc.type2 == "30"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "30")
-      }else if(input$loc.type2 == "27"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "27")
-      }else if(input$loc.type2 == "48"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "48")
-      }else if(input$loc.type2 == "67"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "67")
-      }else if(input$loc.type2 == "6"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "6")
-      }else if(input$loc.type2 == "12"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "12")
-      }else if(input$loc.type2 == "88"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "88")
-      }else if(input$loc.type2 == "131"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "131")
-      }else if(input$loc.type2 == "85"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "85")
-      }else if(input$loc.type2 == "89"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "89")
-      }else if(input$loc.type2 == "79"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "79")
-      }else if(input$loc.type2 == "91"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "91")
-      }else if(input$loc.type2 == "133"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "133")
-      }else if(input$loc.type2 == "81"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "81")
-      }else if(input$loc.type2 == "71"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "71")
-      }else if(input$loc.type2 == "86"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "86")
-      }else if(input$loc.type2 == "56"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "56")
-      }else if(input$loc.type2 == "59"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "59")
-      }else if(input$loc.type2 == "50"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "50")
-      }else if(input$loc.type2 == "61"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "61")
-      }else if(input$loc.type2 == "31"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "31")
-      }else if(input$loc.type2 == "138"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "138")
-      }else if(input$loc.type2 == "57"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "57")
-      }else if(input$loc.type2 == "60"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "60")
-      }else if(input$loc.type2 == "53"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "53")
-      }else if(input$loc.type2 == "32"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "32")
-      }else if(input$loc.type2 == "62"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "62")
-      }else if(input$loc.type2 == "66"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "66")
-      }else if(input$loc.type2 == "51"){
-        cs2 <- traffic.flow %>% filter(voter_precinct == "51")
-      }
+      
+      grid.arrange(p1, p2, ncol = 2)
     }
-    
-    cs3 <- cs2 %>% 
-      group_by(date) %>% 
-      summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
-                mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
-                mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
-    
-    cs4 <- cs2 %>% 
-      group_by(date) %>% 
-      summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
-                mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
-                mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
-    
-    colors <- c("Ozone" = "blue", "SO2" = "red", "PM 2.5" = "Orange",
-                "NO2" = "green")
-    
-    g <- cs3 %>% 
-      ggplot(data = ., aes(x = date)) +
-      labs(x = "Date", y = "Air Quality Index", 
-           title = str_c(input$loc.type, ": ", input$loc.type2),
-           color = "Parameter") +
-      scale_color_manual(values = colors)
-    g1 <- geom_line(aes(y = mean_ozone_loc_aqi, color = "Ozone"))
-    g2 <- geom_line(aes(y = mean_so2_loc_aqi, color = "SO2"))
-    g3 <- geom_line(aes(y = mean_pm2.5_loc_aqi, color = "PM 2.5"))
-    g4 <- geom_line(aes(y = mean_no2_loc_aqi, color = "NO2"))
-    
-    if(input$ozone1 == TRUE){
-      if(input$so2.1 == TRUE){
-        if(input$pm2.5.1 == TRUE){
-          if(input$no2.1 == TRUE){
-            p1 <- g + g1 + g2 + g3 + g4
-          }else if(input$no2.1 == FALSE){
-            p1 <- g + g1 + g2 + g3
-          }
-        }else if(input$pm2.5.1 == FALSE){
-          if(input$no2.1 == TRUE){
-            p1 <- g + g1 + g2 + g4
-          }else if(input$no2.1 == FALSE){
-            p1 <- g + g1 + g2
-          }
-        }
-      }else if(input$so2.1 == FALSE){
-        if(input$pm2.5.1 == TRUE){
-          if(input$no2.1 == TRUE){
-            p1 <- g + g1 + g3 + g4
-          }else if(input$no2.1 == FALSE){
-            p1 <- g + g1 + g3
-          }
-        }else if(input$pm2.5.1 == FALSE){
-          if(input$no2.1 == TRUE){
-            p1 <- g + g1 + g4
-          }else if(input$no2.1 == FALSE){
-            p1 <- g + g1
-          }
-        }
-      }
-    }else if(input$ozone1 == FALSE){
-      if(input$so2.1 == TRUE){
-        if(input$pm2.5.1 == TRUE){
-          if(input$no2.1 == TRUE){
-            p1 <- g + g2 + g3 + g4
-          }else if(input$no2.1 == FALSE){
-            p1 <- g + g2 + g3
-          }
-        }else if(input$pm2.5.1 == FALSE){
-          if(input$no2.1 == TRUE){
-            p1 <- g + g2 + g4
-          }else if(input$no2.1 == FALSE){
-            p1 <- g + g2
-          }
-        }
-      }else if(input$so2.1 == FALSE){
-        if(input$pm2.5.1 == TRUE){
-          if(input$no2.1 == TRUE){
-            p1 <- g + g3 + g4
-          }else if(input$no2.1 == FALSE){
-            p1 <- g + g3
-          }
-        }else if(input$pm2.5.1 == FALSE){
-          if(input$no2.1 == TRUE){
-            p1 <- g + g4 
-          }else if(input$no2.1 == FALSE){
-            p1 <- g
-          }
-        }
-      }
-    }
-    
-    colors <- c("Current Speed" = "blue", "Free Flow Speed" = "red", 
-                "Current Travel Time" = "Orange",
-                "Free Flow Travel Time" = "green")
-    
-    g <- cs4 %>% 
-      ggplot(data = ., aes(x = date)) +
-      labs(x = "Date", y = "Traffic Value",
-           title = str_c(input$loc.type, ": ", input$loc.type2),
-           color = "Parameter") +
-      scale_color_manual(values = colors)
-    g1 <- geom_line(aes(y = mean_current_speed, color = "Current Speed"))
-    g2 <- geom_line(aes(y = mean_free_flow_speed, color = "Free Flow Speed"))
-    g3 <- geom_line(aes(y = mean_current_travel_time, color = "Current Travel Time"))
-    g4 <- geom_line(aes(y = mean_free_flow_travel_time, color = "Free Flow Travel Time"))
-    
-    if(input$cspeed == TRUE){
-      if(input$ffspeed == TRUE){
-        if(input$ctravel == TRUE){
-          if(input$fftravel == TRUE){
-            p2 <- g + g1 + g2 + g3 + g4
-          }else if(input$fftravel == FALSE){
-            p2 <- g + g1 + g2 + g3
-          }
-        }else if(input$ctravel == FALSE){
-          if(input$fftravel == TRUE){
-            p2 <- g + g1 + g2 + g4
-          }else if(input$fftravel == FALSE){
-            p2 <- g + g1 + g2
-          }
-        }
-      }else if(input$ffspeed == FALSE){
-        if(input$ctravel == TRUE){
-          if(input$fftravel == TRUE){
-            p2 <- g + g1 + g3 + g4
-          }else if(input$fftravel == FALSE){
-            p2 <- g + g1 + g3
-          }
-        }else if(input$ctravel == FALSE){
-          if(input$fftravel == TRUE){
-            p2 <- g + g1 + g4
-          }else if(input$fftravel == FALSE){
-            p2 <- g + g1
-          }
-        }
-      }
-    }else if(input$cspeed == FALSE){
-      if(input$ffspeed == TRUE){
-        if(input$ctravel == TRUE){
-          if(input$fftravel == TRUE){
-            p2 <- g + g2 + g3 + g4
-          }else if(input$fftravel == FALSE){
-            p2 <- g + g2 + g3
-          }
-        }else if(input$ctravel == FALSE){
-          if(input$fftravel == TRUE){
-            p2 <- g + g2 + g4
-          }else if(input$fftravel == FALSE){
-            p2 <- g + g2
-          }
-        }
-      }else if(input$ffspeed == FALSE){
-        if(input$ctravel == TRUE){
-          if(input$fftravel == TRUE){
-            p2 <- g + g3 + g4
-          }else if(input$fftravel == FALSE){
-            p2 <- g + g3
-          }
-        }else if(input$ctravel == FALSE){
-          if(input$fftravel == TRUE){
-            p2 <- g + g4 
-          }else if(input$fftravel == FALSE){
-            p2 <- g
-          }
-        }
-      }
-    }
-    
-    grid.arrange(p1, p2, ncol = 2)
   })
   output$loc.type.graph1 <- renderPlot({
-    if(input$loc.type == "Quadrant"){
-      cs3 <- traffic.flow %>% 
-        group_by(date, quadrant) %>% 
-        summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
-                  mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
-                  mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                  mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "Ozone AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_ozone_loc_aqi, color = quadrant))
-      
-      p2 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "SO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_so2_loc_aqi, color = quadrant)) 
-      
-      p3 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "PM 2.5 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_pm2.5_loc_aqi, color = quadrant)) 
-      
-      p4 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "NO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_no2_loc_aqi, color = quadrant)) 
-    }else if(input$loc.type == "Ward"){
-      cs3 <- traffic.flow %>% 
-        group_by(date, ward) %>% 
-        summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
-                  mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
-                  mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                  mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "Ozone AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_ozone_loc_aqi, color = ward))
-      
-      p2 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "SO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_so2_loc_aqi, color = ward)) 
-      
-      p3 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "PM 2.5 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_pm2.5_loc_aqi, color = ward)) 
-      
-      p4 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "NO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_no2_loc_aqi, color = ward)) 
-    }else if(input$loc.type == "Zip Code"){
-      cs3 <- traffic.flow %>% 
-        group_by(date, zip_code) %>% 
-        summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
-                  mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
-                  mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                  mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "Ozone AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_ozone_loc_aqi, color = zip_code))
-      
-      p2 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "SO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_so2_loc_aqi, color = zip_code)) 
-      
-      p3 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "PM 2.5 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_pm2.5_loc_aqi, color = zip_code)) 
-      
-      p4 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "NO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_no2_loc_aqi, color = zip_code)) 
-    }else if(input$loc.type == "Advisory Neighborhood Commission"){
-      cs3 <- traffic.flow %>% 
-        group_by(date, anc) %>% 
-        summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
-                  mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
-                  mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                  mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "Ozone AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_ozone_loc_aqi, color = anc))
-      
-      p2 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "SO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_so2_loc_aqi, color = anc)) 
-      
-      p3 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "PM 2.5 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_pm2.5_loc_aqi, color = anc)) 
-      
-      p4 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "NO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_no2_loc_aqi, color = anc)) 
-    }else if(input$loc.type == "Census Tract"){
-      cs3 <- traffic.flow %>% 
-        group_by(date, census_tract) %>% 
-        summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
-                  mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
-                  mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                  mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "Ozone AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_ozone_loc_aqi, color = census_tract))
-      
-      p2 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "SO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_so2_loc_aqi, color = census_tract)) 
-      
-      p3 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "PM 2.5 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_pm2.5_loc_aqi, color = census_tract)) 
-      
-      p4 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "NO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_no2_loc_aqi, color = census_tract)) 
-    }else if(input$loc.type == "Single Member District"){
-      cs3 <- traffic.flow %>% 
-        group_by(date, single_member_district) %>% 
-        summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
-                  mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
-                  mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                  mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "Ozone AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_ozone_loc_aqi, color = single_member_district))
-      
-      p2 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "SO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_so2_loc_aqi, color = single_member_district)) 
-      
-      p3 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "PM 2.5 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_pm2.5_loc_aqi, color = single_member_district)) 
-      
-      p4 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "NO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_no2_loc_aqi, color = single_member_district)) 
-    }else if(input$loc.type == "Voter Precinct"){
-      cs3 <- traffic.flow %>% 
-        group_by(date, voter_precinct) %>% 
-        summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
-                  mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
-                  mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                  mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "Ozone AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_ozone_loc_aqi, color = voter_precinct))
-      
-      p2 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "SO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_so2_loc_aqi, color = voter_precinct)) 
-      
-      p3 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "PM 2.5 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_pm2.5_loc_aqi, color = voter_precinct)) 
-      
-      p4 <- ggplot(data = cs3, aes(x = date)) +
-        labs(x = "Date", y = "NO2 AQI",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_no2_loc_aqi, color = voter_precinct)) 
-    }
-    
-    if(input$ozone1 == TRUE){
-      if(input$so2.1 == TRUE){
-        if(input$pm2.5.1 == TRUE){
-          if(input$no2.1 == TRUE){
-            grid.arrange(p1, p2, p3, p4, ncol = 2)
-          }else if(input$no2.1 == FALSE){
-            grid.arrange(p1, p2, p3, ncol = 2)
-          }
-        }else if(input$pm2.5.1 == FALSE){
-          if(input$no2.1 == TRUE){
-            grid.arrange(p1, p2, p4, ncol = 2)
-          }else if(input$no2.1 == FALSE){
-            grid.arrange(p1, p2, ncol = 2)
-          }
-        }
-      }else if(input$so2.1 == FALSE){
-        if(input$pm2.5.1 == TRUE){
-          if(input$no2.1 == TRUE){
-            grid.arrange(p1, p3, p4, ncol = 2)
-          }else if(input$no2.1 == FALSE){
-            grid.arrange(p1, p3, ncol = 2)
-          }
-        }else if(input$pm2.5.1 == FALSE){
-          if(input$no2.1 == TRUE){
-            grid.arrange(p1, p4, ncol = 2)
-          }else if(input$no2.1 == FALSE){
-            grid.arrange(p1, ncol = 2)
-          }
-        }
+    if(input$historical == TRUE){
+      if(input$loc.type == "Quadrant"){
+        cs3 <- traffic.flow %>% 
+          group_by(date, quadrant) %>% 
+          summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
+                    mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
+                    mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "Ozone AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_ozone_loc_aqi, color = quadrant))
+        
+        p2 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "SO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_so2_loc_aqi, color = quadrant)) 
+        
+        p3 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "PM 2.5 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = quadrant)) 
+        
+        p4 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "NO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_no2_loc_aqi, color = quadrant)) 
+      }else if(input$loc.type == "Ward"){
+        cs3 <- traffic.flow %>% 
+          group_by(date, ward) %>% 
+          summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
+                    mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
+                    mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "Ozone AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_ozone_loc_aqi, color = ward))
+        
+        p2 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "SO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_so2_loc_aqi, color = ward)) 
+        
+        p3 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "PM 2.5 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = ward)) 
+        
+        p4 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "NO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_no2_loc_aqi, color = ward)) 
+      }else if(input$loc.type == "Zip Code"){
+        cs3 <- traffic.flow %>% 
+          group_by(date, zip_code) %>% 
+          summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
+                    mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
+                    mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "Ozone AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_ozone_loc_aqi, color = zip_code))
+        
+        p2 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "SO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_so2_loc_aqi, color = zip_code)) 
+        
+        p3 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "PM 2.5 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = zip_code)) 
+        
+        p4 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "NO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_no2_loc_aqi, color = zip_code)) 
+      }else if(input$loc.type == "Advisory Neighborhood Commission"){
+        cs3 <- traffic.flow %>% 
+          group_by(date, anc) %>% 
+          summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
+                    mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
+                    mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "Ozone AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_ozone_loc_aqi, color = anc))
+        
+        p2 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "SO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_so2_loc_aqi, color = anc)) 
+        
+        p3 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "PM 2.5 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = anc)) 
+        
+        p4 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "NO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_no2_loc_aqi, color = anc)) 
+      }else if(input$loc.type == "Census Tract"){
+        cs3 <- traffic.flow %>% 
+          group_by(date, census_tract) %>% 
+          summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
+                    mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
+                    mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "Ozone AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_ozone_loc_aqi, color = census_tract))
+        
+        p2 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "SO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_so2_loc_aqi, color = census_tract)) 
+        
+        p3 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "PM 2.5 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = census_tract)) 
+        
+        p4 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "NO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_no2_loc_aqi, color = census_tract)) 
+      }else if(input$loc.type == "Single Member District"){
+        cs3 <- traffic.flow %>% 
+          group_by(date, single_member_district) %>% 
+          summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
+                    mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
+                    mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "Ozone AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_ozone_loc_aqi, color = single_member_district))
+        
+        p2 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "SO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_so2_loc_aqi, color = single_member_district)) 
+        
+        p3 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "PM 2.5 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = single_member_district)) 
+        
+        p4 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "NO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_no2_loc_aqi, color = single_member_district)) 
+      }else if(input$loc.type == "Voter Precinct"){
+        cs3 <- traffic.flow %>% 
+          group_by(date, voter_precinct) %>% 
+          summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
+                    mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
+                    mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "Ozone AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_ozone_loc_aqi, color = voter_precinct))
+        
+        p2 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "SO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_so2_loc_aqi, color = voter_precinct)) 
+        
+        p3 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "PM 2.5 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = voter_precinct)) 
+        
+        p4 <- ggplot(data = cs3, aes(x = date)) +
+          labs(x = "Date", y = "NO2 AQI",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_no2_loc_aqi, color = voter_precinct)) 
       }
-    }else if(input$ozone1 == FALSE){
-      if(input$so2.1 == TRUE){
-        if(input$pm2.5.1 == TRUE){
-          if(input$no2.1 == TRUE){
-            grid.arrange(p2, p3, p4, ncol = 2)
-          }else if(input$no2.1 == FALSE){
-            grid.arrange(p2, p3, ncol = 2)
+      
+      if(input$ozone1 == TRUE){
+        if(input$so2.1 == TRUE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              grid.arrange(p1, p2, p3, p4, ncol = 2)
+            }else if(input$no2.1 == FALSE){
+              grid.arrange(p1, p2, p3, ncol = 2)
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              grid.arrange(p1, p2, p4, ncol = 2)
+            }else if(input$no2.1 == FALSE){
+              grid.arrange(p1, p2, ncol = 2)
+            }
           }
-        }else if(input$pm2.5.1 == FALSE){
-          if(input$no2.1 == TRUE){
-            grid.arrange(p2, p4, ncol = 2)
-          }else if(input$no2.1 == FALSE){
-            grid.arrange(p2, ncol = 2)
+        }else if(input$so2.1 == FALSE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              grid.arrange(p1, p3, p4, ncol = 2)
+            }else if(input$no2.1 == FALSE){
+              grid.arrange(p1, p3, ncol = 2)
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              grid.arrange(p1, p4, ncol = 2)
+            }else if(input$no2.1 == FALSE){
+              grid.arrange(p1, ncol = 2)
+            }
           }
         }
-      }else if(input$so2.1 == FALSE){
-        if(input$pm2.5.1 == TRUE){
-          if(input$no2.1 == TRUE){
-            grid.arrange(p3, p4, ncol = 2)
-          }else if(input$no2.1 == FALSE){
-            grid.arrange(p3, ncol = 2)
+      }else if(input$ozone1 == FALSE){
+        if(input$so2.1 == TRUE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              grid.arrange(p2, p3, p4, ncol = 2)
+            }else if(input$no2.1 == FALSE){
+              grid.arrange(p2, p3, ncol = 2)
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              grid.arrange(p2, p4, ncol = 2)
+            }else if(input$no2.1 == FALSE){
+              grid.arrange(p2, ncol = 2)
+            }
           }
-        }else if(input$pm2.5.1 == FALSE){
-          if(input$no2.1 == TRUE){
-            grid.arrange(p4, ncol = 2)
-          }else if(input$no2.1 == FALSE){
-            ggplot(data = cs3, aes(x = date)) +
-              labs(x = "Date", y = "AQI",
-                   title = str_c(input$loc.type))
+        }else if(input$so2.1 == FALSE){
+          if(input$pm2.5.1 == TRUE){
+            if(input$no2.1 == TRUE){
+              grid.arrange(p3, p4, ncol = 2)
+            }else if(input$no2.1 == FALSE){
+              grid.arrange(p3, ncol = 2)
+            }
+          }else if(input$pm2.5.1 == FALSE){
+            if(input$no2.1 == TRUE){
+              grid.arrange(p4, ncol = 2)
+            }else if(input$no2.1 == FALSE){
+              ggplot(data = cs3, aes(x = date)) +
+                labs(x = "Date", y = "AQI",
+                     title = str_c(input$loc.type))
+            }
           }
         }
       }
     }
   }) 
   output$loc.type.graph2 <- renderPlot({
-    if(input$loc.type == "Quadrant"){
-      cs4 <- traffic.flow %>% 
-        group_by(date, quadrant) %>% 
-        summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
-                  mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
-                  mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                  mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_speed, color = quadrant))
-      
-      p2 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_speed, color = quadrant)) 
-      
-      p3 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_travel_time, color = quadrant)) 
-      
-      p4 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_travel_time, color = quadrant)) 
-    }else if(input$loc.type == "Ward"){
-      cs4 <- traffic.flow %>% 
-        group_by(date, ward) %>% 
-        summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
-                  mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
-                  mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                  mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_speed, color = ward))
-      
-      p2 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_speed, color = ward)) 
-      
-      p3 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_travel_time, color = ward)) 
-      
-      p4 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_travel_time, color = ward)) 
-    }else if(input$loc.type == "Zip Code"){
-      cs4 <- traffic.flow %>% 
-        group_by(date, zip_code) %>% 
-        summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
-                  mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
-                  mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                  mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_speed, color = zip_code))
-      
-      p2 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_speed, color = zip_code)) 
-      
-      p3 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_travel_time, color = zip_code)) 
-      
-      p4 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_travel_time, color = zip_code)) 
-    }else if(input$loc.type == "Advisory Neighborhood Commission"){
-      cs4 <- traffic.flow %>% 
-        group_by(date, anc) %>% 
-        summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
-                  mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
-                  mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                  mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_speed, color = anc))
-      
-      p2 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_speed, color = anc)) 
-      
-      p3 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_travel_time, color = anc)) 
-      
-      p4 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_travel_time, color = anc)) 
-    }else if(input$loc.type == "Census Tract"){
-      cs4 <- traffic.flow %>% 
-        group_by(date, census_tract) %>% 
-        summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
-                  mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
-                  mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                  mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_speed, color = census_tract))
-      
-      p2 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_speed, color = census_tract)) 
-      
-      p3 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_travel_time, color = census_tract)) 
-      
-      p4 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_travel_time, color = census_tract)) 
-    }else if(input$loc.type == "Single Member District"){
-      cs4 <- traffic.flow %>% 
-        group_by(date, single_member_district) %>% 
-        summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
-                  mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
-                  mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                  mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_speed, color = single_member_district))
-      
-      p2 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_speed, color = single_member_district)) 
-      
-      p3 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_travel_time, color = single_member_district)) 
-      
-      p4 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_travel_time, color = single_member_district)) 
-    }else if(input$loc.type == "Voter Precinct"){
-      cs4 <- traffic.flow %>% 
-        group_by(date, voter_precinct) %>% 
-        summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
-                  mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
-                  mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                  mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
-      
-      p1 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_speed, color = voter_precinct))
-      
-      p2 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Speed",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_speed, color = voter_precinct)) 
-      
-      p3 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Current Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_current_travel_time, color = voter_precinct)) 
-      
-      p4 <- ggplot(data = cs4, aes(x = date)) +
-        labs(x = "Date", y = "Free Flow Travel Time",
-             title = str_c(input$loc.type)) +
-        geom_line(aes(y = mean_free_flow_travel_time, color = voter_precinct)) 
-    }
-    
-    if(input$cspeed == TRUE){
-      if(input$ffspeed == TRUE){
-        if(input$ctravel == TRUE){
-          if(input$fftravel == TRUE){
-            grid.arrange(p1, p2, p3, p4, ncol = 2)
-          }else if(input$fftravel == FALSE){
-            grid.arrange(p1, p2, p3, ncol = 2)
-          }
-        }else if(input$ctravel == FALSE){
-          if(input$fftravel == TRUE){
-            grid.arrange(p1, p2, p4, ncol = 2)
-          }else if(input$fftravel == FALSE){
-            grid.arrange(p1, p2, ncol = 2)
-          }
-        }
-      }else if(input$ffspeed == FALSE){
-        if(input$ctravel == TRUE){
-          if(input$fftravel == TRUE){
-            grid.arrange(p1, p3, p4, ncol = 2)
-          }else if(input$fftravel == FALSE){
-            grid.arrange(p1, p3, ncol = 2)
-          }
-        }else if(input$ctravel == FALSE){
-          if(input$fftravel == TRUE){
-            grid.arrange(p1, p4, ncol = 2)
-          }else if(input$fftravel == FALSE){
-            grid.arrange(p1, ncol = 2)
-          }
-        }
+    if(input$historical == TRUE){
+      if(input$loc.type == "Quadrant"){
+        cs4 <- traffic.flow %>% 
+          group_by(date, quadrant) %>% 
+          summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
+                    mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
+                    mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_speed, color = quadrant))
+        
+        p2 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_speed, color = quadrant)) 
+        
+        p3 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_travel_time, color = quadrant)) 
+        
+        p4 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_travel_time, color = quadrant)) 
+      }else if(input$loc.type == "Ward"){
+        cs4 <- traffic.flow %>% 
+          group_by(date, ward) %>% 
+          summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
+                    mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
+                    mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_speed, color = ward))
+        
+        p2 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_speed, color = ward)) 
+        
+        p3 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_travel_time, color = ward)) 
+        
+        p4 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_travel_time, color = ward)) 
+      }else if(input$loc.type == "Zip Code"){
+        cs4 <- traffic.flow %>% 
+          group_by(date, zip_code) %>% 
+          summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
+                    mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
+                    mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_speed, color = zip_code))
+        
+        p2 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_speed, color = zip_code)) 
+        
+        p3 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_travel_time, color = zip_code)) 
+        
+        p4 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_travel_time, color = zip_code)) 
+      }else if(input$loc.type == "Advisory Neighborhood Commission"){
+        cs4 <- traffic.flow %>% 
+          group_by(date, anc) %>% 
+          summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
+                    mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
+                    mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_speed, color = anc))
+        
+        p2 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_speed, color = anc)) 
+        
+        p3 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_travel_time, color = anc)) 
+        
+        p4 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_travel_time, color = anc)) 
+      }else if(input$loc.type == "Census Tract"){
+        cs4 <- traffic.flow %>% 
+          group_by(date, census_tract) %>% 
+          summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
+                    mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
+                    mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_speed, color = census_tract))
+        
+        p2 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_speed, color = census_tract)) 
+        
+        p3 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_travel_time, color = census_tract)) 
+        
+        p4 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_travel_time, color = census_tract)) 
+      }else if(input$loc.type == "Single Member District"){
+        cs4 <- traffic.flow %>% 
+          group_by(date, single_member_district) %>% 
+          summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
+                    mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
+                    mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_speed, color = single_member_district))
+        
+        p2 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_speed, color = single_member_district)) 
+        
+        p3 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_travel_time, color = single_member_district)) 
+        
+        p4 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_travel_time, color = single_member_district)) 
+      }else if(input$loc.type == "Voter Precinct"){
+        cs4 <- traffic.flow %>% 
+          group_by(date, voter_precinct) %>% 
+          summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
+                    mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
+                    mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+        
+        p1 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_speed, color = voter_precinct))
+        
+        p2 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Speed",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_speed, color = voter_precinct)) 
+        
+        p3 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Current Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_current_travel_time, color = voter_precinct)) 
+        
+        p4 <- ggplot(data = cs4, aes(x = date)) +
+          labs(x = "Date", y = "Free Flow Travel Time",
+               title = str_c(input$loc.type)) +
+          geom_line(aes(y = mean_free_flow_travel_time, color = voter_precinct)) 
       }
-    }else if(input$cspeed == FALSE){
-      if(input$ffspeed == TRUE){
-        if(input$ctravel == TRUE){
-          if(input$fftravel == TRUE){
-            grid.arrange(p2, p3, p4, ncol = 2)
-          }else if(input$fftravel == FALSE){
-            grid.arrange(p2, p3, ncol = 2)
+      
+      if(input$cspeed == TRUE){
+        if(input$ffspeed == TRUE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              grid.arrange(p1, p2, p3, p4, ncol = 2)
+            }else if(input$fftravel == FALSE){
+              grid.arrange(p1, p2, p3, ncol = 2)
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              grid.arrange(p1, p2, p4, ncol = 2)
+            }else if(input$fftravel == FALSE){
+              grid.arrange(p1, p2, ncol = 2)
+            }
           }
-        }else if(input$ctravel == FALSE){
-          if(input$fftravel == TRUE){
-            grid.arrange(p2, p4, ncol = 2)
-          }else if(input$fftravel == FALSE){
-            grid.arrange(p2, ncol = 2)
+        }else if(input$ffspeed == FALSE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              grid.arrange(p1, p3, p4, ncol = 2)
+            }else if(input$fftravel == FALSE){
+              grid.arrange(p1, p3, ncol = 2)
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              grid.arrange(p1, p4, ncol = 2)
+            }else if(input$fftravel == FALSE){
+              grid.arrange(p1, ncol = 2)
+            }
           }
         }
-      }else if(input$ffspeed == FALSE){
-        if(input$ctravel == TRUE){
-          if(input$fftravel == TRUE){
-            grid.arrange(p3, p4, ncol = 2)
-          }else if(input$fftravel == FALSE){
-            grid.arrange(p3, ncol = 2)
+      }else if(input$cspeed == FALSE){
+        if(input$ffspeed == TRUE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              grid.arrange(p2, p3, p4, ncol = 2)
+            }else if(input$fftravel == FALSE){
+              grid.arrange(p2, p3, ncol = 2)
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              grid.arrange(p2, p4, ncol = 2)
+            }else if(input$fftravel == FALSE){
+              grid.arrange(p2, ncol = 2)
+            }
           }
-        }else if(input$ctravel == FALSE){
-          if(input$fftravel == TRUE){
-            grid.arrange(p4, ncol = 2)
-          }else if(input$fftravel == FALSE){
-            ggplot(data = cs4, aes(x = date)) +
-              labs(x = "Date", y = "AQI",
-                   title = str_c(input$loc.type))
+        }else if(input$ffspeed == FALSE){
+          if(input$ctravel == TRUE){
+            if(input$fftravel == TRUE){
+              grid.arrange(p3, p4, ncol = 2)
+            }else if(input$fftravel == FALSE){
+              grid.arrange(p3, ncol = 2)
+            }
+          }else if(input$ctravel == FALSE){
+            if(input$fftravel == TRUE){
+              grid.arrange(p4, ncol = 2)
+            }else if(input$fftravel == FALSE){
+              ggplot(data = cs4, aes(x = date)) +
+                labs(x = "Date", y = "AQI",
+                     title = str_c(input$loc.type))
+            }
           }
         }
       }
