@@ -166,12 +166,39 @@ traffic.flow$cat.average <- str_to_title(traffic.flow$cat.average)
 
 traffic.flow$zip_code <- as.character(traffic.flow$zip_code)
 
+for(i in 1:nrow(hourly)){
+  if(hourly$location[i] == "DCNearRoad"){
+    hourly$location[i] <- "DC Near Road"
+  }else if(hourly$location[i] == "RIVER_Terrace"){
+    hourly$location[i] <- "River Terrace"
+  }else if(hourly$location[i] == "TakomaRec"){
+    hourly$location[i] <- "Tokoma Rec"
+  }else if(hourly$location[i] == "AURORA HILLS"){
+    hourly$location[i] <- "Aurora Hills"
+  }
+}
+
+for(i in 1:nrow(parameter_wider)){
+  if(parameter_wider$location[i] == "DCNearRoad"){
+    parameter_wider$location[i] <- "DC Near Road"
+  }else if(parameter_wider$location[i] == "RIVER_Terrace"){
+    parameter_wider$location[i] <- "River Terrace"
+  }else if(parameter_wider$location[i] == "TakomaRec"){
+    parameter_wider$location[i] <- "Tokoma Rec"
+  }else if(parameter_wider$location[i] == "AURORA HILLS"){
+    parameter_wider$location[i] <- "Aurora Hills"
+  }
+}
+
 # User Interface ----------------------------------------------------------
 location.types <- c("Quadrant", "Ward", "Zip Code", 
                     "Advisory Neighborhood Commission",
                     "Census Tract",
                     "Single Member District",
                     "Voter Precinct")
+
+sensor.location <- c(unique(parameter_wider$location))
+sensor.types <- c("Average Across Sensors", "Single Sensor")
 
 current.date.time <- Sys.time()
 
@@ -189,12 +216,18 @@ ui <- fluidPage(theme = shinytheme("slate"),
                sidebarPanel(
                  h5("Metric Comparisons"),
                  checkboxInput("currenttime.o", "Current Date", value = TRUE), 
-                 checkboxInput("lastweek.o", "Previous Week", value = TRUE), 
+                 checkboxInput("lastweek.o", "Previous Week"), 
                  checkboxInput("historical.o", "Historical", value = TRUE),
                  dateInput("date2", "What day?",
                            value = c.date),
                  sliderInput("hour2", "Which hour?",
                              value = c.time, min = 0, max = 24),
+                 selectInput("sensor.type", "Which sensor type?",
+                             choices = sensor.types, 
+                             selected = "Average Across Sensors"),
+                 selectInput("location.type", "Which sensor location?",
+                             choices = sensor.location, 
+                             selected = "DC Near Road"),
                  uiOutput(outputId = "text1"),
                  checkboxInput("traffic", "On", value = TRUE),
                  uiOutput(outputId = "text2"),
@@ -209,15 +242,17 @@ ui <- fluidPage(theme = shinytheme("slate"),
                             ".shiny-output-error { visibility: hidden; }",
                             ".shiny-output-error:before { visibility: hidden; }"),
                  h3("Overview"),
+                 textOutput("current.congestion.o"),
                  textOutput("current.air.quality.o"),
+                 h4("Air Quality and Traffic"),
                  textOutput("airtable.title.o"),
                  tableOutput("aqitable"),
                  textOutput("airtable.title2.o"),
                  tableOutput("aqitable2"),
                  tableOutput("traffictable"),
-                 h5("Daily AQI"),
+                 h3("Daily AQI"),
                  plotOutput("myaqi"),
-                 h5("Map"),
+                 h3("Map"),
                  leafletOutput("mymap"))
              )),
     tabPanel("Location Search",
@@ -292,6 +327,7 @@ server <- function(input, output) {
   
   # AQI SUMMARY
   output$current.air.quality.o <- renderText({
+    
     cs1 <- hourly %>% 
       filter(date == parse_datetime(str_c(as.character(input$date2), 
                                           " ", 
@@ -303,6 +339,49 @@ server <- function(input, output) {
                                        " ", 
                                        as.character(input$hour2), 
                                        ":00:00")) - 604800)
+    
+    if(input$sensor.type == "Average Across Sensors"){
+      cs1 <- cs1
+      ls1 <- ls1
+    }else if(input$sensor.type == "Single Sensor"){
+      if(input$location.type == "McMillan NCORE"){
+        cs1 <- cs1 %>% 
+          filter(location == "McMillan NCORE")
+        ls1 <- ls1 %>% 
+          filter(location == "McMillan NCORE")
+      }else if(input$location.type == "DC Near Road"){
+        cs1 <- cs1 %>% 
+          filter(location == "DC Near Road")
+        ls1 <- ls1 %>% 
+          filter(location == "DC Near Road")
+      }else if(input$location.type == "King Greenleaf Rec Center"){
+        cs1 <- cs1 %>% 
+          filter(location == "King Greenleaf Rec Center")
+        ls1 <- ls1 %>% 
+          filter(location == "King Greenleaf Rec Center")
+      }else if(input$location.type == "River Terrace"){
+        cs1 <- cs1 %>% 
+          filter(location == "River Terrace")
+        ls1 <- ls1 %>% 
+          filter(location == "River Terrace")
+      }else if(input$location.type == "McMillan Reservoir"){
+        cs1 <- cs1 %>% 
+          filter(location == "McMillan Reservoir")
+        ls1 <- ls1 %>% 
+          filter(location == "McMillan Reservoir")
+      }else if(input$location.type == "Tokoma Rec"){
+        cs1 <- cs1 %>% 
+          filter(location == "Tokoma Rec")
+        ls1 <- ls1 %>% 
+          filter(location == "Tokoma Rec")
+      }else if(input$location.type == "Aurora Hills"){
+        cs1 <- cs1 %>% 
+          filter(location == "Aurora Hills")
+        ls1 <- ls1 %>% 
+          filter(location == "Aurora Hills")
+      }
+    }
+    
     
     cs2 <- mean(cs1$category_number, na.rm = TRUE)
     ls2 <- mean(ls1$category_number, na.rm = TRUE)
@@ -366,6 +445,43 @@ server <- function(input, output) {
       }
     }
     
+    
+  })
+  output$current.congestion.o <- renderText({
+    
+    cs1 <- hourly %>% 
+      filter(date == parse_datetime(str_c(as.character(input$date2), 
+                                          " ", 
+                                          as.character(input$hour2), 
+                                          ":00:00")))
+    
+    ls1 <- hourly %>% 
+      filter(date == as_datetime(str_c(as.character(input$date2), 
+                                       " ", 
+                                       as.character(input$hour2), 
+                                       ":00:00")) - 604800)
+    
+    cs2 <- mean(cs1$traffic_index_live, na.rm = TRUE)
+    ls2 <- mean(ls1$traffic_index_live, na.rm = TRUE)
+    
+    cs3 <- str_c("Current traffic congestion level: ", cs2, "%")
+    ls3 <- str_c("Traffic congestion level last week: ", ls2, "%")
+    
+    if(input$currenttime.o == TRUE){ 
+      if(input$lastweek.o == TRUE){ 
+        str_c(cs3, " | ", ls3)
+      }else{
+        cs3
+      }
+    }else{
+      if(input$lastweek.o == TRUE){ 
+        ls3
+      }else{
+        
+      }
+    }
+    
+    
   })
   
   output$airtable.title.o <- renderText({
@@ -384,6 +500,34 @@ server <- function(input, output) {
                                           " ", 
                                           as.character(input$hour2), 
                                           ":00:00")))
+    
+    if(input$sensor.type == "Average Across Sensors"){
+      hourly <- hourly
+    }else if(input$sensor.type == "Single Sensor"){
+      if(input$location.type == "McMillan NCORE"){
+        hourly <- hourly %>% 
+          filter(location == "McMillan NCORE")
+      }else if(input$location.type == "DC Near Road"){
+        hourly <- hourly %>% 
+          filter(location == "DC Near Road")
+      }else if(input$location.type == "King Greenleaf Rec Center"){
+        hourly <- hourly %>% 
+          filter(location == "King Greenleaf Rec Center")
+      }else if(input$location.type == "River Terrace"){
+        hourly <- hourly %>% 
+          filter(location == "River Terrace")
+      }else if(input$location.type == "McMillan Reservoir"){
+        hourly <- hourly %>% 
+          filter(location == "McMillan Reservoir")
+      }else if(input$location.type == "Tokoma Rec"){
+        hourly <- hourly %>% 
+          filter(location == "Tokoma Rec")
+      }else if(input$location.type == "Aurora Hills"){
+        hourly <- hourly %>% 
+          filter(location == "Aurora Hills")
+      }
+    }
+    
     oz <- hourly %>%
       filter(parameter_name == "OZONE")
     so <- hourly %>%
@@ -472,6 +616,34 @@ server <- function(input, output) {
                                        " ", 
                                        as.character(input$hour2), 
                                        ":00:00")) - 604800)
+    
+    if(input$sensor.type == "Average Across Sensors"){
+      hourly <- hourly
+    }else if(input$sensor.type == "Single Sensor"){
+      if(input$location.type == "McMillan NCORE"){
+        hourly <- hourly %>% 
+          filter(location == "McMillan NCORE")
+      }else if(input$location.type == "DC Near Road"){
+        hourly <- hourly %>% 
+          filter(location == "DC Near Road")
+      }else if(input$location.type == "King Greenleaf Rec Center"){
+        hourly <- hourly %>% 
+          filter(location == "King Greenleaf Rec Center")
+      }else if(input$location.type == "River Terrace"){
+        hourly <- hourly %>% 
+          filter(location == "River Terrace")
+      }else if(input$location.type == "McMillan Reservoir"){
+        hourly <- hourly %>% 
+          filter(location == "McMillan Reservoir")
+      }else if(input$location.type == "Tokoma Rec"){
+        hourly <- hourly %>% 
+          filter(location == "Tokoma Rec")
+      }else if(input$location.type == "Aurora Hills"){
+        hourly <- hourly %>% 
+          filter(location == "Aurora Hills")
+      }
+    }
+    
     oz <- hourly %>%
       filter(parameter_name == "OZONE")
     so <- hourly %>%
@@ -608,166 +780,404 @@ server <- function(input, output) {
   
   ## Second graph for the Overview tab
   output$myaqi <- renderPlot({
-    x <- parameter_wider %>% 
-      filter(agency == "District of Columbia - Department of Energy and Environment")
-    
-    x[is.na(x)] <- 0
-    
-    colors <- c("OZONE" = "blue", "PM2.5" = "red", 
-                "SO2" = "Orange", "NO2" = "yellow",
-                "traffic" = "black")
-    
-    avg <- mean(x$traffic_index_live)
-    
-    #ptitle <- str_c("AQI and Traffic")
-    p1 <- x %>%
-      ggplot(aes(x = date)) +
-      labs(x = "Date", y = "AQI",
-           title = "AQI and Traffic",
-           color = "Parameter") +
-      scale_color_manual(values = colors) +
-      annotate("text", x = as_datetime(1603836000), y = 105, label = "Sensitive") +
-      geom_hline(yintercept = 101, linetype = "dashed", color = "orange", size = 1.5) +
-      annotate("text", x = as_datetime(1603836000), y = 155, label = "Unhealthy") +
-      geom_hline(yintercept = 151, linetype = "dashed", color = "red", size = 1.5)
-    
-    ptra <- geom_line(aes(y = traffic_index_live, color = "traffic"))
-    po <- geom_line(aes(y = OZONE, color = "OZONE"))
-    pc <- geom_line(aes(y = SO2, color = "SO2"))
-    ph <- geom_line(aes(y = PM2.5, color = "PM2.5"))
-    pl <- geom_line(aes(y = NO2, color = "NO2"))
-    #pt <- labs(title = ptitle, x = "Date", y = "")
-      
-    if(input$traffic == TRUE) {
-      if(input$ozone == TRUE){
-        if(input$so2 == TRUE){
-          if(input$pm25 == TRUE){
-            if(input$no2 == TRUE){
-                p1 + ptra + po + pc + ph + pl #+ pt
-            } else if(input$no2 == FALSE){
-                p1 + ptra + po + pc + ph #+ pt
+    if(input$historical.o == TRUE){
+      if(input$sensor.type == "Average Across Sensors"){
+        x <- parameter_wider %>% 
+          filter(agency == "District of Columbia - Department of Energy and Environment")
+        
+        param.slim <- parameter_wider %>% 
+          select(date, traffic_index_live) 
+        
+        param.slim <- param.slim[,2:3]
+        
+        param.slim <- param.slim %>% 
+          distinct()
+        
+        x <- x %>% 
+          group_by(date) %>% 
+          summarize(Ozone = mean(OZONE, na.rm = TRUE),
+                    SO2 = mean(SO2, na.rm = TRUE),
+                    PM2.5 = mean(PM2.5, na.rm = TRUE),
+                    NO2 = mean(NO2, na.rm = TRUE))
+        
+        x <- merge(x, param.slim, by = "date")
+        
+        colors <- c("Ozone" = "blue", "PM2.5" = "orange", 
+                    "SO2" = "red", "NO2" = "green",
+                    "traffic" = "black")
+        
+        #ptitle <- str_c("AQI and Traffic")
+        p1 <- 
+          ggplot(data = x, aes(x = date)) +
+          labs(x = "Date", y = "AQI",
+               title = "AQI and Traffic",
+               color = "Parameter") +
+          scale_color_manual(values = colors) +
+          annotate("text", x = as_datetime(1603836000), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1.5) +
+          annotate("text", x = as_datetime(1603836000), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1.5) +
+          annotate("text", x = as_datetime(1603836000), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1.5)
+        
+        ptra <- geom_line(aes(y = traffic_index_live, color = "traffic"))
+        po <- geom_line(aes(y = Ozone, color = "Ozone"))
+        pc <- geom_line(aes(y = SO2, color = "SO2"))
+        ph <- geom_line(aes(y = PM2.5, color = "PM2.5"))
+        pl <- geom_line(aes(y = NO2, color = "NO2"))
+        #pt <- labs(title = ptitle, x = "Date", y = "")
+        
+        if(input$traffic == TRUE) {
+          if(input$ozone == TRUE){
+            if(input$so2 == TRUE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + po + pc + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + po + pc + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + po + pc + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + po + pc #+ pt
+                }
+              }
+            } else if(input$so2 == FALSE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + po + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + po + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + po + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + po #+ pt
+                }
+              }
             }
-          }else if(input$pm25 == FALSE){
-            if(input$no2 == TRUE){
-              p1 + ptra + po + pc + pl #+ pt
-            } else if(input$no2 == FALSE){
-              p1 + ptra + po + pc #+ pt
+          } else if(input$ozone == FALSE){
+            if(input$so2 == TRUE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + pc + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + pc + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + pc + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + pc #+ pt
+                }
+              }
+            } else if(input$so2 == FALSE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra #+ pt
+                }
+              }
             }
           }
-        } else if(input$so2 == FALSE){
-          if(input$pm25 == TRUE){
-            if(input$no2 == TRUE){
-              p1 + ptra + po + ph + pl #+ pt
-            } else if(input$no2 == FALSE){
-              p1 + ptra + po + ph #+ pt
+          # TRAFFIC IS FALSE
+        }else if(input$traffic == FALSE){
+          if(input$ozone == TRUE){
+            if(input$so2 == TRUE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + po + pc + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + po + pc + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + po + pc + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + po + pc #+ pt
+                }
+              }
+            } else if(input$so2 == FALSE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + po + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + po + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + po + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + po #+ pt
+                }
+              }
             }
-          }else if(input$pm25 == FALSE){
-            if(input$no2 == TRUE){
-              p1 + ptra + po + pl #+ pt
-            } else if(input$no2 == FALSE){
-              p1 + ptra + po #+ pt
+          } else if(input$ozone == FALSE){
+            if(input$so2 == TRUE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + pc + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + pc + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + pc + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + pc #+ pt
+                }
+              }
+            } else if(input$so2 == FALSE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 #+ pt
+                }
+              }
             }
           }
         }
-      } else if(input$ozone == FALSE){
-        if(input$so2 == TRUE){
-          if(input$pm25 == TRUE){
-            if(input$no2 == TRUE){
-              p1 + ptra + pc + ph + pl #+ pt
-            } else if(input$no2 == FALSE){
-              p1 + ptra + pc + ph #+ pt
+      }else if(input$sensor.type == "Single Sensor"){
+        if(input$location.type == "McMillan NCORE"){
+          x <- parameter_wider %>% 
+            filter(location == "McMillan NCORE")
+        }else if(input$location.type == "DC Near Road"){
+          x <- parameter_wider %>% 
+            filter(location == "DC Near Road")
+        }else if(input$location.type == "King Greenleaf Rec Center"){
+          x <- parameter_wider %>% 
+            filter(location == "King Greenleaf Rec Center")
+        }else if(input$location.type == "River Terrace"){
+          x <- parameter_wider %>% 
+            filter(location == "River Terrace")
+        }else if(input$location.type == "McMillan Reservoir"){
+          x <- parameter_wider %>% 
+            filter(location == "McMillan Reservoir")
+        }else if(input$location.type == "Tokoma Rec"){
+          x <- parameter_wider %>% 
+            filter(location == "Tokoma Rec")
+        }else if(input$location.type == "Aurora Hills"){
+          x <- parameter_wider %>% 
+            filter(location == "Aurora Hills")
+        }
+        
+        param.slim <- parameter_wider %>% 
+          select(date, traffic_index_live) 
+        
+        param.slim <- param.slim[,2:3]
+        
+        param.slim <- param.slim %>% 
+          distinct()
+        
+        x <- x %>% 
+          group_by(date) %>% 
+          summarize(Ozone = mean(OZONE, na.rm = TRUE),
+                    SO2 = mean(SO2, na.rm = TRUE),
+                    PM2.5 = mean(PM2.5, na.rm = TRUE),
+                    NO2 = mean(NO2, na.rm = TRUE))
+        
+        x <- merge(x, param.slim, by = "date")
+        
+        colors <- c("Ozone" = "blue", "PM2.5" = "orange", 
+                    "SO2" = "red", "NO2" = "green",
+                    "traffic" = "black")
+        
+        #ptitle <- str_c("AQI and Traffic")
+        p1 <- 
+          ggplot(data = x, aes(x = date)) +
+          labs(x = "Date", y = "AQI",
+               title = "AQI and Traffic",
+               color = "Parameter") +
+          scale_color_manual(values = colors) +
+          annotate("text", x = as_datetime(1603836000), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1.5) +
+          annotate("text", x = as_datetime(1603836000), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1.5) +
+          annotate("text", x = as_datetime(1603836000), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1.5)
+        
+        ptra <- geom_line(aes(y = traffic_index_live, color = "traffic"))
+        po <- geom_line(aes(y = Ozone, color = "Ozone"))
+        pc <- geom_line(aes(y = SO2, color = "SO2"))
+        ph <- geom_line(aes(y = PM2.5, color = "PM2.5"))
+        pl <- geom_line(aes(y = NO2, color = "NO2"))
+        #pt <- labs(title = ptitle, x = "Date", y = "")
+        
+        if(input$traffic == TRUE) {
+          if(input$ozone == TRUE){
+            if(input$so2 == TRUE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + po + pc + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + po + pc + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + po + pc + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + po + pc #+ pt
+                }
+              }
+            } else if(input$so2 == FALSE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + po + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + po + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + po + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + po #+ pt
+                }
+              }
             }
-          }else if(input$pm25 == FALSE){
-            if(input$no2 == TRUE){
-              p1 + ptra + pc + pl #+ pt
-            } else if(input$no2 == FALSE){
-              p1 + ptra + pc #+ pt
+          } else if(input$ozone == FALSE){
+            if(input$so2 == TRUE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + pc + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + pc + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + pc + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + pc #+ pt
+                }
+              }
+            } else if(input$so2 == FALSE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + ptra + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ptra #+ pt
+                }
+              }
             }
           }
-        } else if(input$so2 == FALSE){
-          if(input$pm25 == TRUE){
-            if(input$no2 == TRUE){
-              p1 + ptra + ph + pl #+ pt
-            } else if(input$no2 == FALSE){
-              p1 + ptra + ph #+ pt
+          # TRAFFIC IS FALSE
+        }else if(input$traffic == FALSE){
+          if(input$ozone == TRUE){
+            if(input$so2 == TRUE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + po + pc + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + po + pc + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + po + pc + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + po + pc #+ pt
+                }
+              }
+            } else if(input$so2 == FALSE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + po + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + po + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + po + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + po #+ pt
+                }
+              }
             }
-          }else if(input$pm25 == FALSE){
-            if(input$no2 == TRUE){
-              p1 + ptra + pl #+ pt
-            } else if(input$no2 == FALSE){
-              p1 + ptra #+ pt
+          } else if(input$ozone == FALSE){
+            if(input$so2 == TRUE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + pc + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + pc + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + pc + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + pc #+ pt
+                }
+              }
+            } else if(input$so2 == FALSE){
+              if(input$pm25 == TRUE){
+                if(input$no2 == TRUE){
+                  p1 + ph + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 + ph #+ pt
+                }
+              }else if(input$pm25 == FALSE){
+                if(input$no2 == TRUE){
+                  p1 + pl #+ pt
+                } else if(input$no2 == FALSE){
+                  p1 #+ pt
+                }
+              }
             }
           }
         }
       }
-        # TRAFFIC IS FALSE
-      }else if(input$traffic == FALSE){
-        if(input$ozone == TRUE){
-          if(input$so2 == TRUE){
-            if(input$pm25 == TRUE){
-              if(input$no2 == TRUE){
-                p1 + po + pc + ph + pl #+ pt
-              } else if(input$no2 == FALSE){
-                p1 + po + pc + ph #+ pt
-              }
-            }else if(input$pm25 == FALSE){
-              if(input$no2 == TRUE){
-                p1 + po + pc + pl #+ pt
-              } else if(input$no2 == FALSE){
-                p1 + po + pc #+ pt
-              }
-            }
-          } else if(input$so2 == FALSE){
-            if(input$pm25 == TRUE){
-              if(input$no2 == TRUE){
-                p1 + po + ph + pl #+ pt
-              } else if(input$no2 == FALSE){
-                p1 + po + ph #+ pt
-              }
-            }else if(input$pm25 == FALSE){
-              if(input$no2 == TRUE){
-                p1 + po + pl #+ pt
-              } else if(input$no2 == FALSE){
-                p1 + po #+ pt
-              }
-            }
-          }
-        } else if(input$ozone == FALSE){
-          if(input$so2 == TRUE){
-            if(input$pm25 == TRUE){
-              if(input$no2 == TRUE){
-                p1 + pc + ph + pl #+ pt
-              } else if(input$no2 == FALSE){
-                p1 + pc + ph #+ pt
-              }
-            }else if(input$pm25 == FALSE){
-              if(input$no2 == TRUE){
-                p1 + pc + pl #+ pt
-              } else if(input$no2 == FALSE){
-                p1 + pc #+ pt
-              }
-            }
-          } else if(input$so2 == FALSE){
-            if(input$pm25 == TRUE){
-              if(input$no2 == TRUE){
-                p1 + ph + pl #+ pt
-              } else if(input$no2 == FALSE){
-                p1 + ph #+ pt
-              }
-            }else if(input$pm25 == FALSE){
-              if(input$no2 == TRUE){
-                p1 + pl #+ pt
-              } else if(input$no2 == FALSE){
-                p1 #+ pt
-              }
-            }
-          }
-        }
-        }
-    })
+    }
+  })
   
   ## Third graph for the Overview tab
   output$mymap <- renderLeaflet({
+    if(input$sensor.type == "Average Across Sensors"){
+      hourly <- hourly
+    }else if(input$sensor.type == "Single Sensor"){
+      if(input$location.type == "McMillan NCORE"){
+        hourly <- hourly %>% 
+          filter(location == "McMillan NCORE")
+      }else if(input$location.type == "DC Near Road"){
+        hourly <- hourly %>% 
+          filter(location == "DC Near Road")
+      }else if(input$location.type == "King Greenleaf Rec Center"){
+        hourly <- hourly %>% 
+          filter(location == "King Greenleaf Rec Center")
+      }else if(input$location.type == "River Terrace"){
+        hourly <- hourly %>% 
+          filter(location == "River Terrace")
+      }else if(input$location.type == "McMillan Reservoir"){
+        hourly <- hourly %>% 
+          filter(location == "McMillan Reservoir")
+      }else if(input$location.type == "Tokoma Rec"){
+        hourly <- hourly %>% 
+          filter(location == "Tokoma Rec")
+      }else if(input$location.type == "Aurora Hills"){
+        hourly <- hourly %>% 
+          filter(location == "Aurora Hills")
+      }
+    }
+    
     if(input$traffic==TRUE){
       leaflet(hourly) %>% addTiles() %>%
         addCircles(lng = ~longitude, lat = ~latitude, weight = 1,
@@ -785,7 +1195,6 @@ server <- function(input, output) {
       
     }
   })
-  
   
   ## Location Search
   output$warning.text <- renderText({
@@ -3177,8 +3586,14 @@ server <- function(input, output) {
                         substr(cs3$date, start = 12, stop = 13))
       
       p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
-        geom_bar(stat = "identity", , position = "dodge") +
-        labs(x = "Air Quality Parameters", y = "AQI", fill = "Date")
+        geom_bar(stat = "identity", position = "dodge") +
+        labs(x = "Air Quality Parameters", y = "AQI", fill = "Date") +
+        annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+        geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+        geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+        geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
       
       cs4 <- cs2 %>% 
         group_by(date) %>% 
@@ -8843,7 +9258,13 @@ server <- function(input, output) {
         labs(x = "Date", y = "Air Quality Index", 
              title = str_c(input$loc.type, ": ", input$loc.type2),
              color = "Parameter") +
-        scale_color_manual(values = colors)
+        scale_color_manual(values = colors)  +
+        annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+        geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+        annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+        geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+        annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+        geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
       g1 <- geom_line(aes(y = mean_ozone_loc_aqi, color = "Ozone"))
       g2 <- geom_line(aes(y = mean_so2_loc_aqi, color = "SO2"))
       g3 <- geom_line(aes(y = mean_pm2.5_loc_aqi, color = "PM 2.5"))
@@ -9004,22 +9425,46 @@ server <- function(input, output) {
         p1 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "Ozone AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = quadrant))
+          geom_line(aes(y = mean_ozone_loc_aqi, color = quadrant))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p2 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "SO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = quadrant)) 
+          geom_line(aes(y = mean_so2_loc_aqi, color = quadrant))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p3 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "PM 2.5 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = quadrant)) 
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = quadrant))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p4 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "NO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = quadrant)) 
+          geom_line(aes(y = mean_no2_loc_aqi, color = quadrant))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
       }else if(input$loc.type == "Ward"){
         cs3 <- traffic.flow %>% 
           group_by(date, ward) %>% 
@@ -9031,22 +9476,46 @@ server <- function(input, output) {
         p1 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "Ozone AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = ward))
+          geom_line(aes(y = mean_ozone_loc_aqi, color = ward))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p2 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "SO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = ward)) 
+          geom_line(aes(y = mean_so2_loc_aqi, color = ward))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p3 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "PM 2.5 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = ward)) 
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = ward))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p4 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "NO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = ward)) 
+          geom_line(aes(y = mean_no2_loc_aqi, color = ward))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
       }else if(input$loc.type == "Zip Code"){
         cs3 <- traffic.flow %>% 
           group_by(date, zip_code) %>% 
@@ -9058,22 +9527,46 @@ server <- function(input, output) {
         p1 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "Ozone AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = zip_code))
+          geom_line(aes(y = mean_ozone_loc_aqi, color = zip_code)) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p2 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "SO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = zip_code)) 
+          geom_line(aes(y = mean_so2_loc_aqi, color = zip_code))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p3 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "PM 2.5 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = zip_code)) 
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = zip_code))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p4 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "NO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = zip_code)) 
+          geom_line(aes(y = mean_no2_loc_aqi, color = zip_code))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
       }else if(input$loc.type == "Advisory Neighborhood Commission"){
         cs3 <- traffic.flow %>% 
           group_by(date, anc) %>% 
@@ -9085,22 +9578,46 @@ server <- function(input, output) {
         p1 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "Ozone AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = anc))
+          geom_line(aes(y = mean_ozone_loc_aqi, color = anc)) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p2 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "SO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = anc)) 
+          geom_line(aes(y = mean_so2_loc_aqi, color = anc))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p3 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "PM 2.5 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = anc)) 
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = anc))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p4 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "NO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = anc)) 
+          geom_line(aes(y = mean_no2_loc_aqi, color = anc))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
       }else if(input$loc.type == "Census Tract"){
         cs3 <- traffic.flow %>% 
           group_by(date, census_tract) %>% 
@@ -9112,22 +9629,46 @@ server <- function(input, output) {
         p1 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "Ozone AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = census_tract))
+          geom_line(aes(y = mean_ozone_loc_aqi, color = census_tract)) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p2 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "SO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = census_tract)) 
+          geom_line(aes(y = mean_so2_loc_aqi, color = census_tract))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p3 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "PM 2.5 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = census_tract)) 
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = census_tract))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p4 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "NO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = census_tract)) 
+          geom_line(aes(y = mean_no2_loc_aqi, color = census_tract))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
       }else if(input$loc.type == "Single Member District"){
         cs3 <- traffic.flow %>% 
           group_by(date, single_member_district) %>% 
@@ -9139,22 +9680,46 @@ server <- function(input, output) {
         p1 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "Ozone AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = single_member_district))
+          geom_line(aes(y = mean_ozone_loc_aqi, color = single_member_district)) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p2 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "SO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = single_member_district)) 
+          geom_line(aes(y = mean_so2_loc_aqi, color = single_member_district))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p3 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "PM 2.5 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = single_member_district)) 
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = single_member_district)) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) 
         
         p4 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "NO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = single_member_district)) 
+          geom_line(aes(y = mean_no2_loc_aqi, color = single_member_district))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
       }else if(input$loc.type == "Voter Precinct"){
         cs3 <- traffic.flow %>% 
           group_by(date, voter_precinct) %>% 
@@ -9166,22 +9731,46 @@ server <- function(input, output) {
         p1 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "Ozone AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = voter_precinct))
+          geom_line(aes(y = mean_ozone_loc_aqi, color = voter_precinct)) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p2 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "SO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = voter_precinct)) 
+          geom_line(aes(y = mean_so2_loc_aqi, color = voter_precinct))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p3 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "PM 2.5 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = voter_precinct)) 
+          geom_line(aes(y = mean_pm2.5_loc_aqi, color = voter_precinct))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
         
         p4 <- ggplot(data = cs3, aes(x = date)) +
           labs(x = "Date", y = "NO2 AQI",
                title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = voter_precinct)) 
+          geom_line(aes(y = mean_no2_loc_aqi, color = voter_precinct))  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
       }
       
       if(input$ozone1 == TRUE){
