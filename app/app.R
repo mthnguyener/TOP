@@ -187,6 +187,10 @@ ui <- fluidPage(theme = shinytheme("slate"),
     tabPanel("Citywide",
              sidebarLayout(
                sidebarPanel(
+                 h5("Metric Comparisons"),
+                 checkboxInput("currenttime.o", "Current Date", value = TRUE), 
+                 checkboxInput("lastweek.o", "Previous Week", value = TRUE), 
+                 checkboxInput("historical.o", "Historical", value = TRUE),
                  dateInput("date2", "What day?",
                            value = c.date),
                  sliderInput("hour2", "Which hour?",
@@ -205,7 +209,11 @@ ui <- fluidPage(theme = shinytheme("slate"),
                             ".shiny-output-error { visibility: hidden; }",
                             ".shiny-output-error:before { visibility: hidden; }"),
                  h3("Overview"),
+                 textOutput("current.air.quality.o"),
+                 textOutput("airtable.title.o"),
                  tableOutput("aqitable"),
+                 textOutput("airtable.title2.o"),
+                 tableOutput("aqitable2"),
                  tableOutput("traffictable"),
                  h5("Daily AQI"),
                  plotOutput("myaqi"),
@@ -282,8 +290,94 @@ server <- function(input, output) {
     HTML(paste0("<b>","Air Quality Parameters","</b>"))
   })
   
-  
   # AQI SUMMARY
+  output$current.air.quality.o <- renderText({
+    cs1 <- hourly %>% 
+      filter(date == parse_datetime(str_c(as.character(input$date2), 
+                                          " ", 
+                                          as.character(input$hour2), 
+                                          ":00:00")))
+    
+    ls1 <- hourly %>% 
+      filter(date == as_datetime(str_c(as.character(input$date2), 
+                                       " ", 
+                                       as.character(input$hour2), 
+                                       ":00:00")) - 604800)
+    
+    cs2 <- mean(cs1$category_number, na.rm = TRUE)
+    ls2 <- mean(ls1$category_number, na.rm = TRUE)
+    
+    
+    if(is.numeric(cs2) == TRUE){
+      cs2 <- round(cs2, digits = 0) 
+    }else if(is.na(cs2) == TRUE){
+      cs2 <- "NaN"
+    }
+    
+    if(is.numeric(ls2) == TRUE){
+      ls2 <- round(ls2, digits = 0) 
+    }else if(is.na(ls2) == TRUE){
+      ls2 <- "NaN"
+    }
+    
+    if(cs2 == 1){
+      cs3 <- str_c("Current average air quality: ", "Good")
+    }else if(cs2 == 2){
+      cs3 <- str_c("Current average air quality: ", "Moderate")
+    }else if(cs2 == 3){
+      cs3 <- str_c("Current average air quality: ", "Unhealthy for sensitive groups")
+    }else if(cs2 == 4){
+      cs3 <- str_c("Current average air quality: ", "Unhealthy")
+    }else if(cs2 == 5){
+      cs3 <- str_c("Current average air quality: ", "Very unhealthy")
+    }else if(cs2 == 6){
+      cs3 <- str_c("Current average air quality: ", "Hazardous")
+    }else if(cs2 == "NaN"){
+      cs3 <- str_c("Current average air quality: ", "NaN")
+    }
+    
+    if(ls2 == 1){
+      ls3 <- str_c("Average air quality last week: ", "Good")
+    }else if(ls2 == 2){
+      ls3 <- str_c("Average air quality last week: ", "Moderate")
+    }else if(ls2 == 3){
+      ls3 <- str_c("Average air quality last week: ", "Unhealthy for sensitive groups")
+    }else if(ls2 == 4){
+      ls3 <- str_c("Average air quality last week: ", "Unhealthy")
+    }else if(ls2 == 5){
+      ls3 <- str_c("Average air quality last week: ", "Very unhealthy")
+    }else if(ls2 == 6){
+      ls3 <- str_c("Average air quality last week: ", "Hazardous")
+    }else if(ls2 == "NaN"){
+      ls3 <- str_c("Average air quality last week: ", "NaN")
+    }
+    
+    if(input$currenttime.o == TRUE){ 
+      if(input$lastweek.o == TRUE){ 
+        str_c(cs3, " | ", ls3)
+      }else{
+        cs3
+      }
+    }else{
+      if(input$lastweek.o == TRUE){ 
+        ls3
+      }else{
+        
+      }
+    }
+    
+  })
+  
+  output$airtable.title.o <- renderText({
+    if(input$currenttime.o == TRUE){
+      str_c("Current Date")
+    }
+  })
+  output$airtable.title2.o <- renderText({
+    if(input$lastweek.o == TRUE){
+      str_c("Last Week")
+    }
+  })
   output$aqitable <- renderTable({
     hourly <- hourly %>% 
       filter(date == parse_datetime(str_c(as.character(input$date2), 
@@ -366,9 +460,100 @@ server <- function(input, output) {
         }
       }
     }
-
-    })
-  
+    
+    if(input$currenttime.o == TRUE){
+      p2
+    }
+    
+  })
+  output$aqitable2 <- renderTable({
+    hourly <- hourly %>% 
+      filter(date == as_datetime(str_c(as.character(input$date2), 
+                                       " ", 
+                                       as.character(input$hour2), 
+                                       ":00:00")) - 604800)
+    oz <- hourly %>%
+      filter(parameter_name == "OZONE")
+    so <- hourly %>%
+      filter(parameter_name == "SO2")
+    no <- hourly %>%
+      filter(parameter_name == "NO2")
+    pm <- hourly %>%
+      filter(parameter_name == "PM2.5")
+    
+    df <- data.frame(stat = c("Min.", "1st Qu.", "Median", "Mean", "3rd Qu.", "Max."),
+                     Ozone = c(round(summary(oz$AQI), digits = 2)),
+                     SO2 = c(round(summary(so$AQI), digits = 2)),
+                     PM2.5 = c(round(summary(pm$AQI), digits = 2)),
+                     NO2 = c(round(summary(no$AQI), digits = 2)))
+    
+    if(input$ozone == TRUE){
+      if(input$so2 == TRUE){
+        if(input$pm25 == TRUE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 2, 3, 4, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 2, 3, 4)]
+          }
+        }else if(input$pm25 == FALSE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 2, 3, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 2, 3)]
+          }
+        }
+      }else if(input$so2 == FALSE){
+        if(input$pm25 == TRUE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 2, 4, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 2, 4)]
+          }
+        }else if(input$pm25 == FALSE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 2, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 2)]
+          }
+        }
+      }
+    }else if(input$ozone == FALSE){
+      if(input$so2 == TRUE){
+        if(input$pm25 == TRUE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 3, 4, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 3, 4)]
+          }
+        }else if(input$pm25 == FALSE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 3, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 3)]
+          }
+        }
+      }else if(input$so2 == FALSE){
+        if(input$pm25 == TRUE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 4, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1, 4)]
+          }
+        }else if(input$pm25 == FALSE){
+          if(input$no2 == TRUE){
+            p2 <- df[,c(1, 5)]
+          }else if(input$no2 == FALSE){
+            p2 <- df[,c(1)]
+          }
+        }
+      }
+    }
+    
+    if(input$lastweek.o == TRUE){
+      p2
+    }
+    
+  })
   
   output$traffictable <- renderTable({
     cs1 <- hourly %>% 
@@ -376,12 +561,37 @@ server <- function(input, output) {
                                           " ", 
                                           as.character(input$hour2), 
                                           ":00:00")))
-    df1 <- data.frame(traffic_index = c(round(summary(cs1$traffic_index_live), digits = 2)),
+    df1 <- data.frame(time = c("current"),
+                      traffic_index = c(round(summary(cs1$traffic_index_live), digits = 2)),
                       jams_delay = c(round(summary(cs1$jams_delay), digits = 2)),
                       jams_length = c(round(summary(cs1$jams_length), digits = 2)),
                       jams_count = c(round(summary(cs1$jams_count), digits = 2)))
     
-    df1[1,]
+    ls1 <- hourly %>% 
+      filter(date == as_datetime(str_c(as.character(input$date2), 
+                                       " ", 
+                                       as.character(input$hour2), 
+                                       ":00:00")) - 604800)
+    
+    df2 <- data.frame(time = c("last week"),
+                      traffic_index = c(round(summary(ls1$traffic_index_live), digits = 2)),
+                      jams_delay = c(round(summary(ls1$jams_delay), digits = 2)),
+                      jams_length = c(round(summary(ls1$jams_length), digits = 2)),
+                      jams_count = c(round(summary(ls1$jams_count), digits = 2)))
+    
+    if(input$currenttime.o == TRUE){
+      if(input$lastweek.o == TRUE){
+        rbind(df1[1,], df2[1,])
+      }else{
+        df1[1,]
+      }
+    }else{
+      if(input$lastweek.o == TRUE){
+        df2[2,]
+      }else{
+        
+      }
+    }
     
   })
   
@@ -556,7 +766,6 @@ server <- function(input, output) {
         }
     })
   
-  
   ## Third graph for the Overview tab
   output$mymap <- renderLeaflet({
     if(input$traffic==TRUE){
@@ -576,6 +785,7 @@ server <- function(input, output) {
       
     }
   })
+  
   
   ## Location Search
   output$warning.text <- renderText({
@@ -751,6 +961,7 @@ server <- function(input, output) {
     }
   })
   
+  ## Current and Last Week Spec Tables
   output$airtable.title <- renderText({
     if(input$currenttime == TRUE){
       str_c("Current Date")
@@ -761,7 +972,6 @@ server <- function(input, output) {
       str_c("Last Week")
     }
   })
-  
   output$airtable <- renderTable({
     if(input$currenttime == TRUE){
       cs1 <- traffic.flow %>% 
@@ -2269,6 +2479,7 @@ server <- function(input, output) {
     }
   })
   
+  ## Week Comparison Bar Chart
   output$airtable.graph <- renderPlot({
     if(input$currenttime == TRUE & input$lastweek == TRUE){
       cs1 <- traffic.flow %>% 
@@ -3051,6 +3262,7 @@ server <- function(input, output) {
     }
   })
   
+  ## Overview Numbers 
   output$current.speed <- renderText({
     cs1 <- traffic.flow %>% 
       filter(date == parse_datetime(str_c(as.character(input$date1), 
@@ -8000,6 +8212,7 @@ server <- function(input, output) {
     
   })
   
+  ## Historical Graphs
   output$location.graph <- renderPlot({
     if(input$historical == TRUE){
       if(input$loc.type == "Quadrant"){
@@ -9295,7 +9508,7 @@ server <- function(input, output) {
     }
   }) 
   
-  ## Test
+  ## Raw Data Tables
   output$static.city <- renderDataTable({
     hourly
   })
