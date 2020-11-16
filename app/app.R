@@ -207,8 +207,7 @@ c.time <- substr(current.date.time, start = 12, stop = 13)
 
 ui <- fluidPage(theme = shinytheme("slate"),
   wellPanel(titlePanel("Assessment of Air Quality and Traffic Volume"),
-            h4("Washington, D.C."),
-            h4("American University Team - Chace Paulson, Minh Nguyen & Shalini Ramachandra")),
+            h4("Washington, D.C.")),
   
   tabsetPanel(
     tabPanel("Citywide",
@@ -756,6 +755,130 @@ server <- function(input, output) {
                       jams_delay = c(round(summary(ls1$jams_delay), digits = 2)),
                       jams_length = c(round(summary(ls1$jams_length), digits = 2)),
                       jams_count = c(round(summary(ls1$jams_count), digits = 2)))
+    
+    if(input$tindex == TRUE){
+      if(input$jdelay == TRUE){
+        if(input$jlength == TRUE){
+          if(input$jcount == TRUE){
+            df1 <- df1[,c(1, 2, 3, 4, 5)]
+          }else if(input$jcount == FALSE){
+            df1 <- df1[,c(1, 2, 3, 4)]
+          }
+        }else if(input$jlength == FALSE){
+          if(input$jcount == TRUE){
+            df1 <- df1[,c(1, 2, 3, 5)]
+          }else if(input$jcount == FALSE){
+            df1 <- df1[,c(1, 2, 3)]
+          }
+        }
+      }else if(input$jdelay == FALSE){
+        if(input$jlength == TRUE){
+          if(input$jcount == TRUE){
+            df1 <- df1[,c(1, 2, 4, 5)]
+          }else if(input$jcount == FALSE){
+            df1 <- df1[,c(1, 2, 4)]
+          }
+        }else if(input$jlength == FALSE){
+          if(input$jcount == TRUE){
+            df1 <- df1[,c(1, 2, 5)]
+          }else if(input$jcount == FALSE){
+            df1 <- df1[,c(1, 2)]
+          }
+        }
+      }
+    }else if(input$tindex == FALSE){
+      if(input$jdelay == TRUE){
+        if(input$jlength == TRUE){
+          if(input$jcount == TRUE){
+            df1 <- df1[,c(1, 3, 4, 5)]
+          }else if(input$jcount == FALSE){
+            df1 <- df1[,c(1, 3, 4)]
+          }
+        }else if(input$jlength == FALSE){
+          if(input$jcount == TRUE){
+            df1 <- df1[,c(1, 3, 5)]
+          }else if(input$jcount == FALSE){
+            df1 <- df1[,c(1, 3)]
+          }
+        }
+      }else if(input$jdelay == FALSE){
+        if(input$jlength == TRUE){
+          if(input$jcount == TRUE){
+            df1 <- df1[,c(1, 4, 5)]
+          }else if(input$jcount == FALSE){
+            df1 <- df1[,c(1, 4)]
+          }
+        }else if(input$jlength == FALSE){
+          if(input$jcount == TRUE){
+            df1 <- df1[,c(1, 5)]
+          }else if(input$jcount == FALSE){
+            df1 <- df1[,c(1)]
+          }
+        }
+      }
+    }
+    
+    if(input$tindex == TRUE){
+      if(input$jdelay == TRUE){
+        if(input$jlength == TRUE){
+          if(input$jcount == TRUE){
+            df2 <- df2[,c(1, 2, 3, 4, 5)]
+          }else if(input$jcount == FALSE){
+            df2 <- df2[,c(1, 2, 3, 4)]
+          }
+        }else if(input$jlength == FALSE){
+          if(input$jcount == TRUE){
+            df2 <- df2[,c(1, 2, 3, 5)]
+          }else if(input$jcount == FALSE){
+            df2 <- df2[,c(1, 2, 3)]
+          }
+        }
+      }else if(input$jdelay == FALSE){
+        if(input$jlength == TRUE){
+          if(input$jcount == TRUE){
+            df2 <- df2[,c(1, 2, 4, 5)]
+          }else if(input$jcount == FALSE){
+            df2 <- df2[,c(1, 2, 4)]
+          }
+        }else if(input$jlength == FALSE){
+          if(input$jcount == TRUE){
+            df2 <- df2[,c(1, 2, 5)]
+          }else if(input$jcount == FALSE){
+            df2 <- df2[,c(1, 2)]
+          }
+        }
+      }
+    }else if(input$tindex == FALSE){
+      if(input$jdelay == TRUE){
+        if(input$jlength == TRUE){
+          if(input$jcount == TRUE){
+            df2 <- df2[,c(1, 3, 4, 5)]
+          }else if(input$jcount == FALSE){
+            df2 <- df2[,c(1, 3, 4)]
+          }
+        }else if(input$jlength == FALSE){
+          if(input$jcount == TRUE){
+            df2 <- df2[,c(1, 3, 5)]
+          }else if(input$jcount == FALSE){
+            df2 <- df2[,c(1, 3)]
+          }
+        }
+      }else if(input$jdelay == FALSE){
+        if(input$jlength == TRUE){
+          if(input$jcount == TRUE){
+            df2 <- df2[,c(1, 4, 5)]
+          }else if(input$jcount == FALSE){
+            df2 <- df2[,c(1, 4)]
+          }
+        }else if(input$jlength == FALSE){
+          if(input$jcount == TRUE){
+            df2 <- df2[,c(1, 5)]
+          }else if(input$jcount == FALSE){
+            df2 <- df2[,c(1)]
+          }
+        }
+      }
+    }
     
     if(input$currenttime.o == TRUE){
       if(input$lastweek.o == TRUE){
