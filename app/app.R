@@ -313,7 +313,14 @@ ui <- fluidPage(theme = shinytheme("slate"),
     tabPanel("Raw Citywide Data",
              dataTableOutput("static.city")),
     tabPanel("Raw Location Specific Data",
-             dataTableOutput("static.location"))
+             dataTableOutput("static.location")),
+    tabPanel("Background",
+             h3("Air Quality"),
+             tableOutput("airnow.back"),
+             h3("Traffic Data - City Wide"),
+             tableOutput("hourly.back"),
+             h3("Traffic Data - Location Search"),
+             tableOutput("traffic.flow.back"))
   )
 )
 
@@ -1016,7 +1023,8 @@ server <- function(input, output) {
       
       p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
         geom_bar(stat = "identity", position = "dodge") +
-        labs(x = "Air Quality Parameters", y = "AQI", fill = "Date") +
+        labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+             title = "Weekly Comparison of AQI and Traffic") +
         annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
         geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
         annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
@@ -1099,7 +1107,7 @@ server <- function(input, output) {
                         substr(cs4$date, start = 12, stop = 13))
       
       p1 <- ggplot(data = cs4, aes(x = param, y = value, fill = as.character(date))) +
-        geom_bar(stat = "identity", , position = "dodge") +
+        geom_bar(stat = "identity", position = "dodge") +
         labs(x = "Traffic Parameters", y = "Traffic Value", fill = "Date")
       
       grid.arrange(p2, p1, ncol = 2)
@@ -3884,7 +3892,8 @@ server <- function(input, output) {
       
       p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
         geom_bar(stat = "identity", position = "dodge") +
-        labs(x = "Air Quality Parameters", y = "AQI", fill = "Date") +
+        labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+             title = "Weekly Comparison of AQI and Traffic") +
         annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
         geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
         annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
@@ -3967,7 +3976,7 @@ server <- function(input, output) {
                         substr(cs4$date, start = 12, stop = 13))
       
       p1 <- ggplot(data = cs4, aes(x = param, y = value, fill = as.character(date))) +
-        geom_bar(stat = "identity", , position = "dodge") +
+        geom_bar(stat = "identity", position = "dodge") +
         labs(x = "Traffic Parameters", y = "Traffic Value", fill = "Date")
       
       grid.arrange(p2, p1, ncol = 2)
@@ -10127,7 +10136,7 @@ server <- function(input, output) {
               grid.arrange(p4, ncol = 2)
             }else if(input$no2.1 == FALSE){
               ggplot(data = cs3, aes(x = date)) +
-                labs(x = "Date", y = "AQI",
+                labs(x = "Date", y = "Air Quality Index",
                      title = str_c(input$loc.type))
             }
           }
@@ -10385,7 +10394,7 @@ server <- function(input, output) {
               grid.arrange(p4, ncol = 2)
             }else if(input$fftravel == FALSE){
               ggplot(data = cs4, aes(x = date)) +
-                labs(x = "Date", y = "AQI",
+                labs(x = "Date", y = "Air Quality Index",
                      title = str_c(input$loc.type))
             }
           }
@@ -10402,6 +10411,42 @@ server <- function(input, output) {
     traffic.flow %>% 
       select(-all_lat_lon) %>% 
       select(-street.url)
+  })
+  
+  ## graphics for background tab 
+  output$airnow.back <- renderTable({
+    data.frame(`Level of Concern` = c("Good", "Moderate", 
+                                      "Unhealthy for Sensitive Groups", 
+                                      "Unhealthy", "Very Unhealthy", "Hazardous"),
+               `AQI Values` = c("0 to 50", "51 to 100", "101 to 150", 
+                                "151 to 200", "201 to 300", "301 and higher"),
+               Description = c("Air quality is satisfactory, and air pollution poses little or no risk.",
+                               "Air quality is acceptable. However, there may be a risk for some people, particularly those who are unusually sensitive to air pollution.",
+                               "Members of sensitive groups may experience health effects. The general public is less likely to be affected.",
+                               "Some members of the general public may experience health effects; members of sensitive groups may experience more serious health effects.",
+                               "Health alert: the risk of health effects is increased for everyone.",
+                               "Health warming of emergency conditions: everyone is more likely to be affected."))
+    
+  })
+  output$traffic.flow.back <- renderTable({
+    data.frame(Metric = c("Current Speed",
+                          "Free Flow Speed",
+                          "Current Travel Time",
+                          "Free Flow Travel Time"),
+               Description = c("The current average speed at the selected location in miles per hour.",
+                               "The average expected speed at the selected location in miles per hour under ideal conditions.",
+                               "The current travel time at the selected location in seconds.",
+                               "The expected travel time at the selected location in seconds under ideal conditions."))
+  })
+  output$hourly.back <- renderTable({
+    data.frame(Metric = c("Traffic Index",
+                          "Jams Count",
+                          "Jams Delay",
+                          "Jams Length"),
+               Description = c("Congestion level across Washington, D.C. in percent.",
+                               "Total number of traffic jams across Washington, D.C.",
+                               "Delay time from traffic jams across Washington, D.C. in seconds.",
+                               "Total length of traffic jams across Washington, D.C. in km."))
   })
 }
 
