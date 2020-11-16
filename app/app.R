@@ -898,13 +898,41 @@ server <- function(input, output) {
   
   output$airtable.graph2 <- renderPlot({
     if(input$currenttime.o == TRUE & input$lastweek.o == TRUE){
-      cs1 <- parameter_wider %>% 
+      if(input$sensor.type == "Average Across Sensors"){  
+        x <- parameter_wider %>% 
+          filter(agency == "District of Columbia - Department of Energy and Environment")
+      }else if(input$sensor.type == "Single Sensor"){
+        if(input$location.type == "McMillan NCORE"){
+          x <- parameter_wider %>% 
+            filter(location == "McMillan NCORE")
+        }else if(input$location.type == "DC Near Road"){
+          x <- parameter_wider %>% 
+            filter(location == "DC Near Road")
+        }else if(input$location.type == "King Greenleaf Rec Center"){
+          x <- parameter_wider %>% 
+            filter(location == "King Greenleaf Rec Center")
+        }else if(input$location.type == "River Terrace"){
+          x <- parameter_wider %>% 
+            filter(location == "River Terrace")
+        }else if(input$location.type == "McMillan Reservoir"){
+          x <- parameter_wider %>% 
+            filter(location == "McMillan Reservoir")
+        }else if(input$location.type == "Tokoma Rec"){
+          x <- parameter_wider %>% 
+            filter(location == "Tokoma Rec")
+        }else if(input$location.type == "Aurora Hills"){
+          x <- parameter_wider %>% 
+            filter(location == "Aurora Hills")
+        }
+      }
+      
+      cs1 <- x %>% 
         filter(date == parse_datetime(str_c(as.character(input$date2), 
                                             " ", 
                                             as.character(input$hour2), 
                                             ":00:00")))
       
-      ls1 <- parameter_wider %>% 
+      ls1 <- x %>% 
         filter(date == as_datetime(str_c(as.character(input$date2), 
                                          " ", 
                                          as.character(input$hour2), 
@@ -1114,13 +1142,12 @@ server <- function(input, output) {
         x <- merge(x, param.slim, by = "date")
         
         colors <- c("Ozone" = "blue", "PM2.5" = "orange", 
-                    "SO2" = "red", "NO2" = "green",
-                    "traffic" = "black")
+                    "SO2" = "red", "NO2" = "green")
         
         #ptitle <- str_c("AQI and Traffic")
         p1 <- 
           ggplot(data = x, aes(x = date)) +
-          labs(x = "Date", y = "AQI",
+          labs(x = "Date", y = "Air Quality Index",
                title = "AQI and Traffic",
                color = "Parameter") +
           scale_color_manual(values = colors) +
@@ -1128,142 +1155,77 @@ server <- function(input, output) {
           geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1.5) +
           annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 95, label = "Moderate") +
           geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1.5) +
-          annotate("text", x = as_datetime("2020-10-30 8:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          annotate("text", x = as_datetime("2020-10-31 18:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
           geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1.5)
         
-        ptra <- geom_line(aes(y = traffic_index_live, color = "traffic"))
         po <- geom_line(aes(y = Ozone, color = "Ozone"))
         pc <- geom_line(aes(y = SO2, color = "SO2"))
         ph <- geom_line(aes(y = PM2.5, color = "PM2.5"))
         pl <- geom_line(aes(y = NO2, color = "NO2"))
         #pt <- labs(title = ptitle, x = "Date", y = "")
         
-        if(input$traffic == TRUE) {
-          if(input$ozone == TRUE){
-            if(input$so2 == TRUE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + po + pc + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + po + pc + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + po + pc + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + po + pc #+ pt
-                }
+        if(input$ozone == TRUE){
+          if(input$so2 == TRUE){
+            if(input$pm25 == TRUE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + po + pc + ph + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + po + pc + ph #+ pt
               }
-            } else if(input$so2 == FALSE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + po + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + po + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + po + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + po #+ pt
-                }
+            }else if(input$pm25 == FALSE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + po + pc + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + po + pc #+ pt
               }
             }
-          } else if(input$ozone == FALSE){
-            if(input$so2 == TRUE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + pc + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + pc + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + pc + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + pc #+ pt
-                }
+          } else if(input$so2 == FALSE){
+            if(input$pm25 == TRUE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + po + ph + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + po + ph #+ pt
               }
-            } else if(input$so2 == FALSE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra #+ pt
-                }
+            }else if(input$pm25 == FALSE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + po + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + po #+ pt
               }
             }
           }
-          # TRAFFIC IS FALSE
-        }else if(input$traffic == FALSE){
-          if(input$ozone == TRUE){
-            if(input$so2 == TRUE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + po + pc + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + po + pc + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + po + pc + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + po + pc #+ pt
-                }
+        } else if(input$ozone == FALSE){
+          if(input$so2 == TRUE){
+            if(input$pm25 == TRUE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + pc + ph + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + pc + ph #+ pt
               }
-            } else if(input$so2 == FALSE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + po + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + po + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + po + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + po #+ pt
-                }
+            }else if(input$pm25 == FALSE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + pc + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + pc #+ pt
               }
             }
-          } else if(input$ozone == FALSE){
-            if(input$so2 == TRUE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + pc + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + pc + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + pc + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + pc #+ pt
-                }
+          } else if(input$so2 == FALSE){
+            if(input$pm25 == TRUE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + ph + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + ph #+ pt
               }
-            } else if(input$so2 == FALSE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 #+ pt
-                }
+            }else if(input$pm25 == FALSE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 #+ pt
               }
             }
           }
         }
+        
       }else if(input$sensor.type == "Single Sensor"){
         if(input$location.type == "McMillan NCORE"){
           x <- parameter_wider %>% 
@@ -1306,13 +1268,12 @@ server <- function(input, output) {
         x <- merge(x, param.slim, by = "date")
         
         colors <- c("Ozone" = "blue", "PM2.5" = "orange", 
-                    "SO2" = "red", "NO2" = "green",
-                    "traffic" = "black")
+                    "SO2" = "red", "NO2" = "green")
         
         #ptitle <- str_c("AQI and Traffic")
         p1 <- 
           ggplot(data = x, aes(x = date)) +
-          labs(x = "Date", y = "AQI",
+          labs(x = "Date", y = "Air Quality Index",
                title = "AQI and Traffic",
                color = "Parameter") +
           scale_color_manual(values = colors) +
@@ -1323,140 +1284,165 @@ server <- function(input, output) {
           annotate("text", x = as_datetime(1603836000), y = 145, label = "Unhealthy for Sensitive Groups") +
           geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1.5)
         
-        ptra <- geom_line(aes(y = traffic_index_live, color = "traffic"))
         po <- geom_line(aes(y = Ozone, color = "Ozone"))
         pc <- geom_line(aes(y = SO2, color = "SO2"))
         ph <- geom_line(aes(y = PM2.5, color = "PM2.5"))
         pl <- geom_line(aes(y = NO2, color = "NO2"))
         #pt <- labs(title = ptitle, x = "Date", y = "")
         
-        if(input$traffic == TRUE) {
-          if(input$ozone == TRUE){
-            if(input$so2 == TRUE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + po + pc + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + po + pc + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + po + pc + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + po + pc #+ pt
-                }
+        if(input$ozone == TRUE){
+          if(input$so2 == TRUE){
+            if(input$pm25 == TRUE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + po + pc + ph + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + po + pc + ph #+ pt
               }
-            } else if(input$so2 == FALSE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + po + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + po + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + po + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + po #+ pt
-                }
+            }else if(input$pm25 == FALSE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + po + pc + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + po + pc #+ pt
               }
             }
-          } else if(input$ozone == FALSE){
-            if(input$so2 == TRUE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + pc + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + pc + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + pc + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + pc #+ pt
-                }
+          } else if(input$so2 == FALSE){
+            if(input$pm25 == TRUE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + po + ph + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + po + ph #+ pt
               }
-            } else if(input$so2 == FALSE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + ptra + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ptra #+ pt
-                }
+            }else if(input$pm25 == FALSE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + po + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + po #+ pt
               }
             }
           }
-          # TRAFFIC IS FALSE
-        }else if(input$traffic == FALSE){
-          if(input$ozone == TRUE){
-            if(input$so2 == TRUE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + po + pc + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + po + pc + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + po + pc + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + po + pc #+ pt
-                }
+        } else if(input$ozone == FALSE){
+          if(input$so2 == TRUE){
+            if(input$pm25 == TRUE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + pc + ph + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + pc + ph #+ pt
               }
-            } else if(input$so2 == FALSE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + po + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + po + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + po + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + po #+ pt
-                }
+            }else if(input$pm25 == FALSE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + pc + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + pc #+ pt
               }
             }
-          } else if(input$ozone == FALSE){
-            if(input$so2 == TRUE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + pc + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + pc + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + pc + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + pc #+ pt
-                }
+          } else if(input$so2 == FALSE){
+            if(input$pm25 == TRUE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + ph + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 + ph #+ pt
               }
-            } else if(input$so2 == FALSE){
-              if(input$pm25 == TRUE){
-                if(input$no2 == TRUE){
-                  p1 + ph + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 + ph #+ pt
-                }
-              }else if(input$pm25 == FALSE){
-                if(input$no2 == TRUE){
-                  p1 + pl #+ pt
-                } else if(input$no2 == FALSE){
-                  p1 #+ pt
-                }
+            }else if(input$pm25 == FALSE){
+              if(input$no2 == TRUE){
+                plot1 <- p1 + pl #+ pt
+              } else if(input$no2 == FALSE){
+                plot1 <- p1 #+ pt
               }
             }
           }
         }
       }
+      
+      param.slim <- parameter_wider %>% 
+        select(date, traffic_index_live, jams_delay, jams_length, jams_count) 
+      
+      param.slim <- param.slim[,2:6]
+      
+      param.slim <- param.slim %>% 
+        distinct() %>% 
+        rename(Traffic_Index = traffic_index_live,
+               Jams_Delay = jams_delay,
+               Jams_Length = jams_length,
+               Jams_Count = jams_count)
+      
+      colors <- c("Traffic_Index" = "blue", "Jams_Delay" = "orange", 
+                  "Jams_Length" = "red", "Jams_Count" = "green")
+      
+      #ptitle <- str_c("AQI and Traffic")
+      p1 <- 
+        ggplot(data = param.slim, aes(x = date)) +
+        labs(x = "Date", y = "Traffic Value", title = " ",
+             color = "Parameter") +
+        scale_color_manual(values = colors) 
+      
+      po <- geom_line(aes(y = Traffic_Index, color = "Traffic_Index"))
+      pc <- geom_line(aes(y = Jams_Delay, color = "Jams_Delay"))
+      ph <- geom_line(aes(y = Jams_Length, color = "Jams_Length"))
+      pl <- geom_line(aes(y = Jams_Count, color = "Jams_Count"))
+      #pt <- labs(title = ptitle, x = "Date", y = "")
+      
+      if(input$tindex == TRUE){
+        if(input$jdelay == TRUE){
+          if(input$jlength == TRUE){
+            if(input$jcount == TRUE){
+              plot2 <- p1 + po + pc + ph + pl #+ pt
+            } else if(input$jcount == FALSE){
+              plot2 <- p1 + po + pc + ph #+ pt
+            }
+          }else if(input$jlength == FALSE){
+            if(input$jcount == TRUE){
+              plot2 <- p1 + po + pc + pl #+ pt
+            } else if(input$jcount == FALSE){
+              plot2 <- p1 + po + pc #+ pt
+            }
+          }
+        } else if(input$jdelay == FALSE){
+          if(input$jlength == TRUE){
+            if(input$jcount == TRUE){
+              plot2 <- p1 + po + ph + pl #+ pt
+            } else if(input$jcount == FALSE){
+              plot2 <- p1 + po + ph #+ pt
+            }
+          }else if(input$jlength == FALSE){
+            if(input$jcount == TRUE){
+              plot2 <- p1 + po + pl #+ pt
+            } else if(input$jcount == FALSE){
+              plot2 <- p1 + po #+ pt
+            }
+          }
+        }
+      } else if(input$tindex == FALSE){
+        if(input$jdelay == TRUE){
+          if(input$jlength == TRUE){
+            if(input$jcount == TRUE){
+              plot2 <- p1 + pc + ph + pl #+ pt
+            } else if(input$jcount == FALSE){
+              plot2 <- p1 + pc + ph #+ pt
+            }
+          }else if(input$jlength == FALSE){
+            if(input$jcount == TRUE){
+              plot2 <- p1 + pc + pl #+ pt
+            } else if(input$jcount == FALSE){
+              plot2 <- p1 + pc #+ pt
+            }
+          }
+        } else if(input$jdelay == FALSE){
+          if(input$jlength == TRUE){
+            if(input$jcount == TRUE){
+              plot2 <- p1 + ph + pl #+ pt
+            } else if(input$jcount == FALSE){
+              plot2 <- p1 + ph #+ pt
+            }
+          }else if(input$jlength == FALSE){
+            if(input$jcount == TRUE){
+              plot2 <- p1 + pl #+ pt
+            } else if(input$jcount == FALSE){
+              plot2 <- p1 #+ pt
+            }
+          }
+        }
+      }
+      grid.arrange(plot1, plot2, ncol = 2)
     }
   })
   
