@@ -215,7 +215,7 @@ ui <- fluidPage(theme = shinytheme("slate"),
                sidebarPanel(
                  h5("Metric Comparisons"),
                  checkboxInput("currenttime.o", "Current Date", value = TRUE), 
-                 checkboxInput("lastweek.o", "Previous Week"), 
+                 checkboxInput("lastweek.o", "Previous Week", value = TRUE), 
                  checkboxInput("historical.o", "Historical", value = TRUE),
                  dateInput("date2", "What day?",
                            value = c.date),
@@ -315,12 +315,18 @@ ui <- fluidPage(theme = shinytheme("slate"),
     tabPanel("Raw Location Specific Data",
              dataTableOutput("static.location")),
     tabPanel("Background",
-             h3("Air Quality"),
-             tableOutput("airnow.back"),
-             h3("Traffic Data - City Wide"),
+             h3("Traffic Data"),
+             p("Citywide traffic data is pulled hourly from TomTom, a Dutch location technology firm. TomTom sources their traffic information from government and third-party data (e.g., induction loops in roads, cameras, and traffic surveillance) as well as new sources from anonymous mobile phone users. Data is obtained through TomTom's live traffic index for Washington, D.C. as well as their Traffic API. Below is the information available for the citywide and location search features."),
+             h4("Citywide"),
              tableOutput("hourly.back"),
-             h3("Traffic Data - Location Search"),
-             tableOutput("traffic.flow.back"))
+             h4("Location Search"),
+             tableOutput("traffic.flow.back"),
+             h3("Air Quality"),
+             p("Air quality data is pulled from AirNow, the United States government's hub for air quality data. AirNow is a partnership between the U.S. Environmental Protection Agency, National Oceanic and Atmospheric Administration, National Park Service, NASA, Center for Disease Control, and tribal, state, and local air quality agencies. The data encompasses the U.S. Air Quality Index (AQI) which translates raw concentration levels of air pollutants into an index on whether the air quality is healthy or unhealthy."),
+             tableOutput("airnow.back"),
+             h5("Air Pollutants"),
+             p("The AirNow sensors in Washington, D.C. include air quality data for four major pollutants - Ozone, Particulate Matter (PM 2.5), Sulfur Dioxide, and Nitrogen Dioxide. The recommended course of action for each of the pollutants and air quality levels of concern is provided below."),
+             tableOutput("pollutants.back"))
   )
 )
 
@@ -10447,6 +10453,17 @@ server <- function(input, output) {
                                "Total number of traffic jams across Washington, D.C.",
                                "Delay time from traffic jams across Washington, D.C. in seconds.",
                                "Total length of traffic jams across Washington, D.C. in km."))
+  })
+  output$pollutants.back <- renderTable({
+    data.frame("Abbrv." = c("O3", "PM2.5", "SO2", "NO2"),
+               "Pollutant" = c("Ozone", "Particulate Matter", 
+                               "Sulfur Dioxide", "Nitrogen Dioxide"),
+               "Good" = c("None", "None", "None", "None"),
+               "Moderate" = c("Unusually sensitive people should consider reducing prolonged or heavy outdoor exertion.", "Unusually sensitive people should consider reducing prolonged or heavy exertion.", "None", "Unusually sensitive inidividuals should consider limiting prolonged exertion especially near busy roads."),
+               "Sensitive" = c("People with lung disease (such as asthma), children, older adults, people who are active outdoors (including outdoor workers), people with certain genetic variants, and people with diets limited in certain nutrients should reduce prolonged or heavy outdoor exertion.", "People with heart or lung disease, older adults, children, and people of lower socioeconomic status should reduce prolonged or heavy exertion.", "People with asthma should consider limiting outdoor exertion.", "People with asthma, children, and older adults should limit prolonged exertion especially near busy roads."),
+               "Unhealthy" = c("People with lung disease (such as asthma), children, older adults, people who are active outdoors (including outdoor workers), people with certain genetic variants, and people with diets limited in certain nutrients should avoid prolonged or heavy outdoor exertion; everyone should reduce prolonged or heavy outdoor exertion.", "People with heart or lung disease, older adults, children, or people of lower socioeconomic status should avoid prolonged or heavy exertion; everyone else should reduce prolonged or heavy exertion.", "Children, people with asthma, or other lung diseases should limit outdoor exertion.", "People with asthma, children, and older adults should avoid prolonged exertion near roadways; everyone else should limit prolonged exertion especially near busy roads."),
+               "Very Unhealthy" = c("People with lung disease (such as asthma), children, older adults, people who are active outdoors (including outdoor workers), people with certain genetic variants, and people with diets limited in certain nutrients should avoid all outdoor exertion; everyone elese should reduce outdoor exertion.", "People with heart or lung disease, older adults, children, and people of lower socioeconomic status should avoid all physical activity outdoors. Everyone else should avoid prolonged or heavy exertion.", "Children, people with asthma, or other lung diseases should avoid outdoor exertions; everyone else should reduce outdoor exertion.", "People with asthma, children, and older adults should avoid all outdoor exertion; everyone else should avoid prolonged exertion especially near busy roads."),
+               "Hazardous" = c("Everyone should avoid all outdoor exertion.", "Everyone should avoid all physical activity outdoors; people with heart or lung disease, older adults, children, and people of lower socioeconomic status should remain indoors and keep activity levels low.", "Children, people with asthma, or other lung diseases should remain indoors; everyone else should avoid outdoor exertion.", "People with asthma, children, and older adults should remain indoors; everyone else should avoid all outdoor exertion."))
   })
 }
 
