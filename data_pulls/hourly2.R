@@ -3,8 +3,8 @@ library(tidyverse)
 library(httr)
 library(xml2)
 
-hourly.old <- read.csv("hourly.csv")
-traffic.flow.old <- read.csv("traffic_flow.csv")
+hourly.old <- read_csv(str_c(getwd(), "/TOP/data/hourly.csv"))
+traffic.flow.old <- read_csv(str_c(getwd(), "/TOP/data/traffic_flow.csv"))
 
 hourly.old$date <- parse_datetime(hourly.old$date)
 traffic.flow.old$date <- parse_datetime(traffic.flow.old$date)
@@ -104,11 +104,11 @@ hourly.combine <- rbind(hourly.old, hourly.current)
 hourly.combine <- hourly.combine %>% 
   distinct()
 
-write.csv(hourly.combine, file = "hourly.csv", row.names = FALSE)
-
+write.csv(hourly.combine, str_c(getwd(), "/TOP/data/hourly.csv"), row.names = FALSE)
 
 # Traffic Flow ------------------------------------------------------------
-street <- read_csv("street.csv")
+street <- read_csv(str_c(getwd(), "/TOP/data/hourly.csv"))
+  read_csv("street.csv")
 
 coords <- data.frame(lat = as.character(street$lat),
                      lon = as.character(street$lon))
@@ -166,8 +166,7 @@ traffic.flow.current <- merge(traffic.flow.current, street, by = c("lat", "lon")
 
 traffic.flow.combine <- rbind(traffic.flow.old, traffic.flow.current)
 
-write.csv(traffic.flow.combine, file = "traffic_flow.csv", row.names = FALSE)
-
+write.csv(traffic.flow.combine, str_c(getwd(), "/TOP/data/traffic_flow.csv"), row.names = FALSE)
 
 
 
