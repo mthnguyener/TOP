@@ -213,7 +213,7 @@ ui <- fluidPage(theme = shinytheme("slate"),
     tabPanel("Citywide",
              sidebarLayout(
                sidebarPanel(
-                 h5("Metric Comparisons"),
+                 uiOutput(outputId = "text1"),
                  checkboxInput("currenttime.o", "Current Date", value = TRUE), 
                  checkboxInput("lastweek.o", "Previous Week", value = TRUE), 
                  checkboxInput("historical.o", "Historical", value = TRUE),
@@ -227,14 +227,13 @@ ui <- fluidPage(theme = shinytheme("slate"),
                  selectInput("location.type", "Which sensor location?",
                              choices = sensor.location, 
                              selected = "DC Near Road"),
-                 uiOutput(outputId = "text1"),
-                 checkboxInput("traffic", "On", value = TRUE),
+                 checkboxInput("traffic", "Turn Map Traffic Index On", value = TRUE),
                  uiOutput(outputId = "text2"),
                  checkboxInput("ozone", "OZONE", value = TRUE),
                  checkboxInput("so2", "SO2"),
                  checkboxInput("pm25", "PM2.5", value = TRUE),
                  checkboxInput("no2", "NO2"),
-                 h5("Traffic Parameters"),
+                 uiOutput(outputId = "text3"),
                  checkboxInput("tindex", "Traffic Index", value = TRUE), 
                  checkboxInput("jdelay", "Jams Delay"), 
                  checkboxInput("jlength", "Jams Length"),
@@ -336,11 +335,14 @@ server <- function(input, output) {
   ## Citywide Tab
   # Bold Labels
   output$text1 <- renderText({
-    HTML(paste0("<b>","Turn on Traffic Index?","</b>"))
+    HTML(paste0("<b>","Metric Comparisons","</b>"))
   })
   
   output$text2 <- renderText({
     HTML(paste0("<b>","Air Quality Parameters","</b>"))
+  })
+  output$text3 <- renderText({
+    HTML(paste0("<b>","Traffic Parameters","</b>"))
   })
   
   # AQI SUMMARY
