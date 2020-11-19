@@ -269,7 +269,7 @@ ui <- fluidPage(
     tabPanel("Location Search",
              sidebarLayout(
                sidebarPanel(
-                 h5("Metric Comparisons"),
+                 uiOutput(outputId = "text1"),
                  checkboxInput("currenttime", "Current Date", value = TRUE), 
                  checkboxInput("lastweek", "Previous Week", value = TRUE), 
                  checkboxInput("historical", "Historical", value = TRUE),
@@ -282,12 +282,12 @@ ui <- fluidPage(
                              selected = "Quadrant"),
                  selectInput("loc.type2", "Which location?", "",
                              selected = ""),
-                 h5("Air Quality Parameters"),
+                 uiOutput(outputId = "text2"),
                  checkboxInput("ozone1", "Ozone", value = TRUE), 
                  checkboxInput("so2.1", "SO2"), 
                  checkboxInput("pm2.5.1", "PM 2.5", value = TRUE),
                  checkboxInput("no2.1", "NO2"),
-                 h5("Traffic Parameters"),
+                 uiOutput(outputId = "text3"),
                  checkboxInput("cspeed", "Current Speed", value = TRUE), 
                  checkboxInput("ffspeed", "Free Flow Speed", value = TRUE), 
                  checkboxInput("ctravel", "Current Travel Time"),
