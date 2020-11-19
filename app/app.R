@@ -14,8 +14,8 @@ library(stringr)
 library(shinyjs)
 
 # Load Data ---------------------------------------------------------------
-hourly <- read_csv("hourly.csv")
-traffic.flow <- read_csv("traffic_flow.csv")
+hourly <- read_csv(str_c(getwd(), "/TOP/data/hourly.csv"))
+traffic.flow <- read_csv(str_c(getwd(), "/TOP/data/traffic_flow.csv"))
 
 agencies <- as.data.frame(unique(hourly$agency)) %>%
   rename(c("agency"="unique(hourly$agency)"))
@@ -3049,7 +3049,6 @@ server <- function(input, output, session) {
     }
   }
   )
-  
   observeEvent(input$historical,{
     if(input$historical == TRUE){
       show("location.graph");show("loc.type.graph1");show("loc.type.graph2")
@@ -3058,7 +3057,6 @@ server <- function(input, output, session) {
     }
   }
   )
-  
   observeEvent(input$currenttime.o,{
     if(input$currenttime.o == TRUE){
       show("airtable.graph2")
@@ -3067,7 +3065,6 @@ server <- function(input, output, session) {
     }
   }
   )
-  
   observeEvent(input$currenttime,{
     if(input$currenttime == TRUE){
       show("airtable.graph")
