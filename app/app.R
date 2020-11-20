@@ -14,6 +14,7 @@ library(stringr)
 library(shinyjs)
 
 # Load Data ---------------------------------------------------------------
+set('..')
 hourly <- read_csv(str_c(getwd(), "/TOP/data/hourly.csv"))
 traffic.flow <- read_csv(str_c(getwd(), "/TOP/data/traffic_flow.csv"))
 
@@ -217,6 +218,7 @@ ui <- fluidPage(
             h4("Washington, D.C.")),
   
   tabsetPanel(
+    tabPanel("Introduction"),
     tabPanel("Citywide",
              sidebarLayout(
                sidebarPanel(
