@@ -2,12 +2,13 @@
 library(tidyverse)
 library(httr)
 library(xml2)
+library(lubridate)
 
 hourly.old <- read_csv(str_c(getwd(), "/TOP/data/hourly.csv"))
 traffic.flow.old <- read_csv(str_c(getwd(), "/TOP/data/traffic_flow.csv"))
 
-hourly.old$date <- parse_datetime(hourly.old$date)
-traffic.flow.old$date <- parse_datetime(traffic.flow.old$date)
+hourly.old$date <- lubridate::as_datetime(hourly.old$date)
+traffic.flow.old$date <- lubridate::as_datetime(traffic.flow.old$date)
 
 # Hourly Traffic ----------------------------------------------------------
 current.date.time <- Sys.time()
@@ -107,8 +108,7 @@ hourly.combine <- hourly.combine %>%
 write.csv(hourly.combine, str_c(getwd(), "/TOP/data/hourly.csv"), row.names = FALSE)
 
 # Traffic Flow ------------------------------------------------------------
-street <- read_csv(str_c(getwd(), "/TOP/data/hourly.csv"))
-  read_csv("street.csv")
+street <- read_csv(str_c(getwd(), "/TOP/data/street.csv"))
 
 coords <- data.frame(lat = as.character(street$lat),
                      lon = as.character(street$lon))

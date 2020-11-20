@@ -9773,3 +9773,348 @@
 2020-11-19 11:00:00,1,38.875161,-77.012816,"PM2.5",9,40,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",8,199,19.2,49
 2020-11-19 11:00:00,1,38.895683,-76.958089,"PM2.5",1,3,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",8,199,19.2,49
 2020-11-19 11:00:00,1,38.921848,-77.013176,"OZONE",2,5,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",8,199,19.2,49
+2020-11-19 12:00:00,1,38.921848,-77.013176,"OZONE",2.4,4,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",9,146.2,17.9,45
+2020-11-19 12:00:00,1,38.921848,-77.013176,"PM2.5",12,46,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",9,146.2,17.9,45
+2020-11-19 12:00:00,1,38.895683,-76.958089,"PM2.5",-999,3,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",9,146.2,17.9,45
+2020-11-19 12:00:00,2,38.894749,-76.953427,"PM2.5",12,54,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"moderate",9,146.2,17.9,45
+2020-11-19 12:00:00,1,38.921848,-77.013176,"SO2",3.244,4,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",9,146.2,17.9,45
+2020-11-19 12:00:00,1,38.859402,-77.058899,"NO2",27.4,25,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",9,146.2,17.9,45
+2020-11-19 12:00:00,1,38.895683,-76.958089,"OZONE",4,6,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",9,146.2,17.9,45
+2020-11-19 12:00:00,1,38.895683,-76.958089,"NO2",39.03,37,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",9,146.2,17.9,45
+2020-11-19 12:00:00,1,38.970101,-77.016715,"NO2",31.28,29,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",9,146.2,17.9,45
+2020-11-19 12:00:00,1,38.970101,-77.016715,"OZONE",2,5,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",9,146.2,17.9,45
+2020-11-19 12:00:00,1,38.859402,-77.058899,"OZONE",1,3,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",9,146.2,17.9,45
+2020-11-19 12:00:00,1,38.894749,-76.953427,"NO2",40.52,38,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",9,146.2,17.9,45
+2020-11-19 12:00:00,1,38.921848,-77.013176,"NO2",46.2,43,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",9,146.2,17.9,45
+2020-11-19 12:00:00,1,38.875161,-77.012816,"PM2.5",4,28,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",9,146.2,17.9,45
+2020-11-19 13:00:00,1,38.970101,-77.016715,"OZONE",7.4,8,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.875161,-77.012816,"PM2.5",11,37,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.859402,-77.058899,"NO2",20.6,19,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.921848,-77.013176,"OZONE",9.1,6,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.894749,-76.953427,"PM2.5",9,47,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.859402,-77.058899,"OZONE",7,6,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.970101,-77.016715,"NO2",27.29,25,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.895683,-76.958089,"PM2.5",3,9,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.921848,-77.013176,"PM2.5",12,48,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.895683,-76.958089,"NO2",39.62,37,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.921848,-77.013176,"SO2",2.122,3,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.894749,-76.953427,"NO2",31.28,29,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.895683,-76.958089,"OZONE",7.1,7,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",10,186.6,25.9,54
+2020-11-19 13:00:00,1,38.921848,-77.013176,"NO2",32.75,30,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",10,186.6,25.9,54
+2020-11-19 14:00:00,1,38.859402,-77.058899,"NO2",11.5,10,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.970101,-77.016715,"NO2",15.19,14,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.895683,-76.958089,"PM2.5",1,6,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.921848,-77.013176,"PM2.5",6,36,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.894749,-76.953427,"PM2.5",5,34,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.921848,-77.013176,"OZONE",19.4,12,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.970101,-77.016715,"OZONE",18.5,13,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.859402,-77.058899,"OZONE",19,13,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.894749,-76.953427,"NO2",20.2,19,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.895683,-76.958089,"OZONE",20.1,14,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.921848,-77.013176,"SO2",1.174,1,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.921848,-77.013176,"NO2",15.86,14,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.875161,-77.012816,"PM2.5",-999,37,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",12,275.6,63.2,87
+2020-11-19 14:00:00,1,38.895683,-76.958089,"NO2",36.12,34,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",12,275.6,63.2,87
+2020-11-19 15:00:00,1,38.859402,-77.058899,"OZONE",29,19,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",16,405.8,132.7,136
+2020-11-19 15:00:00,1,38.894749,-76.953427,"NO2",18.67,17,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",16,405.8,132.7,136
+2020-11-19 15:00:00,1,38.970101,-77.016715,"NO2",8.76,8,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",16,405.8,132.7,136
+2020-11-19 15:00:00,1,38.895683,-76.958089,"NO2",24.76,23,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",16,405.8,132.7,136
+2020-11-19 15:00:00,1,38.970101,-77.016715,"OZONE",26.8,18,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",16,405.8,132.7,136
+2020-11-19 15:00:00,1,38.921848,-77.013176,"NO2",9.06,8,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",16,405.8,132.7,136
+2020-11-19 15:00:00,1,38.921848,-77.013176,"PM2.5",-999,36,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",16,405.8,132.7,136
+2020-11-19 15:00:00,1,38.895683,-76.958089,"PM2.5",-1,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",16,405.8,132.7,136
+2020-11-19 15:00:00,1,38.895683,-76.958089,"OZONE",27.8,19,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",16,405.8,132.7,136
+2020-11-19 15:00:00,1,38.894749,-76.953427,"PM2.5",9,35,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",16,405.8,132.7,136
+2020-11-19 15:00:00,1,38.921848,-77.013176,"SO2",0.777,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",16,405.8,132.7,136
+2020-11-19 15:00:00,1,38.859402,-77.058899,"NO2",5.5,5,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",16,405.8,132.7,136
+2020-11-19 15:00:00,1,38.921848,-77.013176,"OZONE",29,19,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",16,405.8,132.7,136
+2020-11-19 16:00:00,1,38.894749,-76.953427,"NO2",13.43,12,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",19,438.9,145.6,121
+2020-11-19 16:00:00,1,38.859402,-77.058899,"NO2",4.4,4,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",19,438.9,145.6,121
+2020-11-19 16:00:00,1,38.970101,-77.016715,"NO2",5.7,5,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",19,438.9,145.6,121
+2020-11-19 16:00:00,1,38.970101,-77.016715,"OZONE",32.5,22,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",19,438.9,145.6,121
+2020-11-19 16:00:00,1,38.859402,-77.058899,"OZONE",32,20,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",19,438.9,145.6,121
+2020-11-19 16:00:00,1,38.895683,-76.958089,"PM2.5",0,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",19,438.9,145.6,121
+2020-11-19 16:00:00,1,38.921848,-77.013176,"NO2",7.35,7,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",19,438.9,145.6,121
+2020-11-19 16:00:00,1,38.921848,-77.013176,"SO2",0.403,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",19,438.9,145.6,121
+2020-11-19 16:00:00,1,38.895683,-76.958089,"OZONE",32.5,24,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",19,438.9,145.6,121
+2020-11-19 16:00:00,1,38.895683,-76.958089,"NO2",14.95,13,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",19,438.9,145.6,121
+2020-11-19 16:00:00,1,38.894749,-76.953427,"PM2.5",5,28,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",19,438.9,145.6,121
+2020-11-19 16:00:00,1,38.921848,-77.013176,"PM2.5",6,29,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",19,438.9,145.6,121
+2020-11-19 16:00:00,1,38.921848,-77.013176,"OZONE",32.9,24,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",19,438.9,145.6,121
+2020-11-19 17:00:00,1,38.895683,-76.958089,"OZONE",33.1,26,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.894749,-76.953427,"NO2",16.2,15,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.894749,-76.953427,"PM2.5",10,35,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.921848,-77.013176,"SO2",0.474,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.875161,-77.012816,"PM2.5",5,22,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.921848,-77.013176,"NO2",6.92,6,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.895683,-76.958089,"PM2.5",1,2,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.859402,-77.058899,"OZONE",33,24,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.859402,-77.058899,"NO2",3.6,3,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.895683,-76.958089,"NO2",11.73,10,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.970101,-77.016715,"OZONE",33.2,26,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.970101,-77.016715,"NO2",5.37,5,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.921848,-77.013176,"PM2.5",11,38,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",23,519.5,172.8,169
+2020-11-19 17:00:00,1,38.921848,-77.013176,"OZONE",33.5,28,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",23,519.5,172.8,169
+2020-11-19 18:00:00,1,38.921848,-77.013176,"NO2",7.74,7,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.921848,-77.013176,"SO2",0.839,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.859402,-77.058899,"NO2",3.5,3,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.921848,-77.013176,"OZONE",33,29,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.921848,-77.013176,"PM2.5",5,29,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.859402,-77.058899,"OZONE",33,27,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.895683,-76.958089,"OZONE",33.1,28,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.875161,-77.012816,"PM2.5",1,12,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.895683,-76.958089,"PM2.5",-3,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.970101,-77.016715,"OZONE",33.6,29,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.894749,-76.953427,"PM2.5",4,25,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.895683,-76.958089,"NO2",11.49,10,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.970101,-77.016715,"NO2",5.61,5,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",22,306.7,123.5,94
+2020-11-19 18:00:00,1,38.894749,-76.953427,"NO2",15.16,14,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",22,306.7,123.5,94
+2020-11-19 19:00:00,1,38.970101,-77.016715,"NO2",5.9,5,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",11,122.2,30.1,49
+2020-11-19 19:00:00,1,38.921848,-77.013176,"NO2",8.24,8,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",11,122.2,30.1,49
+2020-11-19 19:00:00,1,38.894749,-76.953427,"NO2",14.7,13,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",11,122.2,30.1,49
+2020-11-19 19:00:00,1,38.921848,-77.013176,"PM2.5",5,25,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",11,122.2,30.1,49
+2020-11-19 19:00:00,1,38.859402,-77.058899,"OZONE",33,29,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",11,122.2,30.1,49
+2020-11-19 19:00:00,1,38.970101,-77.016715,"OZONE",33.9,31,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",11,122.2,30.1,49
+2020-11-19 19:00:00,1,38.921848,-77.013176,"OZONE",32.9,29,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",11,122.2,30.1,49
+2020-11-19 19:00:00,1,38.895683,-76.958089,"OZONE",33,29,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",11,122.2,30.1,49
+2020-11-19 19:00:00,1,38.895683,-76.958089,"PM2.5",-2,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",11,122.2,30.1,49
+2020-11-19 19:00:00,1,38.895683,-76.958089,"NO2",11.03,10,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",11,122.2,30.1,49
+2020-11-19 19:00:00,1,38.875161,-77.012816,"PM2.5",1,8,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",11,122.2,30.1,49
+2020-11-19 19:00:00,1,38.859402,-77.058899,"NO2",4.3,4,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",11,122.2,30.1,49
+2020-11-19 19:00:00,1,38.894749,-76.953427,"PM2.5",6,25,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",11,122.2,30.1,49
+2020-11-19 20:00:00,1,38.859402,-77.058899,"NO2",4.4,4,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",5,66.9,6.4,27
+2020-11-19 20:00:00,1,38.895683,-76.958089,"OZONE",32.1,30,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",5,66.9,6.4,27
+2020-11-19 20:00:00,1,38.895683,-76.958089,"NO2",11.59,10,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",5,66.9,6.4,27
+2020-11-19 20:00:00,1,38.921848,-77.013176,"PM2.5",4,20,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",5,66.9,6.4,27
+2020-11-19 20:00:00,1,38.894749,-76.953427,"PM2.5",9,31,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",5,66.9,6.4,27
+2020-11-19 20:00:00,1,38.970101,-77.016715,"OZONE",31.9,30,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",5,66.9,6.4,27
+2020-11-19 20:00:00,1,38.921848,-77.013176,"OZONE",31.7,28,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",5,66.9,6.4,27
+2020-11-19 20:00:00,1,38.894749,-76.953427,"NO2",18.76,17,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",5,66.9,6.4,27
+2020-11-19 20:00:00,1,38.875161,-77.012816,"PM2.5",4,12,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",5,66.9,6.4,27
+2020-11-19 20:00:00,1,38.921848,-77.013176,"NO2",9.21,8,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",5,66.9,6.4,27
+2020-11-19 20:00:00,1,38.970101,-77.016715,"NO2",8.09,8,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",5,66.9,6.4,27
+2020-11-19 20:00:00,1,38.895683,-76.958089,"PM2.5",-2,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",5,66.9,6.4,27
+2020-11-19 20:00:00,1,38.859402,-77.058899,"OZONE",34,31,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",5,66.9,6.4,27
+2020-11-19 21:00:00,1,38.859402,-77.058899,"NO2",5.5,5,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.894749,-76.953427,"NO2",22.16,21,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.970101,-77.016715,"OZONE",30.2,29,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.921848,-77.013176,"OZONE",30.9,29,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.875161,-77.012816,"PM2.5",3,12,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.970101,-77.016715,"NO2",11.06,10,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.921848,-77.013176,"SO2",0.583,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.921848,-77.013176,"NO2",11.46,10,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.895683,-76.958089,"OZONE",29.6,31,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.894749,-76.953427,"PM2.5",5,26,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.859402,-77.058899,"OZONE",35,31,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.895683,-76.958089,"NO2",12.73,11,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.921848,-77.013176,"PM2.5",5,20,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",3,50.9,4.6,12
+2020-11-19 21:00:00,1,38.895683,-76.958089,"PM2.5",0,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",3,50.9,4.6,12
+2020-11-19 22:00:00,1,38.894749,-76.953427,"NO2",24.4,23,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.895683,-76.958089,"PM2.5",-999,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.895683,-76.958089,"NO2",13.78,12,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.970101,-77.016715,"OZONE",30.8,30,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.895683,-76.958089,"OZONE",28.7,31,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.970101,-77.016715,"NO2",11.04,10,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.894749,-76.953427,"PM2.5",7,28,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.921848,-77.013176,"SO2",0.615,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.859402,-77.058899,"NO2",6.9,6,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.921848,-77.013176,"OZONE",30.3,29,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.859402,-77.058899,"OZONE",33,30,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.875161,-77.012816,"PM2.5",4,14,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.921848,-77.013176,"NO2",12.15,11,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",1,41,5.3,15
+2020-11-19 22:00:00,1,38.921848,-77.013176,"PM2.5",4,18,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",1,41,5.3,15
+2020-11-19 23:00:00,1,38.875161,-77.012816,"PM2.5",5,18,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.894749,-76.953427,"NO2",22.57,21,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.921848,-77.013176,"SO2",0.865,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.970101,-77.016715,"NO2",12.74,11,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.894749,-76.953427,"PM2.5",8,30,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.970101,-77.016715,"OZONE",28,27,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.895683,-76.958089,"NO2",14.64,13,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.921848,-77.013176,"NO2",14.08,13,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.859402,-77.058899,"OZONE",30,28,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.895683,-76.958089,"PM2.5",-1,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.895683,-76.958089,"OZONE",27.3,29,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.921848,-77.013176,"PM2.5",3,15,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.921848,-77.013176,"OZONE",28.1,27,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,31,5.2,7
+2020-11-19 23:00:00,1,38.859402,-77.058899,"NO2",7.9,7,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,31,5.2,7
+2020-11-20 00:00:00,1,38.921848,-77.013176,"NO2",14.15,13,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.894749,-76.953427,"NO2",17.9,16,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.921848,-77.013176,"SO2",0.794,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.859402,-77.058899,"NO2",6.6,6,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.921848,-77.013176,"OZONE",27.5,26,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.921848,-77.013176,"PM2.5",4,16,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.970101,-77.016715,"NO2",11.52,10,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.895683,-76.958089,"NO2",14.93,13,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.970101,-77.016715,"OZONE",28.3,26,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.894749,-76.953427,"PM2.5",6,28,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.895683,-76.958089,"PM2.5",1,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.875161,-77.012816,"PM2.5",3,15,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.859402,-77.058899,"OZONE",31,28,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,27.2,4.2,8
+2020-11-20 00:00:00,1,38.895683,-76.958089,"OZONE",29.1,28,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,27.2,4.2,8
+2020-11-20 01:00:00,1,38.921848,-77.013176,"SO2",0.625,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.921848,-77.013176,"OZONE",28.9,27,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.894749,-76.953427,"NO2",13.18,12,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.895683,-76.958089,"PM2.5",0,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.894749,-76.953427,"PM2.5",5,24,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.895683,-76.958089,"NO2",11.82,10,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.859402,-77.058899,"NO2",5.4,5,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.921848,-77.013176,"NO2",12.15,11,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.921848,-77.013176,"PM2.5",6,20,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.970101,-77.016715,"OZONE",29.3,26,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.895683,-76.958089,"OZONE",31.2,27,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.875161,-77.012816,"PM2.5",2,12,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.859402,-77.058899,"OZONE",31,29,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,28.4,1.8,4
+2020-11-20 01:00:00,1,38.970101,-77.016715,"NO2",9.64,8,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,28.4,1.8,4
+2020-11-20 02:00:00,1,38.859402,-77.058899,"OZONE",31,30,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.970101,-77.016715,"OZONE",29.2,28,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.921848,-77.013176,"SO2",0.557,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.921848,-77.013176,"NO2",12.86,11,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.921848,-77.013176,"PM2.5",6,23,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.970101,-77.016715,"NO2",9.31,8,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.875161,-77.012816,"PM2.5",6,18,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.894749,-76.953427,"NO2",11.45,10,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.895683,-76.958089,"PM2.5",-1,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.895683,-76.958089,"NO2",9.87,8,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.859402,-77.058899,"NO2",5,5,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.921848,-77.013176,"OZONE",27.9,26,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.894749,-76.953427,"PM2.5",6,25,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,8.3,0.9,4
+2020-11-20 02:00:00,1,38.895683,-76.958089,"OZONE",31,27,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,8.3,0.9,4
+2020-11-20 03:00:00,1,38.894749,-76.953427,"PM2.5",6,25,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.895683,-76.958089,"PM2.5",0,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.921848,-77.013176,"OZONE",28.3,25,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.859402,-77.058899,"NO2",5.4,5,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.894749,-76.953427,"NO2",20.83,19,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.859402,-77.058899,"OZONE",30,27,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.921848,-77.013176,"NO2",12.01,11,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.921848,-77.013176,"PM2.5",7,26,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.921848,-77.013176,"SO2",0.865,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.895683,-76.958089,"NO2",9.54,8,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.895683,-76.958089,"OZONE",30,27,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.875161,-77.012816,"PM2.5",5,20,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.970101,-77.016715,"NO2",9.7,8,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,2.6,1.3,1
+2020-11-20 03:00:00,1,38.970101,-77.016715,"OZONE",28.5,27,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,2.6,1.3,1
+2020-11-20 04:00:00,1,38.895683,-76.958089,"OZONE",29.7,28,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.859402,-77.058899,"OZONE",29,27,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.895683,-76.958089,"NO2",9.98,8,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.894749,-76.953427,"NO2",12.59,11,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.921848,-77.013176,"SO2",0.614,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.894749,-76.953427,"PM2.5",8,29,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.859402,-77.058899,"NO2",6.3,6,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.921848,-77.013176,"PM2.5",4,21,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.895683,-76.958089,"PM2.5",3,5,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.875161,-77.012816,"PM2.5",7,24,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.970101,-77.016715,"OZONE",28.7,26,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.921848,-77.013176,"NO2",7.93,7,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.970101,-77.016715,"NO2",9,8,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,11.4,0.6,3
+2020-11-20 04:00:00,1,38.921848,-77.013176,"OZONE",31,27,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,11.4,0.6,3
+2020-11-20 05:00:00,1,38.894749,-76.953427,"NO2",10.97,9,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.921848,-77.013176,"NO2",10.68,9,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.921848,-77.013176,"OZONE",28.5,26,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.895683,-76.958089,"OZONE",31,28,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.895683,-76.958089,"PM2.5",2,7,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.859402,-77.058899,"OZONE",31,29,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.875161,-77.012816,"PM2.5",4,20,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.970101,-77.016715,"OZONE",28.8,26,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.921848,-77.013176,"PM2.5",6,23,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.895683,-76.958089,"NO2",10.79,9,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.894749,-76.953427,"PM2.5",5,25,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.970101,-77.016715,"NO2",8.74,8,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.921848,-77.013176,"SO2",0.64,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",0,0,0,0
+2020-11-20 05:00:00,1,38.859402,-77.058899,"NO2",4.4,4,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",0,0,0,0
+2020-11-20 06:00:00,1,38.921848,-77.013176,"SO2",0.433,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",2,88.8,27.2,22
+2020-11-20 06:00:00,1,38.970101,-77.016715,"NO2",7.95,7,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",2,88.8,27.2,22
+2020-11-20 06:00:00,1,38.894749,-76.953427,"PM2.5",8,29,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",2,88.8,27.2,22
+2020-11-20 06:00:00,1,38.921848,-77.013176,"OZONE",26.3,26,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",2,88.8,27.2,22
+2020-11-20 06:00:00,1,38.921848,-77.013176,"PM2.5",5,22,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",2,88.8,27.2,22
+2020-11-20 06:00:00,1,38.970101,-77.016715,"OZONE",29.2,28,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",2,88.8,27.2,22
+2020-11-20 06:00:00,1,38.921848,-77.013176,"NO2",12.8,11,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",2,88.8,27.2,22
+2020-11-20 06:00:00,1,38.875161,-77.012816,"PM2.5",8,27,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",2,88.8,27.2,22
+2020-11-20 06:00:00,1,38.859402,-77.058899,"OZONE",30,29,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",2,88.8,27.2,22
+2020-11-20 06:00:00,1,38.895683,-76.958089,"NO2",10.41,9,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",2,88.8,27.2,22
+2020-11-20 06:00:00,1,38.895683,-76.958089,"PM2.5",1,5,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",2,88.8,27.2,22
+2020-11-20 06:00:00,1,38.895683,-76.958089,"OZONE",31.2,31,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",2,88.8,27.2,22
+2020-11-20 06:00:00,1,38.894749,-76.953427,"NO2",12.56,11,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",2,88.8,27.2,22
+2020-11-20 07:00:00,1,38.895683,-76.958089,"NO2",9.88,8,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.970101,-77.016715,"NO2",11.38,10,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.859402,-77.058899,"NO2",6.7,6,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.970101,-77.016715,"OZONE",24.7,25,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.921848,-77.013176,"OZONE",24.7,26,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.921848,-77.013176,"NO2",14.3,13,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.859402,-77.058899,"OZONE",27,29,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.894749,-76.953427,"PM2.5",10,35,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.875161,-77.012816,"PM2.5",6,26,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.895683,-76.958089,"PM2.5",2,7,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.921848,-77.013176,"PM2.5",6,23,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.895683,-76.958089,"OZONE",29.9,31,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.921848,-77.013176,"SO2",0.677,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",5,143.8,40,40
+2020-11-20 07:00:00,1,38.894749,-76.953427,"NO2",18.04,17,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",5,143.8,40,40
+2020-11-20 08:00:00,1,38.859402,-77.058899,"NO2",7.4,7,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.894749,-76.953427,"NO2",16.95,15,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.921848,-77.013176,"NO2",13.34,12,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.875161,-77.012816,"PM2.5",3,19,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.970101,-77.016715,"OZONE",24.8,26,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.970101,-77.016715,"NO2",11.15,10,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.921848,-77.013176,"PM2.5",5,22,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.895683,-76.958089,"PM2.5",0,3,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.859402,-77.058899,"OZONE",26,27,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.894749,-76.953427,"PM2.5",7,32,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.895683,-76.958089,"NO2",10.3,9,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.921848,-77.013176,"OZONE",24.7,26,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.921848,-77.013176,"SO2",0.357,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",7,178.2,36.3,41
+2020-11-20 08:00:00,1,38.895683,-76.958089,"OZONE",28.8,28,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",7,178.2,36.3,41
+2020-11-20 09:00:00,1,38.921848,-77.013176,"OZONE",25.1,25,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.859402,-77.058899,"OZONE",-999,27,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.859402,-77.058899,"NO2",7.5,7,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.970101,-77.016715,"NO2",10.51,9,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.894749,-76.953427,"NO2",19.17,18,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.895683,-76.958089,"OZONE",28.7,26,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.875161,-77.012816,"PM2.5",7,24,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.895683,-76.958089,"NO2",9.83,8,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.895683,-76.958089,"PM2.5",1,4,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.970101,-77.016715,"OZONE",24.5,23,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.921848,-77.013176,"NO2",11.78,10,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.921848,-77.013176,"SO2",0.59,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.894749,-76.953427,"PM2.5",10,37,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",7,157.6,21.7,48
+2020-11-20 09:00:00,1,38.921848,-77.013176,"PM2.5",6,23,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",7,157.6,21.7,48
+2020-11-20 10:00:00,1,38.894749,-76.953427,"PM2.5",6,31,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.894749,-76.953427,"NO2",25.3,24,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.921848,-77.013176,"PM2.5",7,26,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.970101,-77.016715,"NO2",10.84,9,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.921848,-77.013176,"OZONE",23.2,22,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.875161,-77.012816,"PM2.5",8,29,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.970101,-77.016715,"OZONE",23.4,22,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.895683,-76.958089,"PM2.5",-1,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.895683,-76.958089,"NO2",11.15,10,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.921848,-77.013176,"NO2",13.37,12,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.859402,-77.058899,"OZONE",22,22,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.859402,-77.058899,"NO2",9.6,8,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.895683,-76.958089,"OZONE",27.5,26,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",9,209.3,38.9,61
+2020-11-20 10:00:00,1,38.921848,-77.013176,"SO2",0.434,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",9,209.3,38.9,61
+2020-11-20 11:00:00,1,38.970101,-77.016715,"NO2",20.18,19,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.894749,-76.953427,"NO2",19.62,18,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.875161,-77.012816,"PM2.5",6,27,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.921848,-77.013176,"SO2",0.417,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.970101,-77.016715,"OZONE",13.2,17,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.921848,-77.013176,"PM2.5",8,30,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.894749,-76.953427,"PM2.5",7,30,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.895683,-76.958089,"OZONE",23.8,23,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.921848,-77.013176,"OZONE",21.7,21,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.921848,-77.013176,"NO2",15.02,14,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.895683,-76.958089,"PM2.5",-1,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.895683,-76.958089,"NO2",13.58,12,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.859402,-77.058899,"NO2",12.5,11,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",11,173.5,43.5,55
+2020-11-20 11:00:00,1,38.859402,-77.058899,"OZONE",18,19,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",11,173.5,43.5,55
+2020-11-20 12:00:00,1,38.859402,-77.058899,"NO2",23.8,22,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.970101,-77.016715,"NO2",27.15,25,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.970101,-77.016715,"OZONE",4.3,12,"TakomaRec","District of Columbia - Department of Energy and Environment",110010050,840110010050,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.921848,-77.013176,"NO2",22.36,21,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.921848,-77.013176,"OZONE",15.9,19,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.921848,-77.013176,"PM2.5",2,19,"McMillan Reservoir","District of Columbia - Department of Energy and Environment",110010043,840110010043,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.921848,-77.013176,"SO2",0.668,0,"McMillan NCORE","District of Columbia - Department of Energy and Environment",110010044,840110010044,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.875161,-77.012816,"PM2.5",3,20,"King Greenleaf Rec Center","District of Columbia - Department of Energy and Environment",840110010053,840840110010053,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.895683,-76.958089,"OZONE",14.9,18,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.895683,-76.958089,"NO2",18.91,17,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.895683,-76.958089,"PM2.5",-4,0,"RIVER_Terrace","District of Columbia - Department of Energy and Environment",110010041,840110010041,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.894749,-76.953427,"PM2.5",13,42,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.859402,-77.058899,"OZONE",5,12,"AURORA HILLS","Virginia Dept. of Environmental Quality",510130020,840510130020,"good",12,266.3,42.4,80
+2020-11-20 12:00:00,1,38.894749,-76.953427,"NO2",33.31,31,"DCNearRoad","District of Columbia - Department of Energy and Environment",110010051,840110010051,"good",12,266.3,42.4,80
