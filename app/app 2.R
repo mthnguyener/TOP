@@ -236,9 +236,8 @@ ui <- fluidPage(
                  selectInput("location.type", "Which sensor location?",
                              choices = sensor.location, 
                              selected = "DC Near Road"),
-                 uiOutput(outputId = "text1"),
-                 checkboxInput("traffic", "On", value = TRUE),
-                 uiOutput(outputId = "text2"),
+                 checkboxInput("traffic", "Turn Map Traffic Index On", value = TRUE),
+                 h5("Air Quality Parameters"),
                  checkboxInput("ozone", "OZONE", value = TRUE),
                  checkboxInput("so2", "SO2"),
                  checkboxInput("pm25", "PM2.5", value = TRUE),
@@ -272,7 +271,7 @@ ui <- fluidPage(
     tabPanel("Location Search",
              sidebarLayout(
                sidebarPanel(
-                 h5("Metric Comparisons"),
+                 h5("Metric Comparisions"),
                  checkboxInput("currenttime", "Current Date", value = TRUE), 
                  checkboxInput("lastweek", "Previous Week", value = TRUE), 
                  checkboxInput("historical", "Historical", value = TRUE),
@@ -336,7 +335,8 @@ ui <- fluidPage(
              p("The AirNow sensors in Washington, D.C. include air quality data for four major pollutants - Ozone, Particulate Matter (PM 2.5), Sulfur Dioxide, and Nitrogen Dioxide. The recommended course of action for each of the pollutants and air quality levels of concern is provided below."),
              tableOutput("pollutants.back"),
              h3("Contributors"),
-             p("Assessment of Air Quality and Traffic Volume tool was compiled and composed by Maria Barouti, Zois Boukouvalas, Konstantinos Koukoulakis, Chace Paulson, Shalini Ramachandra, and Minh-Tuan Nguyen."),
+             p("Assessment of Air Quality and Traffic Volume tool, AirMotionDC, was designed and implemented by Chace Paulson, Minh-Tuan Nguyen and Shalini Ramachandra."),
+             p("Advisory Team includes  Maria Barouti, Zois Boukouvalas and Konstantinos Koukoulakis"),
              h3("Sources"),
              p("TomTom, Behind the Map: How We Keep Our Maps Up to Date: https://www.tomtom.com/blog/maps/continuous-map-processing/#:~:text=Our%20multi%2Dsource%20approach%20combines,will%20not%20deteriorate%20over%20time."),
              p("TomTom, Washington taffic: https://www.tomtom.com/en_gb/traffic-index/washington-traffic/."),
@@ -376,14 +376,7 @@ server <- function(input, output, session) {
   })
   
   ## Citywide Tab
-  # Bold Labels
-  output$text1 <- renderText({
-    HTML(paste0("<b>","Turn on Traffic Index?","</b>"))
-  })
-  output$text2 <- renderText({
-    HTML(paste0("<b>","Air Quality Parameters","</b>"))
-  })
-  
+
   ## Overview numbers
   output$current.air.quality.o <- renderText({
     

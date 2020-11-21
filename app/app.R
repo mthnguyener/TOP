@@ -222,7 +222,7 @@ ui <- fluidPage(
     tabPanel("Citywide",
              sidebarLayout(
                sidebarPanel(
-                 uiOutput(outputId = "text1"),
+                 h5("Metric Comparisons"),
                  checkboxInput("currenttime.o", "Current Date", value = TRUE), 
                  checkboxInput("lastweek.o", "Previous Week", value = TRUE), 
                  checkboxInput("historical.o", "Historical", value = TRUE),
@@ -237,12 +237,12 @@ ui <- fluidPage(
                              choices = sensor.location, 
                              selected = "DC Near Road"),
                  checkboxInput("traffic", "Turn Map Traffic Index On", value = TRUE),
-                 uiOutput(outputId = "text2"),
+                 h5("Air Quality Parameters"),
                  checkboxInput("ozone", "OZONE", value = TRUE),
                  checkboxInput("so2", "SO2"),
                  checkboxInput("pm25", "PM2.5", value = TRUE),
                  checkboxInput("no2", "NO2"),
-                 uiOutput(outputId = "text3"),
+                 h5("Traffic Parameters"),
                  checkboxInput("tindex", "Traffic Index", value = TRUE), 
                  checkboxInput("jdelay", "Jams Delay"), 
                  checkboxInput("jlength", "Jams Length"),
@@ -271,7 +271,7 @@ ui <- fluidPage(
     tabPanel("Location Search",
              sidebarLayout(
                sidebarPanel(
-                 uiOutput(outputId = "text1"),
+                 h5("Metric Comparisons"),
                  checkboxInput("currenttime", "Current Date", value = TRUE), 
                  checkboxInput("lastweek", "Previous Week", value = TRUE), 
                  checkboxInput("historical", "Historical", value = TRUE),
@@ -284,12 +284,12 @@ ui <- fluidPage(
                              selected = "Quadrant"),
                  selectInput("loc.type2", "Which location?", "",
                              selected = ""),
-                 uiOutput(outputId = "text2"),
+                 h5("Air Quality Parameters"),
                  checkboxInput("ozone1", "Ozone", value = TRUE), 
                  checkboxInput("so2.1", "SO2"), 
                  checkboxInput("pm2.5.1", "PM 2.5", value = TRUE),
                  checkboxInput("no2.1", "NO2"),
-                 uiOutput(outputId = "text3"),
+                 h5("Traffic Parameters"),
                  checkboxInput("cspeed", "Current Speed", value = TRUE), 
                  checkboxInput("ffspeed", "Free Flow Speed", value = TRUE), 
                  checkboxInput("ctravel", "Current Travel Time"),
@@ -375,16 +375,6 @@ server <- function(input, output, session) {
   })
   
   ## Citywide Tab
-  # Bold Labels
-  output$text1 <- renderText({
-    HTML(paste0("<b>","Metric Comparisons","</b>"))
-  })
-  output$text2 <- renderText({
-    HTML(paste0("<b>","Air Quality Parameters","</b>"))
-  })
-  output$text3 <- renderText({
-    HTML(paste0("<b>","Traffic Parameters","</b>"))
-  })
   
   ## Overview numbers
   output$current.air.quality.o <- renderText({
