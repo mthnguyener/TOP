@@ -336,7 +336,7 @@ ui <- fluidPage(
              tableOutput("pollutants.back"),
              h3("Contributors"),
              p("Assessment of Air Quality and Traffic Volume tool, AirMotionDC, was designed and implemented by Chace Paulson, Minh-Tuan Nguyen and Shalini Ramachandra."),
-             p("Advisory Team includes  Maria Barouti, Zois Boukouvalas and Konstantinos Koukoulakis"),
+             p("Advisory team includes  Maria Barouti, Konstantinos Koukoulakis and Zois Boukouvalas"),
              h3("Sources"),
              p("TomTom, Behind the Map: How We Keep Our Maps Up to Date: https://www.tomtom.com/blog/maps/continuous-map-processing/#:~:text=Our%20multi%2Dsource%20approach%20combines,will%20not%20deteriorate%20over%20time."),
              p("TomTom, Washington taffic: https://www.tomtom.com/en_gb/traffic-index/washington-traffic/."),
