@@ -3,8 +3,22 @@ library(tidyverse)
 library(httr)
 library(xml2)
 library(lubridate)
+library(owmr)
 
-hourly.old <- read_csv(str_c(getwd(), "/TOP/data/hourly.csv"))
+hourly.old <- read_csv(str_c(getwd(), "/TOP/data/hourly.csv"),
+                       col_types = cols(temp = col_number(),
+                                        pressure = col_number(),
+                                        humidity = col_number(),
+                                        temp_min = col_number(),
+                                        temp_max = col_number(),
+                                        weather_main = col_character(),
+                                        weather_description = col_character(),
+                                        wind_speed = col_number(),
+                                        wind_deg = col_number(),
+                                        feels_like = col_number(),
+                                        sunrise = col_datetime(),
+                                        sunset = col_datetime()))
+
 traffic.flow.old <- read_csv(str_c(getwd(), "/TOP/data/traffic_flow.csv"))
 
 hourly.old$date <- lubridate::as_datetime(hourly.old$date)
@@ -44,7 +58,7 @@ traffic.current <- traffic.data  %>%
                 traffic_index_week_ago = X6, 
                 update_time_week_ago = X7) %>% 
   mutate(date = date.frame) %>% 
-  select(date, traffic_index_live, jams_delay, jams_length, jams_count)
+  dplyr::select(date, traffic_index_live, jams_delay, jams_length, jams_count)
 
 traffic.current$date <- parse_datetime(traffic.current$date)
 
@@ -84,7 +98,7 @@ airnow.current <- airnow.current %>%
          category_number = V7,
          location = V8, 
          agency = V9)  %>% 
-  select(-date.old)
+  dplyr::select(-date.old)
 
 airnow.current$date <- parse_datetime(airnow.current$date)
 
@@ -97,10 +111,35 @@ category_reference <- data.frame(category_number = c(1, 2, 3, 4, 5, 6),
 
 airnow.current <- merge(airnow.current, category_reference)
 
+# Weather Data ------------------------------------------------------------
+OWM_API_KEY <- owmr_settings("74c3f949312a3f8099ebeb5869517c74")
+weather <- get_current("District of Columbia", units = "imperial") %>% 
+  owmr_as_tibble() 
+
+weather <- weather %>% 
+  dplyr::select(temp:temp_max, weather_main, weather_description,
+                wind_speed, wind_deg, dt_sunrise_txt, dt_sunset_txt,
+                feels_like) %>% 
+  rename(sunrise = dt_sunrise_txt,
+         sunset = dt_sunset_txt) %>% 
+  mutate(date = max(traffic.current$date),
+         temp = as.numeric(temp),
+         pressure = as.numeric(pressure),
+         humidity = as.numeric(humidity),
+         temp_min = as.numeric(temp_min),
+         temp_max = as.numeric(temp_max),
+         weather_main = as.character(weather_main),
+         weather_description = as.character(weather_description),
+         wind_speed = as.numeric(wind_speed),
+         wind_deg = as.numeric(wind_deg),
+         feels_like = as.numeric(feels_like))
+
 # Merge Data --------------------------------------------------------------
 hourly.current <- merge(airnow.current, traffic.current, by = "date")
 
-hourly.combine <- rbind(hourly.old, hourly.current)
+hourly.current2 <- merge(hourly.current, weather, by = "date", all.x = TRUE)
+
+hourly.combine <- rbind(hourly.old, hourly.current2)
 
 hourly.combine <- hourly.combine %>% 
   distinct()
@@ -164,9 +203,72 @@ traffic.flow.current <- merge(traffic.flow.current, functional_road_class)
 
 traffic.flow.current <- merge(traffic.flow.current, street, by = c("lat", "lon"))
 
+airnow.sensor.loc <- hourly.combine %>% 
+  dplyr::select(latitude, longitude, parameter_name, location) %>% 
+  distinct()
+
+asl.o <- airnow.sensor.loc %>% 
+  filter(airnow.sensor.loc$parameter_name == "OZONE")
+asl.s <- airnow.sensor.loc %>% 
+  filter(airnow.sensor.loc$parameter_name == "SO2")
+asl.p <- airnow.sensor.loc %>% 
+  filter(airnow.sensor.loc$parameter_name == "PM2.5")
+asl.n <- airnow.sensor.loc %>% 
+  filter(airnow.sensor.loc$parameter_name == "NO2")
+
+traffic.flow.current$ozone_loc <- NA
+traffic.flow.current$so2_loc <- NA
+traffic.flow.current$pm2.5_loc <- NA
+traffic.flow.current$no2_loc <- NA
+
+traffic.flow.current <- traffic.flow.current %>% 
+  mutate(lat = as.numeric(lat),
+         lon = as.numeric(lon))
+
+for(i in 1:nrow(traffic.flow.current)){
+  position.o <- which.min(abs((traffic.flow.current$lat[i] - asl.o$latitude)) + 
+                            abs((traffic.flow.current$lon[i] - asl.o$longitude)))
+  
+  position.s <- which.min(abs((traffic.flow.current$lat[i] - asl.s$latitude)) + 
+                            abs((traffic.flow.current$lon[i] - asl.s$longitude)))
+  
+  position.p <- which.min(abs((traffic.flow.current$lat[i] - asl.p$latitude)) + 
+                            abs((traffic.flow.current$lon[i] - asl.p$longitude)))
+  
+  position.n <- which.min(abs((traffic.flow.current$lat[i] - asl.n$latitude)) + 
+                            abs((traffic.flow.current$lon[i] - asl.n$longitude)))
+  
+  traffic.flow.current$ozone_loc[i] <- asl.o[position.o,4]
+  traffic.flow.current$so2_loc[i] <- asl.s[position.s,4]
+  traffic.flow.current$pm2.5_loc[i] <- asl.p[position.p,4]
+  traffic.flow.current$no2_loc[i] <- asl.n[position.n,4]
+}
+
+traffic.flow.current$anc <- str_replace(traffic.flow.current$anc, "ANC ", "")
+traffic.flow.current$police_service_area <- 
+  str_replace(traffic.flow.current$police_service_area, "Police Service Area ", "")
+traffic.flow.current$ward <- 
+  str_replace(traffic.flow.current$ward, "Ward ", "")
+traffic.flow.current$neighborhood_cluster <-
+  str_replace(traffic.flow.current$neighborhood_cluster, "Cluster ", "")
+traffic.flow.current$police_district <- 
+  str_replace(traffic.flow.current$police_district, "Police District - ", "")
+traffic.flow.current$police_sector <- 
+  str_replace(traffic.flow.current$police_sector, "Police Sector ", "")
+traffic.flow.current$voter_precinct <- 
+  str_replace(traffic.flow.current$voter_precinct, "Precinct ", "")
+traffic.flow.current$single_member_district <-
+  str_replace(traffic.flow.current$single_member_district, "SMD ", "")
+
+traffic.flow.current <- traffic.flow.current %>% 
+  mutate(single_member_district = dplyr::recode(single_member_district, "SMC 4A04" = "4A04"))
+
+traffic.flow.current$single_member_district <- as.character(traffic.flow.current$single_member_district)
+
 traffic.flow.combine <- rbind(traffic.flow.old, traffic.flow.current)
 
-write.csv(traffic.flow.combine, str_c(getwd(), "/TOP/data/traffic_flow.csv"), row.names = FALSE)
+traffic.flow.combine <- apply(traffic.flow.combine,2,as.character)
 
+write.csv(traffic.flow.combine, str_c(getwd(), "/TOP/data/traffic_flow.csv"), row.names = FALSE)
 
 

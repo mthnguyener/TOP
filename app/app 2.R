@@ -12,62 +12,38 @@ library(shinythemes)
 library(lubridate)
 library(stringr)
 library(shinyjs)
+library(shinyBS)
+library(remotes)
+library(shinycssloaders)
+library(shinycustomloader)
+library(rgdal)
 
 # Load Data ---------------------------------------------------------------
 setwd('..')
-hourly <- read_csv(str_c(getwd(), "/data/hourly.csv"))
-traffic.flow <- read_csv(str_c(getwd(), "/data/traffic_flow.csv"))
 
-agencies <- as.data.frame(unique(hourly$agency)) %>%
-  rename(c("agency"="unique(hourly$agency)"))
+hourly <- read_csv(str_c(getwd(), "/data/hourly.csv"),
+                   col_types = cols(temp = col_number(),
+                                    pressure = col_number(),
+                                    humidity = col_number(),
+                                    temp_min = col_number(),
+                                    temp_max = col_number(),
+                                    weather_main = col_character(),
+                                    weather_description = col_character(),
+                                    wind_speed = col_number(),
+                                    wind_deg = col_number(),
+                                    feels_like = col_number(),
+                                    sunrise = col_datetime(),
+                                    sunset = col_datetime()))
 
-parameters <- as.data.frame(unique(hourly$parameter_name)) %>%
-  rename(c("agency"="unique(hourly$parameter_name)"))
+traffic.flow <- read_csv(str_c(getwd(), "/data/traffic_flow.csv"),
+                 col_types = cols(single_member_district = col_character()))
 
-parameter_wider <- hourly %>%
-  group_by(date, location, parameter_name) %>%
-  pivot_wider(names_from = parameter_name, values_from = AQI)
+hourly$date <- lubridate::as_datetime(hourly$date)
+traffic.flow$date <- lubridate::as_datetime(traffic.flow$date)
 
 # Tidy Data ---------------------------------------------------------------
-airnow.sensor.loc <- hourly %>% 
-  select(latitude, longitude, parameter_name, location) %>% 
-  distinct()
-
-asl.o <- airnow.sensor.loc %>% 
-  filter(airnow.sensor.loc$parameter_name == "OZONE")
-asl.s <- airnow.sensor.loc %>% 
-  filter(airnow.sensor.loc$parameter_name == "SO2")
-asl.p <- airnow.sensor.loc %>% 
-  filter(airnow.sensor.loc$parameter_name == "PM2.5")
-asl.n <- airnow.sensor.loc %>% 
-  filter(airnow.sensor.loc$parameter_name == "NO2")
-
-traffic.flow$ozone_loc <- NA
-traffic.flow$so2_loc <- NA
-traffic.flow$pm2.5_loc <- NA
-traffic.flow$no2_loc <- NA
-
-for(i in 1:nrow(traffic.flow)){
-  position.o <- which.min(abs((traffic.flow$lat[i] - asl.o$latitude)) + 
-                            abs((traffic.flow$lon[i] - asl.o$longitude)))
-  
-  position.s <- which.min(abs((traffic.flow$lat[i] - asl.s$latitude)) + 
-                            abs((traffic.flow$lon[i] - asl.s$longitude)))
-  
-  position.p <- which.min(abs((traffic.flow$lat[i] - asl.p$latitude)) + 
-                            abs((traffic.flow$lon[i] - asl.p$longitude)))
-  
-  position.n <- which.min(abs((traffic.flow$lat[i] - asl.n$latitude)) + 
-                            abs((traffic.flow$lon[i] - asl.n$longitude)))
-  
-  traffic.flow$ozone_loc[i] <- asl.o[position.o,4]
-  traffic.flow$so2_loc[i] <- asl.s[position.s,4]
-  traffic.flow$pm2.5_loc[i] <- asl.p[position.p,4]
-  traffic.flow$no2_loc[i] <- asl.n[position.n,4]
-}
-
 an.slim <- hourly %>% 
-  select(date, location, parameter_name, category, category_number, 
+  dplyr::select(date, location, parameter_name, category, category_number, 
          raw_concentration, AQI, location)
 
 an.slim.o <- subset(an.slim, parameter_name == "OZONE")
@@ -81,52 +57,35 @@ an.slim.o <- an.slim.o %>%
          ozone_loc_raw_conc = raw_concentration,
          ozone_loc_aqi = AQI,
          ozone_loc_cat = category) %>% 
-  select(-parameter_name)
+  dplyr::select(-parameter_name)
 an.slim.s <- an.slim.s %>% 
   rename(so2_loc = location, 
          so2_loc_cat_num = category_number, 
          so2_loc_raw_conc = raw_concentration,
          so2_loc_aqi = AQI,
          so2_loc_cat = category) %>% 
-  select(-parameter_name)
+  dplyr::select(-parameter_name)
 an.slim.p <- an.slim.p %>% 
   rename(pm2.5_loc = location, 
          pm2.5_loc_cat_num = category_number, 
          pm2.5_loc_raw_conc = raw_concentration,
          pm2.5_loc_aqi = AQI,
          pm2.5_loc_cat = category) %>% 
-  select(-parameter_name)
+  dplyr::select(-parameter_name)
 an.slim.n <- an.slim.n %>% 
   rename(no2_loc = location, 
          no2_loc_cat_num = category_number, 
          no2_loc_raw_conc = raw_concentration,
          no2_loc_aqi = AQI,
          no2_loc_cat = category) %>% 
-  select(-parameter_name)
+  dplyr::select(-parameter_name)
 
 traffic.flow <- merge(traffic.flow, an.slim.o, by = c("date", "ozone_loc"))
 traffic.flow <- merge(traffic.flow, an.slim.s, by = c("date", "so2_loc"))
 traffic.flow <- merge(traffic.flow, an.slim.p, by = c("date", "pm2.5_loc"))
 traffic.flow <- merge(traffic.flow, an.slim.n, by = c("date", "no2_loc"))
 
-rm(an.slim, an.slim.n, an.slim.p, an.slim.s, an.slim.o,
-   asl.n, asl.o, asl.p, asl.s)
-
-traffic.flow$anc <- str_replace(traffic.flow$anc, "ANC ", "")
-traffic.flow$police_service_area <- 
-  str_replace(traffic.flow$police_service_area, "Police Service Area ", "")
-traffic.flow$ward <- 
-  str_replace(traffic.flow$ward, "Ward ", "")
-traffic.flow$neighborhood_cluster <-
-  str_replace(traffic.flow$neighborhood_cluster, "Cluster ", "")
-traffic.flow$police_district <- 
-  str_replace(traffic.flow$police_district, "Police District - ", "")
-traffic.flow$police_sector <- 
-  str_replace(traffic.flow$police_sector, "Police Sector ", "")
-traffic.flow$voter_precinct <- 
-  str_replace(traffic.flow$voter_precinct, "Precinct ", "")
-traffic.flow$single_member_district <-
-  str_replace(traffic.flow$single_member_district, "SMD ", "")
+rm(an.slim, an.slim.n, an.slim.p, an.slim.s, an.slim.o)
 
 traffic.flow$census_tract <-
   as.character(traffic.flow$census_tract)
@@ -168,6 +127,8 @@ traffic.flow$cat.average <- str_to_title(traffic.flow$cat.average)
 
 traffic.flow$zip_code <- as.character(traffic.flow$zip_code)
 
+hourly$jams_length <- hourly$jams_length * 0.621371
+
 for(i in 1:nrow(hourly)){
   if(hourly$location[i] == "DCNearRoad"){
     hourly$location[i] <- "DC Near Road"
@@ -180,21 +141,9 @@ for(i in 1:nrow(hourly)){
   }
 }
 
-for(i in 1:nrow(parameter_wider)){
-  if(parameter_wider$location[i] == "DCNearRoad"){
-    parameter_wider$location[i] <- "DC Near Road"
-  }else if(parameter_wider$location[i] == "RIVER_Terrace"){
-    parameter_wider$location[i] <- "River Terrace"
-  }else if(parameter_wider$location[i] == "TakomaRec"){
-    parameter_wider$location[i] <- "Tokoma Rec"
-  }else if(parameter_wider$location[i] == "AURORA HILLS"){
-    parameter_wider$location[i] <- "Aurora Hills"
-  }
-}
-
-traffic.flow <- traffic.flow %>% 
-  mutate(single_member_district = dplyr::recode(single_member_district, "SMC 4A04" = "4A04"))
-
+parameter_wider <- hourly %>%
+  group_by(date, location, parameter_name) %>%
+  pivot_wider(names_from = parameter_name, values_from = AQI)
 
 # User Interface ----------------------------------------------------------
 location.types <- c("Quadrant", "Ward", "Zip Code", 
@@ -206,6 +155,10 @@ location.types <- c("Quadrant", "Ward", "Zip Code",
 sensor.location <- c(unique(parameter_wider$location))
 sensor.types <- c("Average Across Sensors", "Single Sensor")
 
+traffic.types <- c("Current Speed", "Free Flow Speed", 
+                   "Current Travel Time", "Free Flow Travel Time")
+air.types <- c("Ozone", "SO2", "PM2.5", "NO2")
+
 current.date.time <- Sys.time()
 
 c.date <- substr(current.date.time, start = 1, stop = 10)
@@ -214,11 +167,26 @@ c.time <- substr(current.date.time, start = 12, stop = 13)
 ui <- fluidPage(
   useShinyjs(),
   theme = shinytheme("slate"),
-  wellPanel(titlePanel("Assessment of Air Quality and Traffic Volume"),
-            h4("Washington, D.C.")),
+  wellPanel(titlePanel("AirMotionDC")),
   
   tabsetPanel(
-    tabPanel("Overview"),
+    tabPanel("Overview",
+             h2("Welcome to AirMotionDC"),
+             p("AirMotionDC is a real time data tool that compiles and analyzes traffic patterns and air pollution in the District of Columbia to explore the relationship between transportation and air quality. AirMotionDC utilizes a variety of data sources including AirNow, TomTom, Open Data DC, and OpenWeather. For more information on these sources and how the data was compiled, please visit the Background tab."),
+             h3("Understanding the Tool"),
+             p("Click the following to expand the section and explore what information is provided in each of the tabs above."),
+             bsCollapse(id = "collapseOverview",
+                        bsCollapsePanel("Citywide",
+                                        p("The Citywide tab provides traffic patterns, air pollution, and weather information for the whole of D.C. Users are able to select which information they would like to view - data on current traffic, air quality, and weather for the date inputted; data on traffic, air quality, and weather from one week ago; and/or the full historical data on the three. Users are able to input which date and time they would like to view for the Current Date output, whether they would like the air quality data to be averaged across all six of the sensors or narrowed to only one sensor location, and which air quality/traffic parameters to include on the graphics. Output includes a variety of methods of exploration into air quality, traffic, and weather, including overall averages, tables, bar charts, trend lines, and maps.")),
+                        bsCollapsePanel("Location Search",
+                                        p("The Location Search tab provides traffic patterns and air pollution information for specific locations within the District of Columbia. Users are able to select which information they would like to view - data on current traffic and air quality for the date inputted; data on traffic and air quality from one week ago; and/or the full historical data on the two. Users are able to input which date and time they would like to view for the Current Date output, which location type (e.g., quadrant, ward) and specific location (e.g., SE quadrant, 8th ward) they would like the output to show, and which air quality/traffic parameters to include on the graphics. Output includes a variety of methods of exploration into air quality and traffic, including overall averages, tables, bar charts, trend lines, and maps.")),
+                        bsCollapsePanel("Raw Citywide Data",
+                                        p("The Raw Citywide Data tab provides the full data set utilized for the Citywide tab. Data is compiled at the city level for overall information on traffic, air quality, and weather in the District of Columbia. Users can explore the data present as well as filter and sort variables of interest.")),
+                        bsCollapsePanel("Raw Location Search Data",
+                                        p("The Raw Location Search Data tab provides the full data set utilized for the Location Search tab. Data is compiled at a more granular level (e.g., quadrants, wards, zip codes) for a more narrow look into traffic and air quality as well as how it differs across the District of Columbia. Users can explore the data present as well as filter and sort variables of interest.")),
+                        bsCollapsePanel("Background",
+                                        p("The Background tab provides additional information on how and where the data is sourced from, what the variables are and how they are measured, and who the team is behind AirMotionDC."))),
+    ),
     tabPanel("Citywide",
              sidebarLayout(
                sidebarPanel(
@@ -257,21 +225,23 @@ ui <- fluidPage(
                  textOutput("current.congestion.o"),
                  textOutput("current.air.quality.o"),
                  h4("Air Quality and Traffic"),
-                 textOutput("airtable.title.o"),
-                 tableOutput("aqitable"),
-                 textOutput("airtable.title2.o"),
-                 tableOutput("aqitable2"),
+                 splitLayout(cellWidths = c("50%", "50%"),
+                             textOutput("airtable.title.o"),
+                             textOutput("airtable.title2.o")),
+                 splitLayout(cellWidths = c("50%", "50%"),
+                             withLoader(tableOutput("aqitable"), type = "html", loader = "loader6"),
+                             withLoader(tableOutput("aqitable2"), type = "html", loader = "loader6")),
                  tableOutput("traffictable"),
                  plotOutput("airtable.graph2"),
                  h3("Daily AQI"),
-                 plotOutput("myaqi"),
+                 withLoader(plotOutput("myaqi"), type = "html", loader = "loader6"),
                  h3("Map"),
                  leafletOutput("mymap"))
              )),
     tabPanel("Location Search",
              sidebarLayout(
                sidebarPanel(
-                 h5("Metric Comparisions"),
+                 h5("Metric Comparisons"),
                  checkboxInput("currenttime", "Current Date", value = TRUE), 
                  checkboxInput("lastweek", "Previous Week", value = TRUE), 
                  checkboxInput("historical", "Historical", value = TRUE),
@@ -293,7 +263,13 @@ ui <- fluidPage(
                  checkboxInput("cspeed", "Current Speed", value = TRUE), 
                  checkboxInput("ffspeed", "Free Flow Speed", value = TRUE), 
                  checkboxInput("ctravel", "Current Travel Time"),
-                 checkboxInput("fftravel", "Free Flow Travel Time")
+                 checkboxInput("fftravel", "Free Flow Travel Time"),
+                 selectInput("map.choice.air", "Which air quality map?",
+                             choices = air.types,
+                             selected = "Ozone"),
+                 selectInput("map.choice.traffic", "Which traffic map?",
+                             choices = traffic.types,
+                             selected = "Current Speed")
                ),
                mainPanel(
                  tags$style(type="text/css",
@@ -304,10 +280,12 @@ ui <- fluidPage(
                  textOutput("current.travel.time"),
                  textOutput("current.air.quality"),
                  h4("Air Quality and Traffic in Location"),
-                 textOutput("airtable.title"),
-                 tableOutput("airtable"),
-                 textOutput("airtable.title2"),
-                 tableOutput("airtable2"),
+                 splitLayout(cellWidths = c("50%", "50%"),
+                             textOutput("airtable.title"),
+                             textOutput("airtable.title2")),
+                 splitLayout(cellWidths = c("50%", "50%"),
+                             withLoader(tableOutput("airtable"), type = "html", loader = "loader6"),
+                             withLoader(tableOutput("airtable2"), type = "html", loader = "loader6")),
                  plotOutput("airtable.graph"),
                  h3("Within Location"),
                  plotOutput("location.graph"),
@@ -315,7 +293,12 @@ ui <- fluidPage(
                  h4("Air Quality"),
                  plotOutput("loc.type.graph1"),
                  h4("Traffic Volume"),
-                 plotOutput("loc.type.graph2"))
+                 plotOutput("loc.type.graph2"),
+                 h4("Maps"),
+                 textOutput("airtable.title3"),
+                 plotOutput("location.map"),
+                 textOutput("airtable.title4"),
+                 plotOutput("location.map2"))
              )),
     tabPanel("Raw Citywide Data",
              dataTableOutput("static.city")),
@@ -324,29 +307,45 @@ ui <- fluidPage(
     tabPanel("Background",
              h3("Traffic Data"),
              p("Citywide and location specific traffic data is pulled hourly from TomTom, a Dutch location technology firm. TomTom sources their traffic information from government and third-party data (e.g., survey vehicles, GPS traces, community input, and vehicle sensor data). Data is obtained through TomTom's live traffic index for Washington, D.C. as well as their Traffic API. Below is the information available for the citywide and location search features. Data is then merged with information from the DC GIS Master Address Repository to allow for additional location attributed (e.g., quadrants, wards, zip codes)."),
-             h4("Citywide"),
-             tableOutput("hourly.back"),
-            h4("Location Search"),
-             tableOutput("traffic.flow.back"),
+             bsCollapse(id = "collapseTraffic",
+                        bsCollapsePanel("Citywide",
+                                        tableOutput("hourly.back")),
+                        bsCollapsePanel("Location Search",
+                                        tableOutput("traffic.flow.back"))),
              h3("Air Quality"),
              p("Air quality data is pulled from AirNow, the United States government's hub for air quality data. AirNow is a partnership between the U.S. Environmental Protection Agency, National Oceanic and Atmospheric Administration, National Park Service, NASA, Center for Disease Control, and tribal, state, and local air quality agencies. The data encompasses the U.S. Air Quality Index (AQI) which translates raw concentration levels of air pollutants into an index on whether the air quality is healthy or unhealthy."),
-             tableOutput("airnow.back"), 
-             h5("Air Pollutants"),
-             p("The AirNow sensors in Washington, D.C. include air quality data for four major pollutants - Ozone, Particulate Matter (PM 2.5), Sulfur Dioxide, and Nitrogen Dioxide. The recommended course of action for each of the pollutants and air quality levels of concern is provided below."),
-             tableOutput("pollutants.back"),
-             h3("Contributors"),
-             p("Assessment of Air Quality and Traffic Volume tool, AirMotionDC, was designed and implemented by Chace Paulson, Minh-Tuan Nguyen and Shalini Ramachandra."),
-             p("Advisory team includes  Maria Barouti, Konstantinos Koukoulakis and Zois Boukouvalas"),
-             h3("Sources"),
-             p("TomTom, Behind the Map: How We Keep Our Maps Up to Date: https://www.tomtom.com/blog/maps/continuous-map-processing/#:~:text=Our%20multi%2Dsource%20approach%20combines,will%20not%20deteriorate%20over%20time."),
-             p("TomTom, Washington taffic: https://www.tomtom.com/en_gb/traffic-index/washington-traffic/."),
-             p("TomTom, Traffic API: https://developer.tomtom.com/traffic-api/traffic-api-documentation-traffic-flow/flow-segment-data#request-data."),
-             p("Open Data DC, Street Segments: https://opendata.dc.gov/datasets/street-segments-retired."),
-             p("DC.gov Office of the Chief Technology Officer, DC GIS Master Address Repository: http://dcatlas.dcgis.dc.gov/mar/."),
-             p("AirNow, About AirNow: https://www.airnow.gov/about-airnow/."),
-             p("AirNow, AQI Basics: https://www.airnow.gov/aqi/aqi-basics/."),
-             p("AirNow, AirNow API - Web Services: https://docs.airnowapi.org/webservices."),
-             p("AirNow, Technical Assistance Document for the Reporting of Daily Air Quality - the Air Quality Index (AQI): https://www.airnow.gov/sites/default/files/2020-05/aqi-technical-assistance-document-sept2018.pdf."))
+             bsCollapse(id = "collapseAir",
+                        bsCollapsePanel("AQI Values",
+                                        tableOutput("airnow.back"))),
+             p("The AirNow sensors in Washington, D.C. include air quality data for four major pollutants - Ozone, Particulate Matter (PM 2.5), Sulfur Dioxide, and Nitrogen Dioxide. Information on the conversion of raw concentrations of the four pollutants into AQI scores as well as the recommended course of action for each of the pollutants at the various AQI levels is provided below."),
+             bsCollapse(id = "collapseAir2",
+                        bsCollapsePanel("Raw Concentrations for AQI",
+                                        tableOutput("concentrations.back")),
+                        bsCollapsePanel("Recommended Actions",
+                                        tableOutput("pollutants.back"))),
+             h3("Additional Information"),
+             bsCollapse(id = "collapseAdditional",
+                        bsCollapsePanel("Contributors",
+                                        p("Assessment of Air Quality and Traffic Volume tool was compiled and composed by Chace Paulson, Minh-Tuan Nguyen, and Shalini Ramachandra."),
+                                        p("Advisory team includes Maria Barouti, Zois Boukouvalas, and Konstantinos Koukoulakis.")),
+                        bsCollapsePanel("Sources",
+                                        p("TomTom, Behind the Map: How We Keep Our Maps Up to Date: https://www.tomtom.com/blog/maps/continuous-map-processing/#:~:text=Our%20multi%2Dsource%20approach%20combines,will%20not%20deteriorate%20over%20time."),
+                                        p("TomTom, Washington taffic: https://www.tomtom.com/en_gb/traffic-index/washington-traffic/."),
+                                        p("TomTom, Traffic API: https://developer.tomtom.com/traffic-api/traffic-api-documentation-traffic-flow/flow-segment-data#request-data."),
+                                        p("Open Data DC, Street Segments: https://opendata.dc.gov/datasets/street-segments-retired."),
+                                        p("Open Data DC, DC Quadrants: https://opendata.dc.gov/datasets/dc-quadrants?geometry=-77.838%2C38.707%2C-76.190%2C39.081."),
+                                        p("Open Data DC, Ward from 2012: https://opendata.dc.gov/datasets/ward-from-2012."),
+                                        p("Open Data DC, Zip Codes: https://opendata.dc.gov/datasets/zip-codes."),
+                                        p("Open Data DC, Advisory Neighborhood Commissions from 2013: https://opendata.dc.gov/datasets/advisory-neighborhood-commissions-from-2013?geometry=-77.838%2C38.707%2C-76.190%2C39.081."),
+                                        p("Open Data DC, Census Tracts - 1990: https://opendata.dc.gov/datasets/census-tracts-1990."),
+                                        p("Open Data DC, Single Member District from 2013: https://opendata.dc.gov/datasets/single-member-district-from-2013."),
+                                        p("Open Data DC, Voting Precinct - 2012: https://opendata.dc.gov/datasets/voting-precinct-2012."),
+                                        p("DC.gov Office of the Chief Technology Officer, DC GIS Master Address Repository: http://dcatlas.dcgis.dc.gov/mar/."),
+                                        p("AirNow, About AirNow: https://www.airnow.gov/about-airnow/."),
+                                        p("AirNow, AQI Basics: https://www.airnow.gov/aqi/aqi-basics/."),
+                                        p("AirNow, AirNow API - Web Services: https://docs.airnowapi.org/webservices."),
+                                        p("AirNow, Technical Assistance Document for the Reporting of Daily Air Quality - the Air Quality Index (AQI): https://www.airnow.gov/sites/default/files/2020-05/aqi-technical-assistance-document-sept2018.pdf."),
+                                        p("OpenWeather, Current Weather Data: https://openweathermap.org/current#cityid."))))
   )
 )
 
@@ -376,7 +375,7 @@ server <- function(input, output, session) {
   })
   
   ## Citywide Tab
-
+  
   ## Overview numbers
   output$current.air.quality.o <- renderText({
     
@@ -436,19 +435,19 @@ server <- function(input, output, session) {
     }
     
     if(ls2 == 1){
-      ls3 <- str_c("Average air quality last week: ", "Good")
+      ls3 <- str_c("Average air quality one week ago: ", "Good")
     }else if(ls2 == 2){
-      ls3 <- str_c("Average air quality last week: ", "Moderate")
+      ls3 <- str_c("Average air quality one week ago: ", "Moderate")
     }else if(ls2 == 3){
-      ls3 <- str_c("Average air quality last week: ", "Unhealthy for sensitive groups")
+      ls3 <- str_c("Average air quality one week ago: ", "Unhealthy for sensitive groups")
     }else if(ls2 == 4){
-      ls3 <- str_c("Average air quality last week: ", "Unhealthy")
+      ls3 <- str_c("Average air quality one week ago: ", "Unhealthy")
     }else if(ls2 == 5){
-      ls3 <- str_c("Average air quality last week: ", "Very unhealthy")
+      ls3 <- str_c("Average air quality one week ago: ", "Very unhealthy")
     }else if(ls2 == 6){
-      ls3 <- str_c("Average air quality last week: ", "Hazardous")
+      ls3 <- str_c("Average air quality one week ago: ", "Hazardous")
     }else if(ls2 == "NaN"){
-      ls3 <- str_c("Average air quality last week: ", "NaN")
+      ls3 <- str_c("Average air quality one week ago: ", "NaN")
     }
     
     if(input$currenttime.o == TRUE){ 
@@ -485,7 +484,7 @@ server <- function(input, output, session) {
     ls2 <- mean(ls1$traffic_index_live, na.rm = TRUE)
     
     cs3 <- str_c("Current traffic congestion level: ", cs2, "%")
-    ls3 <- str_c("Traffic congestion level last week: ", ls2, "%")
+    ls3 <- str_c("Traffic congestion level one week ago: ", ls2, "%")
     
     if(input$currenttime.o == TRUE){ 
       if(input$lastweek.o == TRUE){ 
@@ -512,7 +511,7 @@ server <- function(input, output, session) {
   })
   output$airtable.title2.o <- renderText({
     if(input$lastweek.o == TRUE){
-      str_c("Last Week")
+      str_c("One Week Ago")
     }
   })
   output$aqitable <- renderTable({
@@ -725,7 +724,7 @@ server <- function(input, output, session) {
                                        as.character(input$hour2), 
                                        ":00:00")) - 604800)
     
-    df2 <- data.frame(time = c("last week"),
+    df2 <- data.frame(time = c("one week ago"),
                       traffic_index = c(round(summary(ls1$traffic_index_live), digits = 2)),
                       jams_delay = c(round(summary(ls1$jams_delay), digits = 2)),
                       jams_length = c(round(summary(ls1$jams_length), digits = 2)),
@@ -873,7 +872,6 @@ server <- function(input, output, session) {
   
   ## Bar chart 
   output$airtable.graph2 <- renderPlot({
-    if(input$currenttime.o == TRUE & input$lastweek.o == TRUE){
       if(input$sensor.type == "Average Across Sensors"){  
         x <- parameter_wider %>% 
           filter(agency == "District of Columbia - Department of Energy and Environment")
@@ -901,7 +899,10 @@ server <- function(input, output, session) {
         summarize(Ozone = mean(OZONE, na.rm = TRUE),
                   SO2 = mean(SO2, na.rm = TRUE),
                   PM2.5 = mean(PM2.5, na.rm = TRUE),
-                  NO2 = mean(NO2, na.rm = TRUE))
+                  NO2 = mean(NO2, na.rm = TRUE),
+                  .groups = 'drop')
+      
+      cs3a <- cs3
       
       if(input$ozone == TRUE){
         if(input$so2 == TRUE){
@@ -970,23 +971,71 @@ server <- function(input, output, session) {
       cs3$date <- str_c(substr(cs3$date, start = 1, stop = 10), " T",
                         substr(cs3$date, start = 12, stop = 13))
       
-      p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
-        geom_bar(stat = "identity", position = "dodge") +
-        labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
-             title = "Weekly Comparison of AQI and Traffic") +
-        annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
-        geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-        annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
-        geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-        annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
-        geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+      if(max(cs3a$PM2.5) <=150 | sum(is.na(cs3a$PM2.5)) == nrow(cs3a)){
+        p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
+          geom_bar(stat = "identity", position = "dodge") +
+          labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+               title = "Weekly Comparison of AQI and Traffic") +
+          annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+      }else if(max(cs3a$PM2.5) <=200 & max(cs3a$PM2.5) > 150){
+        p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
+          geom_bar(stat = "identity", position = "dodge") +
+          labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+               title = "Weekly Comparison of AQI and Traffic") +
+          annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+          annotate("text", x = unique(cs3$param)[1], y = 195, label = "Unhealthy") +
+          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1)
+      }else if(max(cs3a$PM2.5) <=300 & max(cs3a$PM2.5) > 200){
+        p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
+          geom_bar(stat = "identity", position = "dodge") +
+          labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+               title = "Weekly Comparison of AQI and Traffic") +
+          annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+          annotate("text", x = unique(cs3$param)[1], y = 195, label = "Unhealthy") +
+          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 295, label = "Very Unhealthy") +
+          geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1)
+      }else if(max(cs3a$PM2.5) > 300){
+        p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
+          geom_bar(stat = "identity", position = "dodge") +
+          labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+               title = "Weekly Comparison of AQI and Traffic") +
+          annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+          annotate("text", x = unique(cs3$param)[1], y = 195, label = "Unhealthy") +
+          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 295, label = "Very Unhealthy") +
+          geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 395, label = "Hazardous") +
+          geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1)
+      }
       
       cs4 <- com.s1 %>% 
         group_by(date) %>% 
         summarize(Traffic_Index = mean(traffic_index_live, na.rm = TRUE),
                   Jams_Delay = mean(jams_delay, na.rm = TRUE),
                   Jams_Length = mean(jams_length, na.rm = TRUE),
-                  Jams_Count = mean(jams_count, na.rm = TRUE))
+                  Jams_Count = mean(jams_count, na.rm = TRUE),
+                  .groups = 'drop')
       
       if(input$tindex == TRUE){
         if(input$jdelay == TRUE){
@@ -1060,7 +1109,6 @@ server <- function(input, output, session) {
         labs(x = "Traffic Parameters", y = "Traffic Value", fill = "Date")
       
       grid.arrange(p2, p1, ncol = 2)
-    }
   })
   
   ## Overview graph for the Overview tab
@@ -1076,7 +1124,7 @@ server <- function(input, output, session) {
       }
       
       param.slim <- parameter_wider %>% 
-        select(date, traffic_index_live) 
+        dplyr::select(date, traffic_index_live) 
       
       param.slim <- param.slim[,2:3]
       
@@ -1088,7 +1136,8 @@ server <- function(input, output, session) {
         summarize(Ozone = mean(OZONE, na.rm = TRUE),
                   SO2 = mean(SO2, na.rm = TRUE),
                   PM2.5 = mean(PM2.5, na.rm = TRUE),
-                  NO2 = mean(NO2, na.rm = TRUE))
+                  NO2 = mean(NO2, na.rm = TRUE),
+                  .groups = 'drop')
       
       x <- merge(x, param.slim, by = "date")
       
@@ -1096,18 +1145,67 @@ server <- function(input, output, session) {
                   "SO2" = "red", "NO2" = "green")
       
       #ptitle <- str_c("AQI and Traffic")
-      p1 <- 
-        ggplot(data = x, aes(x = date)) +
-        labs(x = "Date", y = "Air Quality Index",
-             title = "AQI and Traffic",
-             color = "Parameter") +
-        scale_color_manual(values = colors) +
-        annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 45, label = "Healthy") +
-        geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1.5) +
-        annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 95, label = "Moderate") +
-        geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1.5) +
-        annotate("text", x = as_datetime("2020-10-31 18:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-        geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1.5)
+      if(max(x$PM2.5) <=150 | sum(is.na(x$PM2.5)) == nrow(x)){
+        p1 <- ggplot(data = x, aes(x = date)) +
+          labs(x = "Date", y = "Air Quality Index",
+               title = "AQI and Traffic",
+               color = "Parameter") +
+          scale_color_manual(values = colors) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-31 18:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1.5)
+      }else if(max(x$PM2.5) <=200 & max(x$PM2.5) > 150){
+        p1 <- ggplot(data = x, aes(x = date)) +
+          labs(x = "Date", y = "Air Quality Index",
+               title = "AQI and Traffic",
+               color = "Parameter") +
+          scale_color_manual(values = colors) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-31 18:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 195, label = "Unhealthy") +
+          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1.5) 
+      }else if(max(x$PM2.5) <=300 & max(x$PM2.5) > 200){
+        p1 <- ggplot(data = x, aes(x = date)) +
+          labs(x = "Date", y = "Air Quality Index",
+               title = "AQI and Traffic",
+               color = "Parameter") +
+          scale_color_manual(values = colors) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-31 18:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 195, label = "Unhealthy") +
+          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 295, label = "Very Unhealthy") +
+          geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1.5) 
+      }else if(max(x$PM2.5) > 300){
+        p1 <- ggplot(data = x, aes(x = date)) +
+          labs(x = "Date", y = "Air Quality Index",
+               title = "AQI and Traffic",
+               color = "Parameter") +
+          scale_color_manual(values = colors) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-31 18:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 195, label = "Unhealthy") +
+          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 295, label = "Very Unhealthy") +
+          geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1.5) +
+          annotate("text", x = as_datetime("2020-10-28 22:00:00"), y = 395, label = "Hazardous") +
+          geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1.5) 
+      }
       
       po <- geom_line(aes(y = Ozone, color = "Ozone"))
       pc <- geom_line(aes(y = SO2, color = "SO2"))
@@ -1178,7 +1276,7 @@ server <- function(input, output, session) {
       }
       
       param.slim <- parameter_wider %>% 
-        select(date, traffic_index_live, jams_delay, jams_length, jams_count) 
+        dplyr::select(date, traffic_index_live, jams_delay, jams_length, jams_count) 
       
       param.slim <- param.slim[,2:6]
       
@@ -1308,7 +1406,7 @@ server <- function(input, output, session) {
   })
   output$airtable.title2 <- renderText({
     if(input$lastweek == TRUE){
-      str_c("Last Week")
+      str_c("One Week Ago")
     }
   })
   output$airtable <- renderTable({
@@ -1640,7 +1738,6 @@ server <- function(input, output, session) {
   
   ## Week Comparison Bar Chart
   output$airtable.graph <- renderPlot({
-    if(input$currenttime == TRUE & input$lastweek == TRUE){
       cs1 <- traffic.flow %>% 
         filter(date == parse_datetime(str_c(as.character(input$date1), 
                                             " ", 
@@ -1678,7 +1775,10 @@ server <- function(input, output, session) {
         summarize(Ozone = mean(ozone_loc_aqi, na.rm = TRUE),
                   SO2 = mean(so2_loc_aqi, na.rm = TRUE),
                   PM2.5 = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                  NO2 = mean(no2_loc_aqi, na.rm = TRUE))
+                  NO2 = mean(no2_loc_aqi, na.rm = TRUE),
+                  .groups = 'drop')
+      
+      cs3a <- cs3
       
       if(input$ozone1 == TRUE){
         if(input$so2.1 == TRUE){
@@ -1747,23 +1847,71 @@ server <- function(input, output, session) {
       cs3$date <- str_c(substr(cs3$date, start = 1, stop = 10), " T",
                         substr(cs3$date, start = 12, stop = 13))
       
-      p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
-        geom_bar(stat = "identity", position = "dodge") +
-        labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
-             title = "Weekly Comparison of AQI and Traffic") +
-        annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
-        geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-        annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
-        geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-        annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
-        geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+      if(max(cs3a$PM2.5) <=150 | sum(is.na(cs3a$PM2.5)) == nrow(cs3a)){
+        p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
+          geom_bar(stat = "identity", position = "dodge") +
+          labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+               title = "Weekly Comparison of AQI and Traffic") +
+          annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+      }else if(max(cs3a$PM2.5) <=200 & max(cs3a$PM2.5) > 150){
+        p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
+          geom_bar(stat = "identity", position = "dodge") +
+          labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+               title = "Weekly Comparison of AQI and Traffic") +
+          annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+          annotate("text", x = unique(cs3$param)[1], y = 195, label = "Unhealthy") +
+          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1)
+      }else if(max(cs3a$PM2.5) <=300 & max(cs3a$PM2.5) > 200){
+        p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
+          geom_bar(stat = "identity", position = "dodge") +
+          labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+               title = "Weekly Comparison of AQI and Traffic") +
+          annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+          annotate("text", x = unique(cs3$param)[1], y = 195, label = "Unhealthy") +
+          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 295, label = "Very Unhealthy") +
+          geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1)
+      }else if(max(cs3a$PM2.5) > 300){
+        p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
+          geom_bar(stat = "identity", position = "dodge") +
+          labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+               title = "Weekly Comparison of AQI and Traffic") +
+          annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+          annotate("text", x = unique(cs3$param)[1], y = 195, label = "Unhealthy") +
+          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 295, label = "Very Unhealthy") +
+          geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+          annotate("text", x = unique(cs3$param)[1], y = 395, label = "Hazardous") +
+          geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1)
+      }
       
       cs4 <- cs2 %>% 
         group_by(date) %>% 
         summarize(Current_Speed = mean(current_speed, na.rm = TRUE),
                   Free_Flow_Speed = mean(free_flow_speed, na.rm = TRUE),
                   Current_Travel_Time = mean(current_travel_time, na.rm = TRUE),
-                  Free_Flow_Travel_Time = mean(free_flow_travel_time, na.rm = TRUE))
+                  Free_Flow_Travel_Time = mean(free_flow_travel_time, na.rm = TRUE),
+                  .groups = 'drop')
       
       if(input$cspeed == TRUE){
         if(input$ffspeed == TRUE){
@@ -1837,7 +1985,6 @@ server <- function(input, output, session) {
         labs(x = "Traffic Parameters", y = "Traffic Value", fill = "Date")
       
       grid.arrange(p2, p1, ncol = 2)
-    }
   })
   
   ## Overview Numbers 
@@ -1905,13 +2052,13 @@ server <- function(input, output, session) {
     if(input$currenttime == TRUE){ 
       if(input$lastweek == TRUE){
         str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph) | ", 
-              "Speed last week: ", round(ls2, digits = 0), " mph (Free flow speed: ", round(ls3, digits = 0), " mph)")
+              "Speed one week ago: ", round(ls2, digits = 0), " mph (Free flow speed: ", round(ls3, digits = 0), " mph)")
       }else{
         str_c("Current speed: ", round(cs2, digits = 0), " mph (Free flow speed: ", round(cs3, digits = 0), " mph)")
       }
     }else{
       if(input$lastweek == TRUE){
-        str_c("Speed last week: ", round(ls2, digits = 0), " mph (Free flow speed: ", round(ls3, digits = 0), " mph)")
+        str_c("Speed one week ago: ", round(ls2, digits = 0), " mph (Free flow speed: ", round(ls3, digits = 0), " mph)")
       }else{
         
       }
@@ -1981,13 +2128,13 @@ server <- function(input, output, session) {
     if(input$currenttime == TRUE){ 
       if(input$lastweek == TRUE){
         str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph) | ",
-              "Travel time last week: ", round(ls2, digits = 0), " mph (Free flow travel time: ", round(ls3, digits = 0), " mph)")
+              "Travel time one week ago: ", round(ls2, digits = 0), " mph (Free flow travel time: ", round(ls3, digits = 0), " mph)")
       }else{
         str_c("Current travel time: ", round(cs2, digits = 0), " mph (Free flow travel time: ", round(cs3, digits = 0), " mph)")
       }
     }else{
       if(input$lastweek == TRUE){
-        str_c("Travel time last week: ", round(ls2, digits = 0), " mph (Free flow travel time: ", round(ls3, digits = 0), " mph)")
+        str_c("Travel time one week ago: ", round(ls2, digits = 0), " mph (Free flow travel time: ", round(ls3, digits = 0), " mph)")
       }else{
         
       }
@@ -2069,19 +2216,19 @@ server <- function(input, output, session) {
     }
     
     if(ls2 == 1){
-      ls3 <- str_c("Average air quality last week: ", "Good")
+      ls3 <- str_c("Average air quality one week ago: ", "Good")
     }else if(ls2 == 2){
-      ls3 <- str_c("Average air quality last week: ", "Moderate")
+      ls3 <- str_c("Average air quality one week ago: ", "Moderate")
     }else if(ls2 == 3){
-      ls3 <- str_c("Average air quality last week: ", "Unhealthy for sensitive groups")
+      ls3 <- str_c("Average air quality one week ago: ", "Unhealthy for sensitive groups")
     }else if(ls2 == 4){
-      ls3 <- str_c("Average air quality last week: ", "Unhealthy")
+      ls3 <- str_c("Average air quality one week ago: ", "Unhealthy")
     }else if(ls2 == 5){
-      ls3 <- str_c("Average air quality last week: ", "Very unhealthy")
+      ls3 <- str_c("Average air quality one week ago: ", "Very unhealthy")
     }else if(ls2 == 6){
-      ls3 <- str_c("Average air quality last week: ", "Hazardous")
+      ls3 <- str_c("Average air quality one week ago: ", "Hazardous")
     }else if(ls2 == "NaN"){
-      ls3 <- str_c("Average air quality last week: ", "NaN")
+      ls3 <- str_c("Average air quality one week ago: ", "NaN")
     }
     
     if(input$currenttime == TRUE){ 
@@ -2124,30 +2271,86 @@ server <- function(input, output, session) {
         summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
                   mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
                   mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                  mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+                  mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE),
+                  .groups = 'drop')
       
       cs4 <- cs2 %>% 
         group_by(date) %>% 
         summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
                   mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
                   mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                  mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+                  mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE),
+                  .groups = 'drop')
       
       colors <- c("Ozone" = "blue", "SO2" = "red", "PM 2.5" = "Orange",
                   "NO2" = "green")
       
-      g <- cs3 %>% 
-        ggplot(data = ., aes(x = date)) +
-        labs(x = "Date", y = "Air Quality Index", 
-             title = str_c(input$loc.type, ": ", input$loc.type2),
-             color = "Parameter") +
-        scale_color_manual(values = colors)  +
-        annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-        geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-        annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-        geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-        annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-        geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+      if(max(cs3$mean_pm2.5_loc_aqi) <=150 | sum(is.na(cs3$mean_pm2.5_loc_aqi)) == nrow(cs3)){
+        g <- cs3 %>% 
+          ggplot(data = ., aes(x = date)) +
+          labs(x = "Date", y = "Air Quality Index", 
+               title = str_c(input$loc.type, ": ", input$loc.type2),
+               color = "Parameter") +
+          scale_color_manual(values = colors)  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+      }else if(max(cs3$mean_pm2.5_loc_aqi) <=200 & max(cs3$mean_pm2.5_loc_aqi) > 150){
+        g <- cs3 %>% 
+          ggplot(data = ., aes(x = date)) +
+          labs(x = "Date", y = "Air Quality Index", 
+               title = str_c(input$loc.type, ": ", input$loc.type2),
+               color = "Parameter") +
+          scale_color_manual(values = colors)  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1.5) 
+      }else if(max(cs3$mean_pm2.5_loc_aqi) <=300 & max(cs3$mean_pm2.5_loc_aqi) > 200){
+        g <- cs3 %>% 
+          ggplot(data = ., aes(x = date)) +
+          labs(x = "Date", y = "Air Quality Index", 
+               title = str_c(input$loc.type, ": ", input$loc.type2),
+               color = "Parameter") +
+          scale_color_manual(values = colors)  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1.5) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+          geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1.5) 
+      }else if(max(cs3$mean_pm2.5_loc_aqi) > 300){
+        g <- cs3 %>% 
+          ggplot(data = ., aes(x = date)) +
+          labs(x = "Date", y = "Air Quality Index", 
+               title = str_c(input$loc.type, ": ", input$loc.type2),
+               color = "Parameter") +
+          scale_color_manual(values = colors)  +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1.5) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+          geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1.5) +
+          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+          geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1.5) 
+      }
+      
       g1 <- geom_line(aes(y = mean_ozone_loc_aqi, color = "Ozone"))
       g2 <- geom_line(aes(y = mean_so2_loc_aqi, color = "SO2"))
       g3 <- geom_line(aes(y = mean_pm2.5_loc_aqi, color = "PM 2.5"))
@@ -2302,358 +2505,1641 @@ server <- function(input, output, session) {
           summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
                     mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
                     mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE),
+                    .groups = 'drop')
         
-        p1 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "Ozone AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = quadrant))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p2 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "SO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = quadrant))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p3 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "PM 2.5 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = quadrant))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p4 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "NO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = quadrant))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        if(max(cs3$mean_pm2.5_loc_aqi) <= 150 | sum(is.na(cs3$mean_pm2.5_loc_aqi)) == nrow(cs3)){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = quadrant)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = quadrant))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = quadrant))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = quadrant))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=200 & max(cs3$mean_pm2.5_loc_aqi) > 150){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = quadrant)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = quadrant))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = quadrant))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = quadrant))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=300 & max(cs3$mean_pm2.5_loc_aqi) > 200){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = quadrant)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = quadrant))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = quadrant))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = quadrant))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) > 300){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = quadrant)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = quadrant))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = quadrant))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = quadrant))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+        }
       }else if(input$loc.type == "Ward"){
         cs3 <- traffic.flow %>% 
           group_by(date, ward) %>% 
           summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
                     mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
                     mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE),
+                    .groups = 'drop')
         
-        p1 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "Ozone AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = ward))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p2 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "SO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = ward))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p3 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "PM 2.5 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = ward))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p4 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "NO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = ward))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        if(max(cs3$mean_pm2.5_loc_aqi) <=150 | sum(is.na(cs3$mean_pm2.5_loc_aqi)) == nrow(cs3)){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = ward)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = ward))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = ward))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = ward))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=200 & max(cs3$mean_pm2.5_loc_aqi) > 150){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = ward)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = ward))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = ward))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = ward))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=300 & max(cs3$mean_pm2.5_loc_aqi) > 200){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = ward)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = ward))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = ward))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = ward))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) > 300){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = ward)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = ward))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = ward))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = ward))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+        }
       }else if(input$loc.type == "Zip Code"){
         cs3 <- traffic.flow %>% 
           group_by(date, zip_code) %>% 
           summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
                     mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
                     mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE),
+                    .groups = 'drop')
         
-        p1 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "Ozone AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = zip_code)) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p2 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "SO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = zip_code))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p3 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "PM 2.5 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = zip_code))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p4 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "NO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = zip_code))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        if(max(cs3$mean_pm2.5_loc_aqi) <=150 | sum(is.na(cs3$mean_pm2.5_loc_aqi)) == nrow(cs3)){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = zip_code)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = zip_code))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = zip_code))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = zip_code))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=200 & max(cs3$mean_pm2.5_loc_aqi) > 150){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = zip_code)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = zip_code))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = zip_code))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = zip_code))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=300 & max(cs3$mean_pm2.5_loc_aqi) > 200){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = zip_code)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = zip_code))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = zip_code))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = zip_code))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) > 300){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = zip_code)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = zip_code))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = zip_code))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = zip_code))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+        }
       }else if(input$loc.type == "Advisory Neighborhood Commission"){
         cs3 <- traffic.flow %>% 
           group_by(date, anc) %>% 
           summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
                     mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
                     mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE),
+                    .groups = 'drop')
         
-        p1 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "Ozone AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = anc)) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p2 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "SO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = anc))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p3 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "PM 2.5 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = anc))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p4 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "NO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = anc))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        if(max(cs3$mean_pm2.5_loc_aqi) <=150 | sum(is.na(cs3$mean_pm2.5_loc_aqi)) == nrow(cs3)){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = zip_code)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = anc))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = anc))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = anc))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=200 & max(cs3$mean_pm2.5_loc_aqi) > 150){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = anc)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = anc))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = anc))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = anc))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=300 & max(cs3$mean_pm2.5_loc_aqi) > 200){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = anc)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = anc))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = anc))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = anc))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) > 300){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = anc)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = anc))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = anc))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = anc))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+        }
       }else if(input$loc.type == "Census Tract"){
         cs3 <- traffic.flow %>% 
           group_by(date, census_tract) %>% 
           summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
                     mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
                     mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE),
+                    .groups = 'drop')
         
-        p1 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "Ozone AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = census_tract)) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p2 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "SO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = census_tract))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p3 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "PM 2.5 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = census_tract))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p4 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "NO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = census_tract))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        if(max(cs3$mean_pm2.5_loc_aqi) <=150 | sum(is.na(cs3$mean_pm2.5_loc_aqi)) == nrow(cs3)){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = census_tract)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = census_tract))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = census_tract))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = census_tract))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=200 & max(cs3$mean_pm2.5_loc_aqi) > 150){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = census_tract)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = census_tract))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = census_tract))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = census_tract))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=300 & max(cs3$mean_pm2.5_loc_aqi) > 200){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = census_tract)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = census_tract))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = census_tract))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = census_tract))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) > 300){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = census_tract)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = census_tract))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = census_tract))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = census_tract))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+        }
       }else if(input$loc.type == "Single Member District"){
         cs3 <- traffic.flow %>% 
           group_by(date, single_member_district) %>% 
           summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
                     mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
                     mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE),
+                    .groups = 'drop')
         
-        p1 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "Ozone AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = single_member_district)) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p2 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "SO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = single_member_district))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p3 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "PM 2.5 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = single_member_district)) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) 
-        
-        p4 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "NO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = single_member_district))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        if(max(cs3$mean_pm2.5_loc_aqi) <=150 | sum(is.na(cs3$mean_pm2.5_loc_aqi)) == nrow(cs3)){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = single_member_district)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = single_member_district))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = single_member_district))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = single_member_district))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=200 & max(cs3$mean_pm2.5_loc_aqi) > 150){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = single_member_district)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = single_member_district))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = single_member_district))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = single_member_district))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=300 & max(cs3$mean_pm2.5_loc_aqi) > 200){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = single_member_district)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = single_member_district))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = single_member_district))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = single_member_district))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) > 300){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = single_member_district)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = single_member_district))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = single_member_district))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = single_member_district))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+        }
       }else if(input$loc.type == "Voter Precinct"){
         cs3 <- traffic.flow %>% 
           group_by(date, voter_precinct) %>% 
           summarize(mean_ozone_loc_aqi = mean(ozone_loc_aqi, na.rm = TRUE),
                     mean_so2_loc_aqi = mean(so2_loc_aqi, na.rm = TRUE),
                     mean_pm2.5_loc_aqi = mean(pm2.5_loc_aqi, na.rm = TRUE),
-                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE))
+                    mean_no2_loc_aqi = mean(no2_loc_aqi, na.rm = TRUE),
+                    .groups = 'drop')
         
-        p1 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "Ozone AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_ozone_loc_aqi, color = voter_precinct)) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p2 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "SO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_so2_loc_aqi, color = voter_precinct))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p3 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "PM 2.5 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_pm2.5_loc_aqi, color = voter_precinct))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-        
-        p4 <- ggplot(data = cs3, aes(x = date)) +
-          labs(x = "Date", y = "NO2 AQI",
-               title = str_c(input$loc.type)) +
-          geom_line(aes(y = mean_no2_loc_aqi, color = voter_precinct))  +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        if(max(cs3$mean_pm2.5_loc_aqi) <=150 | sum(is.na(cs3$mean_pm2.5_loc_aqi)) == nrow(cs3)){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = voter_precinct)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = voter_precinct))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = voter_precinct))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = voter_precinct))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=200 & max(cs3$mean_pm2.5_loc_aqi) > 150){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = voter_precinct)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = voter_precinct))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = voter_precinct))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = voter_precinct))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) <=300 & max(cs3$mean_pm2.5_loc_aqi) > 200){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = voter_precinct)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = voter_precinct))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = voter_precinct))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = voter_precinct))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) 
+        }else if(max(cs3$mean_pm2.5_loc_aqi) > 300){
+          p1 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "Ozone AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_ozone_loc_aqi, color = voter_precinct)) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p2 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "SO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_so2_loc_aqi, color = voter_precinct))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p3 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "PM 2.5 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_pm2.5_loc_aqi, color = voter_precinct))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+          
+          p4 <- ggplot(data = cs3, aes(x = date)) +
+            labs(x = "Date", y = "NO2 AQI",
+                 title = str_c(input$loc.type)) +
+            geom_line(aes(y = mean_no2_loc_aqi, color = voter_precinct))  +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 45, label = "Healthy") +
+            geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 95, label = "Moderate") +
+            geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+            annotate("text", x = as_datetime("2020-11-08 1:00:00"), y = 145, label = "Unhealthy for Sensitive Groups") +
+            geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 195, label = "Unhealthy") +
+            geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 295, label = "Very Unhealthy") +
+            geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+            annotate("text", x = as_datetime("2020-11-06 10:00:00"), y = 395, label = "Hazardous") +
+            geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1) 
+        }
       }
+      
+      
       
       if(input$ozone1 == TRUE){
         if(input$so2.1 == TRUE){
@@ -2728,7 +4214,8 @@ server <- function(input, output, session) {
           summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
                     mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
                     mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE),
+                    .groups = 'drop')
         
         p1 <- ggplot(data = cs4, aes(x = date)) +
           labs(x = "Date", y = "Current Speed",
@@ -2755,7 +4242,8 @@ server <- function(input, output, session) {
           summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
                     mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
                     mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE),
+                    .groups = 'drop')
         
         p1 <- ggplot(data = cs4, aes(x = date)) +
           labs(x = "Date", y = "Current Speed",
@@ -2782,7 +4270,8 @@ server <- function(input, output, session) {
           summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
                     mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
                     mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE),
+                    .groups = 'drop')
         
         p1 <- ggplot(data = cs4, aes(x = date)) +
           labs(x = "Date", y = "Current Speed",
@@ -2809,7 +4298,8 @@ server <- function(input, output, session) {
           summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
                     mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
                     mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE),
+                    .groups = 'drop')
         
         p1 <- ggplot(data = cs4, aes(x = date)) +
           labs(x = "Date", y = "Current Speed",
@@ -2836,7 +4326,8 @@ server <- function(input, output, session) {
           summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
                     mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
                     mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE),
+                    .groups = 'drop')
         
         p1 <- ggplot(data = cs4, aes(x = date)) +
           labs(x = "Date", y = "Current Speed",
@@ -2863,7 +4354,8 @@ server <- function(input, output, session) {
           summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
                     mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
                     mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE),
+                    .groups = 'drop')
         
         p1 <- ggplot(data = cs4, aes(x = date)) +
           labs(x = "Date", y = "Current Speed",
@@ -2890,7 +4382,8 @@ server <- function(input, output, session) {
           summarize(mean_current_speed = mean(current_speed, na.rm = TRUE),
                     mean_free_flow_speed = mean(free_flow_speed, na.rm = TRUE),
                     mean_current_travel_time = mean(current_travel_time, na.rm = TRUE),
-                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE))
+                    mean_free_flow_travel_time = mean(free_flow_travel_time, na.rm = TRUE),
+                    .groups = 'drop')
         
         p1 <- ggplot(data = cs4, aes(x = date)) +
           labs(x = "Date", y = "Current Speed",
@@ -2979,14 +4472,587 @@ server <- function(input, output, session) {
     }
   }) ## comparison of location, traffic
   
+  ## Location Search Maps 
+  output$airtable.title3 <- renderText({
+    if(input$currenttime == TRUE){
+      str_c("Current Date")
+    }
+  })
+  output$airtable.title4 <- renderText({
+    if(input$lastweek == TRUE){
+      str_c("One Week Ago")
+    }
+  })
+  output$location.map <- renderPlot({
+    if(input$loc.type == "Quadrant"){
+      ## Quadrants 
+      map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/DC_Quadrants-shp/"),
+                        verbose = FALSE)
+      
+      map_fort <- fortify(map_df, region ="QUADRANT")
+      
+      map_id <- map_df@data$QUADRANT
+      
+      map_centroids <- as.data.frame(coordinates(map_df))
+      names(map_centroids) <- c("Longitude", "Latitude")
+      map_centroids <- cbind(map_id, map_centroids)
+      map_centroids <- map_centroids %>% 
+        rename(id = map_id)
+      
+      map_tf <- traffic.flow %>% 
+        filter(date == parse_datetime(str_c(as.character(input$date1), 
+                                            " ", 
+                                            as.character(input$hour), 
+                                            ":00:00"))) %>% 
+        group_by(quadrant) %>% 
+        summarize(cs = mean(current_speed),
+                  fs = mean(free_flow_speed),
+                  tt = mean(current_travel_time),
+                  ftt = mean(free_flow_travel_time),
+                  ozone = mean(ozone_loc_aqi),
+                  so2 = mean(so2_loc_aqi),
+                  pm2.5 = mean(pm2.5_loc_aqi),
+                  no2 = mean(no2_loc_aqi),
+                  .groups = 'drop') %>% 
+        rename(id = quadrant)
+      
+      map_tf <- merge(map_tf, map_centroids, by = "id")
+    }else if(input$loc.type == "Ward"){
+      map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Ward_from_2012-shp/"),
+                        verbose = FALSE)
+      
+      map_fort <- fortify(map_df, region ="WARD")
+      
+      map_id <- map_df@data$WARD
+      
+      map_centroids <- as.data.frame(coordinates(map_df))
+      names(map_centroids) <- c("Longitude", "Latitude")
+      map_centroids <- cbind(map_id, map_centroids)
+      map_centroids <- map_centroids %>% 
+        rename(id = map_id)
+      
+      map_tf <- traffic.flow %>% 
+        filter(date == parse_datetime(str_c(as.character(input$date1), 
+                                            " ", 
+                                            as.character(input$hour), 
+                                            ":00:00"))) %>% 
+        group_by(ward) %>% 
+        summarize(cs = mean(current_speed),
+                  fs = mean(free_flow_speed),
+                  tt = mean(current_travel_time),
+                  ftt = mean(free_flow_travel_time),
+                  ozone = mean(ozone_loc_aqi),
+                  so2 = mean(so2_loc_aqi),
+                  pm2.5 = mean(pm2.5_loc_aqi),
+                  no2 = mean(no2_loc_aqi),
+                  .groups = 'drop') %>% 
+        rename(id = ward) %>% 
+        mutate(id = as.integer(id))
+      
+      map_tf <- merge(map_tf, map_centroids, by = "id")
+    }else if(input$loc.type == "Zip Code"){
+      map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Zip_Codes-shp/"),
+                        verbose = FALSE)
+      
+      map_fort <- fortify(map_df, region ="ZIPCODE")
+      
+      map_id <- map_df@data$ZIPCODE
+      
+      map_centroids <- as.data.frame(coordinates(map_df))
+      names(map_centroids) <- c("Longitude", "Latitude")
+      map_centroids <- cbind(map_id, map_centroids)
+      map_centroids <- map_centroids %>% 
+        rename(id = map_id)
+      
+      map_tf <- traffic.flow %>% 
+        filter(date == parse_datetime(str_c(as.character(input$date1), 
+                                             " ", 
+                                             as.character(input$hour), 
+                                             ":00:00"))) %>% 
+        group_by(zip_code) %>% 
+        summarize(cs = mean(current_speed),
+                  fs = mean(free_flow_speed),
+                  tt = mean(current_travel_time),
+                  ftt = mean(free_flow_travel_time),
+                  ozone = mean(ozone_loc_aqi),
+                  so2 = mean(so2_loc_aqi),
+                  pm2.5 = mean(pm2.5_loc_aqi),
+                  no2 = mean(no2_loc_aqi),
+                  .groups = 'drop') %>% 
+        rename(id = zip_code) %>% 
+        mutate(id = as.integer(id))
+      
+      map_tf <- merge(map_tf, map_centroids, by = "id", all.y = TRUE)
+    }else if(input$loc.type == "Advisory Neighborhood Commission"){
+      map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Advisory_Neighborhood_Commissions_from_2013-shp/"),
+                        verbose = FALSE)
+      
+      map_fort <- fortify(map_df, region ="ANC_ID")
+      
+      map_id <- map_df@data$ANC_ID
+      
+      map_centroids <- as.data.frame(coordinates(map_df))
+      names(map_centroids) <- c("Longitude", "Latitude")
+      map_centroids <- cbind(map_id, map_centroids)
+      map_centroids <- map_centroids %>% 
+        rename(id = map_id)
+      
+      map_tf <- traffic.flow %>% 
+        filter(date == parse_datetime(str_c(as.character(input$date1), 
+                                            " ", 
+                                            as.character(input$hour), 
+                                            ":00:00"))) %>% 
+        group_by(anc) %>% 
+        summarize(cs = mean(current_speed),
+                  fs = mean(free_flow_speed),
+                  tt = mean(current_travel_time),
+                  ftt = mean(free_flow_travel_time),
+                  ozone = mean(ozone_loc_aqi),
+                  so2 = mean(so2_loc_aqi),
+                  pm2.5 = mean(pm2.5_loc_aqi),
+                  no2 = mean(no2_loc_aqi),
+                  .groups = 'drop') %>% 
+        rename(id = anc) 
+      
+      map_tf <- merge(map_tf, map_centroids, by = "id", all.y = TRUE)
+    }else if(input$loc.type == "Single Member District"){
+      map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Single_Member_District_from_2013-shp/"),
+                        verbose = FALSE)
+      
+      map_fort <- fortify(map_df, region ="SMD_ID")
+      
+      map_id <- map_df@data$SMD_ID
+      
+      map_centroids <- as.data.frame(coordinates(map_df))
+      names(map_centroids) <- c("Longitude", "Latitude")
+      map_centroids <- cbind(map_id, map_centroids)
+      map_centroids <- map_centroids %>% 
+        rename(id = map_id)
+      
+      map_tf <- traffic.flow %>% 
+        filter(date == parse_datetime(str_c(as.character(input$date1), 
+                                            " ", 
+                                            as.character(input$hour), 
+                                            ":00:00"))) %>% 
+        group_by(single_member_district) %>% 
+        summarize(cs = mean(current_speed),
+                  fs = mean(free_flow_speed),
+                  tt = mean(current_travel_time),
+                  ftt = mean(free_flow_travel_time),
+                  ozone = mean(ozone_loc_aqi),
+                  so2 = mean(so2_loc_aqi),
+                  pm2.5 = mean(pm2.5_loc_aqi),
+                  no2 = mean(no2_loc_aqi),
+                  .groups = 'drop') %>% 
+        rename(id = single_member_district) 
+      
+      map_tf <- merge(map_tf, map_centroids, by = "id", all.y = TRUE)
+    }else if(input$loc.type == "Voter Precinct"){
+      map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Voting_Precinct_-_2012-shp/"),
+                        verbose = FALSE)
+      
+      map_df@data$GIS_ID <- sub("Vote19_", "", map_df@data$GIS_ID)
+      
+      map_fort <- fortify(map_df, region ="GIS_ID")
+      
+      map_id <- map_df@data$GIS_ID
+      
+      map_centroids <- as.data.frame(coordinates(map_df))
+      names(map_centroids) <- c("Longitude", "Latitude")
+      map_centroids <- cbind(map_id, map_centroids)
+      map_centroids <- map_centroids %>% 
+        rename(id = map_id)
+      
+      map_tf <- traffic.flow %>% 
+        filter(date == parse_datetime(str_c(as.character(input$date1), 
+                                            " ", 
+                                            as.character(input$hour), 
+                                            ":00:00"))) %>% 
+        group_by(voter_precinct) %>% 
+        summarize(cs = mean(current_speed),
+                  fs = mean(free_flow_speed),
+                  tt = mean(current_travel_time),
+                  ftt = mean(free_flow_travel_time),
+                  ozone = mean(ozone_loc_aqi),
+                  so2 = mean(so2_loc_aqi),
+                  pm2.5 = mean(pm2.5_loc_aqi),
+                  no2 = mean(no2_loc_aqi),
+                  .groups = 'drop') %>% 
+        rename(id = voter_precinct) 
+      
+      map_tf <- merge(map_tf, map_centroids, by = "id", all.y = TRUE)
+    }
+    
+    if(input$loc.type != "Census Tract"){
+      if(input$map.choice.air == "Ozone"){
+        p1 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = ozone), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("AQI by ", input$loc.type),
+               fill = "Ozone") +
+          theme_bw()
+      }else if(input$map.choice.air == "SO2"){
+        p1 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = so2), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("AQI by ", input$loc.type),
+               fill = "SO2") +
+          theme_bw()
+      }else if(input$map.choice.air == "PM2.5"){
+        p1 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = pm2.5), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("AQI by ", input$loc.type),
+               fill = "PM2.5") +
+          theme_bw()
+      }else if(input$map.choice.air == "NO2"){
+        p1 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = no2), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("AQI by ", input$loc.type),
+               fill = "NO2") +
+          theme_bw()
+      }
+      
+      if(input$map.choice.traffic == "Current Speed"){
+        p2 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = cs), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("Traffic by ", input$loc.type),
+               fill = "C Speed") +
+          theme_bw()
+      }else if(input$map.choice.traffic == "Free Flow Speed"){
+        p2 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = fs), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("Traffic by ", input$loc.type),
+               fill = "FF Speed") +
+          theme_bw()
+      }else if(input$map.choice.traffic == "Current Travel Time"){
+        p2 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = tt), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("Traffic by ", input$loc.type),
+               fill = "C Travel") +
+          theme_bw()
+      }else if(input$map.choice.traffic == "Free Flow Speed"){
+        p2 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = ftt), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("Traffic by ", input$loc.type),
+               fill = "FF Travel") +
+          theme_bw()
+      }
+      
+      grid.arrange(p1, p2, ncol = 2)
+    }    
+    
+  })
+  output$location.map2 <- renderPlot({
+    if(input$loc.type == "Quadrant"){
+      ## Quadrants 
+      map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/DC_Quadrants-shp/"),
+                        verbose = FALSE)
+      
+      map_fort <- fortify(map_df, region ="QUADRANT")
+      
+      map_id <- map_df@data$QUADRANT
+      
+      map_centroids <- as.data.frame(coordinates(map_df))
+      names(map_centroids) <- c("Longitude", "Latitude")
+      map_centroids <- cbind(map_id, map_centroids)
+      map_centroids <- map_centroids %>% 
+        rename(id = map_id)
+      
+      map_tf <- traffic.flow %>% 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
+                                         " ", 
+                                         as.character(input$hour), 
+                                         ":00:00")) - 604800) %>% 
+        group_by(quadrant) %>% 
+        summarize(cs = mean(current_speed),
+                  fs = mean(free_flow_speed),
+                  tt = mean(current_travel_time),
+                  ftt = mean(free_flow_travel_time),
+                  ozone = mean(ozone_loc_aqi),
+                  so2 = mean(so2_loc_aqi),
+                  pm2.5 = mean(pm2.5_loc_aqi),
+                  no2 = mean(no2_loc_aqi),
+                  .groups = 'drop') %>% 
+        rename(id = quadrant)
+      
+      map_tf <- merge(map_tf, map_centroids, by = "id")
+    }else if(input$loc.type == "Ward"){
+      map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Ward_from_2012-shp/"),
+                        verbose = FALSE)
+      
+      map_fort <- fortify(map_df, region ="WARD")
+      
+      map_id <- map_df@data$WARD
+      
+      map_centroids <- as.data.frame(coordinates(map_df))
+      names(map_centroids) <- c("Longitude", "Latitude")
+      map_centroids <- cbind(map_id, map_centroids)
+      map_centroids <- map_centroids %>% 
+        rename(id = map_id)
+      
+      map_tf <- traffic.flow %>% 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
+                                         " ", 
+                                         as.character(input$hour), 
+                                         ":00:00")) - 604800) %>% 
+        group_by(ward) %>% 
+        summarize(cs = mean(current_speed),
+                  fs = mean(free_flow_speed),
+                  tt = mean(current_travel_time),
+                  ftt = mean(free_flow_travel_time),
+                  ozone = mean(ozone_loc_aqi),
+                  so2 = mean(so2_loc_aqi),
+                  pm2.5 = mean(pm2.5_loc_aqi),
+                  no2 = mean(no2_loc_aqi),
+                  .groups = 'drop') %>% 
+        rename(id = ward)
+      
+      map_tf <- merge(map_tf, map_centroids, by = "id")
+    }else if(input$loc.type == "Zip Code"){
+      map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Zip_Codes-shp/"),
+                        verbose = FALSE)
+      
+      map_fort <- fortify(map_df, region ="ZIPCODE")
+      
+      map_id <- map_df@data$ZIPCODE
+      
+      map_centroids <- as.data.frame(coordinates(map_df))
+      names(map_centroids) <- c("Longitude", "Latitude")
+      map_centroids <- cbind(map_id, map_centroids)
+      map_centroids <- map_centroids %>% 
+        rename(id = map_id)
+      
+      map_tf <- traffic.flow %>% 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
+                                         " ", 
+                                         as.character(input$hour), 
+                                         ":00:00")) - 604800) %>% 
+        group_by(zip_code) %>% 
+        summarize(cs = mean(current_speed),
+                  fs = mean(free_flow_speed),
+                  tt = mean(current_travel_time),
+                  ftt = mean(free_flow_travel_time),
+                  ozone = mean(ozone_loc_aqi),
+                  so2 = mean(so2_loc_aqi),
+                  pm2.5 = mean(pm2.5_loc_aqi),
+                  no2 = mean(no2_loc_aqi),
+                  .groups = 'drop') %>% 
+        rename(id = zip_code) %>% 
+        mutate(id = as.integer(id))
+      
+      map_tf <- merge(map_tf, map_centroids, by = "id")
+    }else if(input$loc.type == "Advisory Neighborhood Commission"){
+      map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Advisory_Neighborhood_Commissions_from_2013-shp/"),
+                        verbose = FALSE)
+      
+      map_fort <- fortify(map_df, region ="ANC_ID")
+      
+      map_id <- map_df@data$ANC_ID
+      
+      map_centroids <- as.data.frame(coordinates(map_df))
+      names(map_centroids) <- c("Longitude", "Latitude")
+      map_centroids <- cbind(map_id, map_centroids)
+      map_centroids <- map_centroids %>% 
+        rename(id = map_id)
+      
+      map_tf <- traffic.flow %>% 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
+                                         " ", 
+                                         as.character(input$hour), 
+                                         ":00:00")) - 604800) %>% 
+        group_by(anc) %>% 
+        summarize(cs = mean(current_speed),
+                  fs = mean(free_flow_speed),
+                  tt = mean(current_travel_time),
+                  ftt = mean(free_flow_travel_time),
+                  ozone = mean(ozone_loc_aqi),
+                  so2 = mean(so2_loc_aqi),
+                  pm2.5 = mean(pm2.5_loc_aqi),
+                  no2 = mean(no2_loc_aqi),
+                  .groups = 'drop') %>% 
+        rename(id = anc)
+      
+      map_tf <- merge(map_tf, map_centroids, by = "id")
+    }else if(input$loc.type == "Single Member District"){
+      map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Single_Member_District_from_2013-shp/"),
+                        verbose = FALSE)
+      
+      map_fort <- fortify(map_df, region ="SMD_ID")
+      
+      map_id <- map_df@data$SMD_ID
+      
+      map_centroids <- as.data.frame(coordinates(map_df))
+      names(map_centroids) <- c("Longitude", "Latitude")
+      map_centroids <- cbind(map_id, map_centroids)
+      map_centroids <- map_centroids %>% 
+        rename(id = map_id)
+      
+      map_tf <- traffic.flow %>% 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
+                                         " ", 
+                                         as.character(input$hour), 
+                                         ":00:00")) - 604800) %>% 
+        group_by(single_member_district) %>% 
+        summarize(cs = mean(current_speed),
+                  fs = mean(free_flow_speed),
+                  tt = mean(current_travel_time),
+                  ftt = mean(free_flow_travel_time),
+                  ozone = mean(ozone_loc_aqi),
+                  so2 = mean(so2_loc_aqi),
+                  pm2.5 = mean(pm2.5_loc_aqi),
+                  no2 = mean(no2_loc_aqi),
+                  .groups = 'drop') %>% 
+        rename(id = single_member_district)
+      
+      map_tf <- merge(map_tf, map_centroids, by = "id")
+    }else if(input$loc.type == "Voter Precinct"){
+      map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Voting_Precinct_-_2012-shp/"),
+                        verbose = FALSE)
+      
+      map_df@data$GIS_ID <- sub("Vote19_", "", map_df@data$GIS_ID)
+      
+      map_fort <- fortify(map_df, region ="GIS_ID")
+      
+      map_id <- map_df@data$GIS_ID
+      
+      map_centroids <- as.data.frame(coordinates(map_df))
+      names(map_centroids) <- c("Longitude", "Latitude")
+      map_centroids <- cbind(map_id, map_centroids)
+      map_centroids <- map_centroids %>% 
+        rename(id = map_id)
+      
+      map_tf <- traffic.flow %>% 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
+                                         " ", 
+                                         as.character(input$hour), 
+                                         ":00:00")) - 604800) %>% 
+        group_by(voter_precinct) %>% 
+        summarize(cs = mean(current_speed),
+                  fs = mean(free_flow_speed),
+                  tt = mean(current_travel_time),
+                  ftt = mean(free_flow_travel_time),
+                  ozone = mean(ozone_loc_aqi),
+                  so2 = mean(so2_loc_aqi),
+                  pm2.5 = mean(pm2.5_loc_aqi),
+                  no2 = mean(no2_loc_aqi),
+                  .groups = 'drop') %>% 
+        rename(id = voter_precinct)
+      
+      map_tf <- merge(map_tf, map_centroids, by = "id")
+    }
+    
+    if(input$loc.type != "Census Tract"){
+      if(input$map.choice.air == "Ozone"){
+        p1 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = ozone), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("AQI by ", input$loc.type),
+               fill = "Ozone") +
+          theme_bw()
+      }else if(input$map.choice.air == "SO2"){
+        p1 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = so2), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("AQI by ", input$loc.type),
+               fill = "SO2") +
+          theme_bw()
+      }else if(input$map.choice.air == "PM2.5"){
+        p1 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = pm2.5), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("AQI by ", input$loc.type),
+               fill = "PM2.5") +
+          theme_bw()
+      }else if(input$map.choice.air == "NO2"){
+        p1 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = no2), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("AQI by ", input$loc.type),
+               fill = "NO2") +
+          theme_bw()
+      }
+      
+      if(input$map.choice.traffic == "Current Speed"){
+        p2 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = cs), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("Traffic by ", input$loc.type),
+               fill = "C Speed") +
+          theme_bw()
+      }else if(input$map.choice.traffic == "Free Flow Speed"){
+        p2 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = fs), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("Traffic by ", input$loc.type),
+               fill = "FF Speed") +
+          theme_bw()
+      }else if(input$map.choice.traffic == "Current Travel Time"){
+        p2 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = tt), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("Traffic by ", input$loc.type),
+               fill = "C Travel") +
+          theme_bw()
+      }else if(input$map.choice.traffic == "Free Flow Speed"){
+        p2 <- ggplot(map_tf, aes(map_id = id)) +
+          geom_map(aes(fill = ftt), stat = "identity", colour = "grey", map = map_fort) +
+          expand_limits(x = map_fort$long, y = map_fort$lat) + 
+          scale_fill_gradient(high = "red", low = "white", guide = "colorbar", labels = comma) +
+          geom_text(aes(label = id, x = Longitude, y = Latitude), size = 3) +
+          labs(x = "Longitude", y = "Latitude", title = str_c("Traffic by ", input$loc.type),
+               fill = "FF Travel") +
+          theme_bw()
+      }
+      
+      grid.arrange(p1, p2, ncol = 2)
+    }    
+    
+  })
+  
   ## Raw Data Tables
   output$static.city <- renderDataTable({
     hourly
   })
   output$static.location <- renderDataTable({
     traffic.flow %>% 
-      select(-all_lat_lon) %>% 
-      select(-street.url)
+      dplyr::select(-all_lat_lon) %>% 
+      dplyr::select(-street.url)
   })
   
   ## graphics for background tab 
@@ -3022,7 +5088,7 @@ server <- function(input, output, session) {
                Description = c("Congestion level across Washington, D.C. in percent.",
                                "Total number of traffic jams across Washington, D.C.",
                                "Delay time from traffic jams across Washington, D.C. in seconds.",
-                               "Total length of traffic jams across Washington, D.C. in km."))
+                               "Total length of traffic jams across Washington, D.C. in miles."))
   })
   output$pollutants.back <- renderTable({
     data.frame("Abbrv." = c("O3", "PM2.5", "SO2", "NO2"),
@@ -3035,6 +5101,17 @@ server <- function(input, output, session) {
                "Very Unhealthy" = c("People with lung disease (such as asthma), children, older adults, people who are active outdoors (including outdoor workers), people with certain genetic variants, and people with diets limited in certain nutrients should avoid all outdoor exertion; everyone elese should reduce outdoor exertion.", "People with heart or lung disease, older adults, children, and people of lower socioeconomic status should avoid all physical activity outdoors. Everyone else should avoid prolonged or heavy exertion.", "Children, people with asthma, or other lung diseases should avoid outdoor exertions; everyone else should reduce outdoor exertion.", "People with asthma, children, and older adults should avoid all outdoor exertion; everyone else should avoid prolonged exertion especially near busy roads."),
                "Hazardous" = c("Everyone should avoid all outdoor exertion.", "Everyone should avoid all physical activity outdoors; people with heart or lung disease, older adults, children, and people of lower socioeconomic status should remain indoors and keep activity levels low.", "Children, people with asthma, or other lung diseases should remain indoors; everyone else should avoid outdoor exertion.", "People with asthma, children, and older adults should remain indoors; everyone else should avoid all outdoor exertion."))
   })
+  output$concentrations.back <- renderTable({
+    data.frame("Abbrv." = c("O3", "PM2.5", "SO2", "NO2"),
+               "Pollutant" = c("Ozone", "Particulate Matter", 
+                               "Sulfur Dioxide", "Nitrogen Dioxide"),
+               "Good" = c("8 Hour: 0-0.054 ppm", "24 Hour: 0-12.0 microgram/m3", "1 Hour: 0-35 ppb", "1 Hour: 0-53 ppb"),
+               "Moderate" = c("8 Hour: 0.055-0.070 ppm", "24 Hour: 12.1-35.4 microgram/m3", "1 Hour: 36-75 ppb", "1 Hour: 54-100 ppb"),
+               "Sensitive" = c("8 Hour: 0.071-0.085 ppm; 1 Hour: 0.125-0.164 ppm", "24 Hour: 35.5-55.4 microgram/m3", "1 Hour: 76-185 ppb", "1 Hour: 101-360 ppb"),
+               "Unhealthy" = c("8 Hour: 0.086-0.105 ppm; 1 Hour: 0.165-0.204 ppm", "24 Hour: 55.5-150.4 microgram/m3", "1 Hour: 186-304 ppb", "1 Hour: 361-649 ppb"),
+               "Very Unhealthy" = c("8 Hour: 0.106-0.200 ppm; 1 Hour: 0.205-0.404 ppm", "24 Hour: 150.5-250.4 microgram/m3", "1 Hour: 305-604 ppb", "1 Hour: 650-1,249 ppb"),
+               "Hazardous" = c("1 Hour: 0.405-0.604 ppm", "24 Hour: 250.5-500.4 microgram/m3", "1 Hour: 605-1,004 ppb", "1 Hour: 1,250-2,049 ppb"))
+  })
   
   observeEvent(input$historical.o,{
     if(input$historical.o == TRUE){
@@ -3042,34 +5119,43 @@ server <- function(input, output, session) {
     }else if(input$historical.o == FALSE){
       hide("myaqi")
     }
-  }
-  )
+  })
+  observeEvent(input$currenttime,{
+    if(input$currenttime == TRUE){
+      show("location.map")
+    }else if(input$currenttime == FALSE){
+      hide("location.map")
+    }
+  })
+  observeEvent(input$lastweek,{
+    if(input$lastweek == TRUE){
+      show("location.map2")
+    }else if(input$lastweek == FALSE){
+      hide("location.map2")
+    }
+  })
   observeEvent(input$historical,{
     if(input$historical == TRUE){
       show("location.graph");show("loc.type.graph1");show("loc.type.graph2")
     }else if(input$historical == FALSE){
       hide("location.graph");hide("loc.type.graph1");hide("loc.type.graph2")
     }
-  }
-  )
+  })
   observeEvent(input$currenttime.o,{
     if(input$currenttime.o == TRUE){
       show("airtable.graph2")
     }else if(input$currenttime.o == FALSE){
       hide("airtable.graph2")
     }
-  }
-  )
+  })
   observeEvent(input$currenttime,{
     if(input$currenttime == TRUE){
       show("airtable.graph")
     }else if(input$currenttime == FALSE){
       hide("airtable.graph")
     }
-  }
-  )
-  
-  
+  })
+
 }
 
 # Run ---------------------------------------------------------------------
