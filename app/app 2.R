@@ -105,25 +105,6 @@ traffic.flow$cat.average.num <-
             traffic.flow$so2_loc_cat_num + 
             traffic.flow$pm2.5_loc_cat_num + 
             traffic.flow$no2_loc_cat_num) / 4), digits = 0)
-traffic.flow$cat.average <- NA
-
-for(i in 1:nrow(traffic.flow)){
-  if(traffic.flow$cat.average.num[i] == 1){
-    traffic.flow$cat.average <- "good"
-  }else if(traffic.flow$cat.average.num[i] == 2){
-    traffic.flow$cat.average <- "moderate"
-  }else if(traffic.flow$cat.average.num[i] == 3){
-    traffic.flow$cat.average <- "unhealthy for sensitive groups"
-  }else if(traffic.flow$cat.average.num[i] == 4){
-    traffic.flow$cat.average <- "unhealthy"
-  }else if(traffic.flow$cat.average.num[i] == 5){
-    traffic.flow$cat.average <- "very unhealthy"
-  }else if(traffic.flow$cat.average.num[i] == 6){
-    traffic.flow$cat.average <- "hazardous"
-  }
-}
-
-traffic.flow$cat.average <- str_to_title(traffic.flow$cat.average)
 
 traffic.flow$zip_code <- as.character(traffic.flow$zip_code)
 
@@ -214,7 +195,12 @@ ui <- fluidPage(
                  checkboxInput("tindex", "Traffic Index", value = TRUE), 
                  checkboxInput("jdelay", "Jams Delay"), 
                  checkboxInput("jlength", "Jams Length"),
-                 checkboxInput("jcount", "Jams Count", value = TRUE)
+                 checkboxInput("jcount", "Jams Count", value = TRUE),
+                 h5("Weather Parameters"),
+                 checkboxInput("temp", "Temperature", value = TRUE),
+                 checkboxInput("weather.des", "Weather Description", value = TRUE),
+                 checkboxInput("humidity", "Humidity"),
+                 checkboxInput("wind.speed", "Wind Speed")
                ),
                
                mainPanel(
@@ -232,6 +218,7 @@ ui <- fluidPage(
                              withLoader(tableOutput("aqitable"), type = "html", loader = "loader6"),
                              withLoader(tableOutput("aqitable2"), type = "html", loader = "loader6")),
                  tableOutput("traffictable"),
+                 tableOutput("weathertable"),
                  plotOutput("airtable.graph2"),
                  h3("Daily AQI"),
                  withLoader(plotOutput("myaqi"), type = "html", loader = "loader6"),
@@ -323,6 +310,11 @@ ui <- fluidPage(
                                         tableOutput("concentrations.back")),
                         bsCollapsePanel("Recommended Actions",
                                         tableOutput("pollutants.back"))),
+             h3("Weather"),
+             p("Weather data is pulled from Open Weather, an online service providing global weather data. Data is obtained hourly at the citywide level. Below is the information available for the citywide search feature."),
+             bsCollapse(id = "collapseWeather",
+                        bsCollapsePanel("Weather Metrics",
+                                        tableOutput("weather.back"))),
              h3("Additional Information"),
              bsCollapse(id = "collapseAdditional",
                         bsCollapsePanel("Contributors",
@@ -380,7 +372,7 @@ server <- function(input, output, session) {
   output$current.air.quality.o <- renderText({
     
     cs1 <- hourly %>% 
-      filter(date == parse_datetime(str_c(as.character(input$date2), 
+      filter(date == as_datetime(str_c(as.character(input$date2), 
                                           " ", 
                                           as.character(input$hour2), 
                                           ":00:00")))
@@ -469,7 +461,7 @@ server <- function(input, output, session) {
   output$current.congestion.o <- renderText({
     
     cs1 <- hourly %>% 
-      filter(date == parse_datetime(str_c(as.character(input$date2), 
+      filter(date == as_datetime(str_c(as.character(input$date2), 
                                           " ", 
                                           as.character(input$hour2), 
                                           ":00:00")))
@@ -516,7 +508,7 @@ server <- function(input, output, session) {
   })
   output$aqitable <- renderTable({
     hourly <- hourly %>% 
-      filter(date == parse_datetime(str_c(as.character(input$date2), 
+      filter(date == as_datetime(str_c(as.character(input$date2), 
                                           " ", 
                                           as.character(input$hour2), 
                                           ":00:00")))
@@ -708,7 +700,7 @@ server <- function(input, output, session) {
   })
   output$traffictable <- renderTable({
     cs1 <- hourly %>% 
-      filter(date == parse_datetime(str_c(as.character(input$date2), 
+      filter(date == as_datetime(str_c(as.character(input$date2), 
                                           " ", 
                                           as.character(input$hour2), 
                                           ":00:00")))
@@ -869,6 +861,174 @@ server <- function(input, output, session) {
     }
     
   })
+  output$weathertable <- renderTable({
+    cs1 <- hourly %>% 
+      filter(date == as_datetime(str_c(as.character(input$date2), 
+                                       " ", 
+                                       as.character(input$hour2), 
+                                       ":00:00"))) %>% 
+      dplyr::select(temp, weather_description, humidity, wind_speed) %>% 
+      distinct()
+    
+    df1 <- data.frame(time = c("current"),
+                      temperatre = round(cs1$temp, digits = 2),
+                      weather_description = cs1$weather_description,
+                      humidity = round(cs1$humidity, digits = 2),
+                      wind_speed = round(cs1$wind_speed, digits = 2))
+    
+    ls1 <- hourly %>% 
+      filter(date == as_datetime(str_c(as.character(input$date2), 
+                                       " ", 
+                                       as.character(input$hour2), 
+                                       ":00:00")) - 604800) %>% 
+      dplyr::select(temp, weather_description, humidity, wind_speed) %>% 
+      distinct()
+    
+    df2 <- data.frame(time = c("one week ago"),
+                      temperatre = round(ls1$temp, digits = 2),
+                      weather_description = ls1$weather_description,
+                      humidity = round(ls1$humidity, digits = 2),
+                      wind_speed = round(ls1$wind_speed, digits = 2))
+    
+    if(input$temp == TRUE){
+      if(input$weather.des == TRUE){
+        if(input$humidity == TRUE){
+          if(input$wind.speed == TRUE){
+            df1 <- df1[,c(1, 2, 3, 4, 5)]
+          }else if(input$wind.speed == FALSE){
+            df1 <- df1[,c(1, 2, 3, 4)]
+          }
+        }else if(input$humidity == FALSE){
+          if(input$wind.speed == TRUE){
+            df1 <- df1[,c(1, 2, 3, 5)]
+          }else if(input$wind.speed == FALSE){
+            df1 <- df1[,c(1, 2, 3)]
+          }
+        }
+      }else if(input$weather.des == FALSE){
+        if(input$humidity == TRUE){
+          if(input$wind.speed == TRUE){
+            df1 <- df1[,c(1, 2, 4, 5)]
+          }else if(input$wind.speed == FALSE){
+            df1 <- df1[,c(1, 2, 4)]
+          }
+        }else if(input$humidity == FALSE){
+          if(input$wind.speed == TRUE){
+            df1 <- df1[,c(1, 2, 5)]
+          }else if(input$wind.speed == FALSE){
+            df1 <- df1[,c(1, 2)]
+          }
+        }
+      }
+    }else if(input$temp == FALSE){
+      if(input$weather.des == TRUE){
+        if(input$humidity == TRUE){
+          if(input$wind.speed == TRUE){
+            df1 <- df1[,c(1, 3, 4, 5)]
+          }else if(input$wind.speed == FALSE){
+            df1 <- df1[,c(1, 3, 4)]
+          }
+        }else if(input$humidity == FALSE){
+          if(input$wind.speed == TRUE){
+            df1 <- df1[,c(1, 3, 5)]
+          }else if(input$wind.speed == FALSE){
+            df1 <- df1[,c(1, 3)]
+          }
+        }
+      }else if(input$weather.des == FALSE){
+        if(input$humidity == TRUE){
+          if(input$wind.speed == TRUE){
+            df1 <- df1[,c(1, 4, 5)]
+          }else if(input$wind.speed == FALSE){
+            df1 <- df1[,c(1, 4)]
+          }
+        }else if(input$humidity == FALSE){
+          if(input$wind.speed == TRUE){
+            df1 <- df1[,c(1, 5)]
+          }else if(input$wind.speed == FALSE){
+            df1 <- df1[,c(1)]
+          }
+        }
+      }
+    }
+    
+    if(input$temp == TRUE){
+      if(input$weather.des == TRUE){
+        if(input$humidity == TRUE){
+          if(input$wind.speed == TRUE){
+            df2 <- df2[,c(1, 2, 3, 4, 5)]
+          }else if(input$wind.speed == FALSE){
+            df2 <- df2[,c(1, 2, 3, 4)]
+          }
+        }else if(input$humidity == FALSE){
+          if(input$wind.speed == TRUE){
+            df2 <- df2[,c(1, 2, 3, 5)]
+          }else if(input$wind.speed == FALSE){
+            df2 <- df2[,c(1, 2, 3)]
+          }
+        }
+      }else if(input$weather.des == FALSE){
+        if(input$humidity == TRUE){
+          if(input$wind.speed == TRUE){
+            df2 <- df2[,c(1, 2, 4, 5)]
+          }else if(input$wind.speed == FALSE){
+            df2 <- df2[,c(1, 2, 4)]
+          }
+        }else if(input$humidity == FALSE){
+          if(input$wind.speed == TRUE){
+            df2 <- df2[,c(1, 2, 5)]
+          }else if(input$wind.speed == FALSE){
+            df2 <- df2[,c(1, 2)]
+          }
+        }
+      }
+    }else if(input$temp == FALSE){
+      if(input$weather.des == TRUE){
+        if(input$humidity == TRUE){
+          if(input$wind.speed == TRUE){
+            df2 <- df2[,c(1, 3, 4, 5)]
+          }else if(input$wind.speed == FALSE){
+            df2 <- df2[,c(1, 3, 4)]
+          }
+        }else if(input$humidity == FALSE){
+          if(input$wind.speed == TRUE){
+            df2 <- df2[,c(1, 3, 5)]
+          }else if(input$wind.speed == FALSE){
+            df2 <- df2[,c(1, 3)]
+          }
+        }
+      }else if(input$weather.des == FALSE){
+        if(input$humidity == TRUE){
+          if(input$wind.speed == TRUE){
+            df2 <- df2[,c(1, 4, 5)]
+          }else if(input$wind.speed == FALSE){
+            df2 <- df2[,c(1, 4)]
+          }
+        }else if(input$humidity == FALSE){
+          if(input$wind.speed == TRUE){
+            df2 <- df2[,c(1, 5)]
+          }else if(input$wind.speed == FALSE){
+            df2 <- df2[,c(1)]
+          }
+        }
+      }
+    }
+    
+    if(input$currenttime.o == TRUE){
+      if(input$lastweek.o == TRUE){
+        rbind(df1, df2)
+      }else{
+        df1
+      }
+    }else{
+      if(input$lastweek.o == TRUE){
+        df2
+      }else{
+        
+      }
+    }
+    
+  })
   
   ## Bar chart 
   output$airtable.graph2 <- renderPlot({
@@ -881,7 +1041,7 @@ server <- function(input, output, session) {
       }
       
       cs1 <- x %>% 
-        filter(date == parse_datetime(str_c(as.character(input$date2), 
+        filter(date == as_datetime(str_c(as.character(input$date2), 
                                             " ", 
                                             as.character(input$hour2), 
                                             ":00:00")))
@@ -1412,7 +1572,7 @@ server <- function(input, output, session) {
   output$airtable <- renderTable({
     if(input$currenttime == TRUE){
       cs1 <- traffic.flow %>% 
-        filter(date == parse_datetime(str_c(as.character(input$date1), 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
                                             " ", 
                                             as.character(input$hour), 
                                             ":00:00")))
@@ -1739,7 +1899,7 @@ server <- function(input, output, session) {
   ## Week Comparison Bar Chart
   output$airtable.graph <- renderPlot({
       cs1 <- traffic.flow %>% 
-        filter(date == parse_datetime(str_c(as.character(input$date1), 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
                                             " ", 
                                             as.character(input$hour), 
                                             ":00:00")))
@@ -1990,7 +2150,7 @@ server <- function(input, output, session) {
   ## Overview Numbers 
   output$current.speed <- renderText({
     cs1 <- traffic.flow %>% 
-      filter(date == parse_datetime(str_c(as.character(input$date1), 
+      filter(date == as_datetime(str_c(as.character(input$date1), 
                                           " ", 
                                           as.character(input$hour), 
                                           ":00:00")))
@@ -2068,7 +2228,7 @@ server <- function(input, output, session) {
   })
   output$current.travel.time <- renderText({
     cs1 <- traffic.flow %>% 
-      filter(date == parse_datetime(str_c(as.character(input$date1), 
+      filter(date == as_datetime(str_c(as.character(input$date1), 
                                           " ", 
                                           as.character(input$hour), 
                                           ":00:00")))
@@ -2144,7 +2304,7 @@ server <- function(input, output, session) {
   })
   output$current.air.quality <- renderText({
     cs1 <- traffic.flow %>% 
-      filter(date == parse_datetime(str_c(as.character(input$date1), 
+      filter(date == as_datetime(str_c(as.character(input$date1), 
                                           " ", 
                                           as.character(input$hour), 
                                           ":00:00")))
@@ -4500,7 +4660,7 @@ server <- function(input, output, session) {
         rename(id = map_id)
       
       map_tf <- traffic.flow %>% 
-        filter(date == parse_datetime(str_c(as.character(input$date1), 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
                                             " ", 
                                             as.character(input$hour), 
                                             ":00:00"))) %>% 
@@ -4532,7 +4692,7 @@ server <- function(input, output, session) {
         rename(id = map_id)
       
       map_tf <- traffic.flow %>% 
-        filter(date == parse_datetime(str_c(as.character(input$date1), 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
                                             " ", 
                                             as.character(input$hour), 
                                             ":00:00"))) %>% 
@@ -4565,7 +4725,7 @@ server <- function(input, output, session) {
         rename(id = map_id)
       
       map_tf <- traffic.flow %>% 
-        filter(date == parse_datetime(str_c(as.character(input$date1), 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
                                              " ", 
                                              as.character(input$hour), 
                                              ":00:00"))) %>% 
@@ -4598,7 +4758,7 @@ server <- function(input, output, session) {
         rename(id = map_id)
       
       map_tf <- traffic.flow %>% 
-        filter(date == parse_datetime(str_c(as.character(input$date1), 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
                                             " ", 
                                             as.character(input$hour), 
                                             ":00:00"))) %>% 
@@ -4630,7 +4790,7 @@ server <- function(input, output, session) {
         rename(id = map_id)
       
       map_tf <- traffic.flow %>% 
-        filter(date == parse_datetime(str_c(as.character(input$date1), 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
                                             " ", 
                                             as.character(input$hour), 
                                             ":00:00"))) %>% 
@@ -4664,7 +4824,7 @@ server <- function(input, output, session) {
         rename(id = map_id)
       
       map_tf <- traffic.flow %>% 
-        filter(date == parse_datetime(str_c(as.character(input$date1), 
+        filter(date == as_datetime(str_c(as.character(input$date1), 
                                             " ", 
                                             as.character(input$hour), 
                                             ":00:00"))) %>% 
@@ -5111,6 +5271,16 @@ server <- function(input, output, session) {
                "Unhealthy" = c("8 Hour: 0.086-0.105 ppm; 1 Hour: 0.165-0.204 ppm", "24 Hour: 55.5-150.4 microgram/m3", "1 Hour: 186-304 ppb", "1 Hour: 361-649 ppb"),
                "Very Unhealthy" = c("8 Hour: 0.106-0.200 ppm; 1 Hour: 0.205-0.404 ppm", "24 Hour: 150.5-250.4 microgram/m3", "1 Hour: 305-604 ppb", "1 Hour: 650-1,249 ppb"),
                "Hazardous" = c("1 Hour: 0.405-0.604 ppm", "24 Hour: 250.5-500.4 microgram/m3", "1 Hour: 605-1,004 ppb", "1 Hour: 1,250-2,049 ppb"))
+  })
+  output$weather.back <- renderTable({
+    data.frame(Metric = c("Temperature",
+                          "Weather Description",
+                          "Humidity",
+                          "Wind Speed"),
+               Description = c("Temperature across Washington, D.C. in Farenheit.",
+                               "Description of the current weather across Washington, D.C..",
+                               "Humidity across Washington, D.C. in percent.",
+                               "Wind speed across Washington, D.C. in miles per hour."))
   })
   
   observeEvent(input$historical.o,{
