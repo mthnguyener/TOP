@@ -185,6 +185,7 @@ ui <- fluidPage(
                  selectInput("location.type", "Which sensor location?",
                              choices = sensor.location, 
                              selected = "DC Near Road"),
+                 checkboxInput("include.weather", "Include Weather Data"),
                  checkboxInput("traffic", "Turn Map Traffic Index On", value = TRUE),
                  h5("Air Quality Parameters"),
                  checkboxInput("ozone", "OZONE", value = TRUE),
@@ -870,6 +871,13 @@ server <- function(input, output, session) {
       dplyr::select(temp, weather_description, humidity, wind_speed) %>% 
       distinct()
     
+    if(nrow(cs1) == 0){
+      cs1 <- data.frame(temp = NA, 
+                        weather_description = NA,
+                        humidity = NA,
+                        wind_speed = NA)
+    }
+    
     df1 <- data.frame(time = c("current"),
                       temperatre = round(cs1$temp, digits = 2),
                       weather_description = cs1$weather_description,
@@ -1014,17 +1022,19 @@ server <- function(input, output, session) {
       }
     }
     
-    if(input$currenttime.o == TRUE){
-      if(input$lastweek.o == TRUE){
-        rbind(df1, df2)
+    if(input$include.weather == TRUE){
+      if(input$currenttime.o == TRUE){
+        if(input$lastweek.o == TRUE){
+          rbind(df1[1,], df2[1,])
+        }else{
+          df1[1,]
+        }
       }else{
-        df1
-      }
-    }else{
-      if(input$lastweek.o == TRUE){
-        df2
-      }else{
-        
+        if(input$lastweek.o == TRUE){
+          df2[1,]
+        }else{
+          
+        }
       }
     }
     
@@ -1032,243 +1042,295 @@ server <- function(input, output, session) {
   
   ## Bar chart 
   output$airtable.graph2 <- renderPlot({
-      if(input$sensor.type == "Average Across Sensors"){  
-        x <- parameter_wider %>% 
-          filter(agency == "District of Columbia - Department of Energy and Environment")
-      }else if(input$sensor.type == "Single Sensor"){
-        x <- parameter_wider %>% 
-          filter(location == input$location.type)
-      }
-      
-      cs1 <- x %>% 
-        filter(date == as_datetime(str_c(as.character(input$date2), 
-                                            " ", 
-                                            as.character(input$hour2), 
-                                            ":00:00")))
-      
-      ls1 <- x %>% 
-        filter(date == as_datetime(str_c(as.character(input$date2), 
-                                         " ", 
-                                         as.character(input$hour2), 
-                                         ":00:00")) - 604800)
-      
-      com.s1 <- rbind(cs1, ls1)
-      
-      cs3 <- com.s1 %>% 
-        group_by(date) %>% 
-        summarize(Ozone = mean(OZONE, na.rm = TRUE),
-                  SO2 = mean(SO2, na.rm = TRUE),
-                  PM2.5 = mean(PM2.5, na.rm = TRUE),
-                  NO2 = mean(NO2, na.rm = TRUE),
-                  .groups = 'drop')
-      
-      cs3a <- cs3
-      
-      if(input$ozone == TRUE){
-        if(input$so2 == TRUE){
-          if(input$pm25 == TRUE){
-            if(input$no2 == TRUE){
-              cs3 <- cs3[,c(1, 2, 3, 4, 5)]
-            }else if(input$no2 == FALSE){
-              cs3 <- cs3[,c(1, 2, 3, 4)]
-            }
-          }else if(input$pm25 == FALSE){
-            if(input$no2 == TRUE){
-              cs3 <- cs3[,c(1, 2, 3, 5)]
-            }else if(input$no2 == FALSE){
-              cs3 <- cs3[,c(1, 2, 3)]
-            }
+    if(input$sensor.type == "Average Across Sensors"){  
+      x <- parameter_wider %>% 
+        filter(agency == "District of Columbia - Department of Energy and Environment")
+    }else if(input$sensor.type == "Single Sensor"){
+      x <- parameter_wider %>% 
+        filter(location == input$location.type)
+    }
+    
+    cs1 <- x %>% 
+      filter(date == as_datetime(str_c(as.character(input$date2), 
+                                       " ", 
+                                       as.character(input$hour2), 
+                                       ":00:00")))
+    
+    ls1 <- x %>% 
+      filter(date == as_datetime(str_c(as.character(input$date2), 
+                                       " ", 
+                                       as.character(input$hour2), 
+                                       ":00:00")) - 604800)
+    
+    com.s1 <- rbind(cs1, ls1)
+    
+    cs3 <- com.s1 %>% 
+      group_by(date) %>% 
+      summarize(Ozone = mean(OZONE, na.rm = TRUE),
+                SO2 = mean(SO2, na.rm = TRUE),
+                PM2.5 = mean(PM2.5, na.rm = TRUE),
+                NO2 = mean(NO2, na.rm = TRUE),
+                .groups = 'drop')
+    
+    cs3a <- cs3
+    
+    if(input$ozone == TRUE){
+      if(input$so2 == TRUE){
+        if(input$pm25 == TRUE){
+          if(input$no2 == TRUE){
+            cs3 <- cs3[,c(1, 2, 3, 4, 5)]
+          }else if(input$no2 == FALSE){
+            cs3 <- cs3[,c(1, 2, 3, 4)]
           }
-        }else if(input$so2 == FALSE){
-          if(input$pm25 == TRUE){
-            if(input$no2 == TRUE){
-              cs3 <- cs3[,c(1, 2, 4, 5)]
-            }else if(input$no2 == FALSE){
-              cs3 <- cs3[,c(1, 2, 4)]
-            }
-          }else if(input$pm25 == FALSE){
-            if(input$no2 == TRUE){
-              cs3 <- cs3[,c(1, 2, 5)]
-            }else if(input$no2 == FALSE){
-              cs3 <- cs3[,c(1, 2)]
-            }
+        }else if(input$pm25 == FALSE){
+          if(input$no2 == TRUE){
+            cs3 <- cs3[,c(1, 2, 3, 5)]
+          }else if(input$no2 == FALSE){
+            cs3 <- cs3[,c(1, 2, 3)]
           }
         }
-      }else if(input$ozone == FALSE){
-        if(input$so2 == TRUE){
-          if(input$pm25 == TRUE){
-            if(input$no2 == TRUE){
-              cs3 <- cs3[,c(1, 3, 4, 5)]
-            }else if(input$no2 == FALSE){
-              cs3 <- cs3[,c(1, 3, 4)]
-            }
-          }else if(input$pm25 == FALSE){
-            if(input$no2 == TRUE){
-              cs3 <- cs3[,c(1, 3, 5)]
-            }else if(input$no2 == FALSE){
-              cs3 <- cs3[,c(1, 3)]
-            }
+      }else if(input$so2 == FALSE){
+        if(input$pm25 == TRUE){
+          if(input$no2 == TRUE){
+            cs3 <- cs3[,c(1, 2, 4, 5)]
+          }else if(input$no2 == FALSE){
+            cs3 <- cs3[,c(1, 2, 4)]
           }
-        }else if(input$so2 == FALSE){
-          if(input$pm25 == TRUE){
-            if(input$no2 == TRUE){
-              cs3 <- cs3[,c(1, 4, 5)]
-            }else if(input$no2 == FALSE){
-              cs3 <- cs3[,c(1, 4)]
-            }
-          }else if(input$pm25 == FALSE){
-            if(input$no2 == TRUE){
-              cs3 <- cs3[,c(1, 5)]
-            }else if(input$no2 == FALSE){
-              cs3 <- cs3[,c(1)]
-            }
+        }else if(input$pm25 == FALSE){
+          if(input$no2 == TRUE){
+            cs3 <- cs3[,c(1, 2, 5)]
+          }else if(input$no2 == FALSE){
+            cs3 <- cs3[,c(1, 2)]
           }
         }
       }
-      
-      cs3 <- pivot_longer(cs3, -date, names_to = "param")
-      
-      cs3$date <- str_c(substr(cs3$date, start = 1, stop = 10), " T",
-                        substr(cs3$date, start = 12, stop = 13))
-      
-      if(max(cs3a$PM2.5) <=150 | sum(is.na(cs3a$PM2.5)) == nrow(cs3a)){
-        p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
-          geom_bar(stat = "identity", position = "dodge") +
-          labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
-               title = "Weekly Comparison of AQI and Traffic") +
-          annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
-      }else if(max(cs3a$PM2.5) <=200 & max(cs3a$PM2.5) > 150){
-        p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
-          geom_bar(stat = "identity", position = "dodge") +
-          labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
-               title = "Weekly Comparison of AQI and Traffic") +
-          annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
-          annotate("text", x = unique(cs3$param)[1], y = 195, label = "Unhealthy") +
-          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1)
-      }else if(max(cs3a$PM2.5) <=300 & max(cs3a$PM2.5) > 200){
-        p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
-          geom_bar(stat = "identity", position = "dodge") +
-          labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
-               title = "Weekly Comparison of AQI and Traffic") +
-          annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
-          annotate("text", x = unique(cs3$param)[1], y = 195, label = "Unhealthy") +
-          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
-          annotate("text", x = unique(cs3$param)[1], y = 295, label = "Very Unhealthy") +
-          geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1)
-      }else if(max(cs3a$PM2.5) > 300){
-        p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
-          geom_bar(stat = "identity", position = "dodge") +
-          labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
-               title = "Weekly Comparison of AQI and Traffic") +
-          annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
-          geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
-          annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
-          geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
-          annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
-          geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
-          annotate("text", x = unique(cs3$param)[1], y = 195, label = "Unhealthy") +
-          geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
-          annotate("text", x = unique(cs3$param)[1], y = 295, label = "Very Unhealthy") +
-          geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
-          annotate("text", x = unique(cs3$param)[1], y = 395, label = "Hazardous") +
-          geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1)
-      }
-      
-      cs4 <- com.s1 %>% 
-        group_by(date) %>% 
-        summarize(Traffic_Index = mean(traffic_index_live, na.rm = TRUE),
-                  Jams_Delay = mean(jams_delay, na.rm = TRUE),
-                  Jams_Length = mean(jams_length, na.rm = TRUE),
-                  Jams_Count = mean(jams_count, na.rm = TRUE),
-                  .groups = 'drop')
-      
-      if(input$tindex == TRUE){
-        if(input$jdelay == TRUE){
-          if(input$jlength == TRUE){
-            if(input$jcount == TRUE){
-              cs4 <- cs4[,c(1, 2, 3, 4, 5)]
-            }else if(input$jcount == FALSE){
-              cs4 <- cs4[,c(1, 2, 3, 4)]
-            }
-          }else if(input$jlength == FALSE){
-            if(input$jcount == TRUE){
-              cs4 <- cs4[,c(1, 2, 3, 5)]
-            }else if(input$jcount == FALSE){
-              cs4 <- cs4[,c(1, 2, 3)]
-            }
+    }else if(input$ozone == FALSE){
+      if(input$so2 == TRUE){
+        if(input$pm25 == TRUE){
+          if(input$no2 == TRUE){
+            cs3 <- cs3[,c(1, 3, 4, 5)]
+          }else if(input$no2 == FALSE){
+            cs3 <- cs3[,c(1, 3, 4)]
           }
-        }else if(input$jdelay == FALSE){
-          if(input$jlength == TRUE){
-            if(input$jcount == TRUE){
-              cs4 <- cs4[,c(1, 2, 4, 5)]
-            }else if(input$jcount == FALSE){
-              cs4 <- cs4[,c(1, 2, 4)]
-            }
-          }else if(input$jlength == FALSE){
-            if(input$jcount == TRUE){
-              cs4 <- cs4[,c(1, 2, 5)]
-            }else if(input$jcount == FALSE){
-              cs4 <- cs4[,c(1, 2)]
-            }
+        }else if(input$pm25 == FALSE){
+          if(input$no2 == TRUE){
+            cs3 <- cs3[,c(1, 3, 5)]
+          }else if(input$no2 == FALSE){
+            cs3 <- cs3[,c(1, 3)]
           }
         }
-      }else if(input$tindex == FALSE){
-        if(input$jdelay == TRUE){
-          if(input$jlength == TRUE){
-            if(input$jcount == TRUE){
-              cs4 <- cs4[,c(1, 3, 4, 5)]
-            }else if(input$jcount == FALSE){
-              cs4 <- cs4[,c(1, 3, 4)]
-            }
-          }else if(input$jlength == FALSE){
-            if(input$jcount == TRUE){
-              cs4 <- cs4[,c(1, 3, 5)]
-            }else if(input$jcount == FALSE){
-              cs4 <- cs4[,c(1, 3)]
-            }
+      }else if(input$so2 == FALSE){
+        if(input$pm25 == TRUE){
+          if(input$no2 == TRUE){
+            cs3 <- cs3[,c(1, 4, 5)]
+          }else if(input$no2 == FALSE){
+            cs3 <- cs3[,c(1, 4)]
           }
-        }else if(input$jdelay == FALSE){
-          if(input$jlength == TRUE){
-            if(input$jcount == TRUE){
-              cs4 <- cs4[,c(1, 4, 5)]
-            }else if(input$jcount == FALSE){
-              cs4 <- cs4[,c(1, 4)]
-            }
-          }else if(input$jlength == FALSE){
-            if(input$jcount == TRUE){
-              cs4 <- cs4[,c(1, 5)]
-            }else if(input$jcount == FALSE){
-              cs4 <- cs4[,c(1)]
-            }
+        }else if(input$pm25 == FALSE){
+          if(input$no2 == TRUE){
+            cs3 <- cs3[,c(1, 5)]
+          }else if(input$no2 == FALSE){
+            cs3 <- cs3[,c(1)]
           }
         }
       }
-      
-      cs4 <- pivot_longer(cs4, -date, names_to = "param")
-      
-      cs4$date <- str_c(substr(cs4$date, start = 1, stop = 10), " T",
-                        substr(cs4$date, start = 12, stop = 13))
-      
-      p1 <- ggplot(data = cs4, aes(x = param, y = value, fill = as.character(date))) +
+    }
+    
+    cs3 <- pivot_longer(cs3, -date, names_to = "param")
+    
+    cs3$date <- str_c(substr(cs3$date, start = 1, stop = 10), " T",
+                      substr(cs3$date, start = 12, stop = 13))
+    
+    if(max(cs3a$PM2.5) <=150 | sum(is.na(cs3a$PM2.5)) == nrow(cs3a)){
+      p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
         geom_bar(stat = "identity", position = "dodge") +
-        labs(x = "Traffic Parameters", y = "Traffic Value", fill = "Date")
-      
+        labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+             title = "Weekly Comparison of AQI") +
+        annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+        geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+        geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+        geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1)
+    }else if(max(cs3a$PM2.5) <=200 & max(cs3a$PM2.5) > 150){
+      p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
+        geom_bar(stat = "identity", position = "dodge") +
+        labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+             title = "Weekly Comparison of AQI and Traffic") +
+        annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+        geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+        geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+        geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+        annotate("text", x = unique(cs3$param)[1], y = 195, label = "Unhealthy") +
+        geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1)
+    }else if(max(cs3a$PM2.5) <=300 & max(cs3a$PM2.5) > 200){
+      p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
+        geom_bar(stat = "identity", position = "dodge") +
+        labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+             title = "Weekly Comparison of AQI and Traffic") +
+        annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+        geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+        geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+        geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+        annotate("text", x = unique(cs3$param)[1], y = 195, label = "Unhealthy") +
+        geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 295, label = "Very Unhealthy") +
+        geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1)
+    }else if(max(cs3a$PM2.5) > 300){
+      p2 <- ggplot(data = cs3, aes(x = param, y = value, fill = as.character(date))) +
+        geom_bar(stat = "identity", position = "dodge") +
+        labs(x = "Air Quality Parameters", y = "Air Quality Index", fill = "Date",
+             title = "Weekly Comparison of AQI and Traffic") +
+        annotate("text", x = unique(cs3$param)[1], y = 45, label = "Healthy") +
+        geom_hline(yintercept = 51, linetype = "dashed", color = "green", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 95, label = "Moderate") +
+        geom_hline(yintercept = 101, linetype = "dashed", color = "yellow", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 145, label = "Unhealthy for Sensitive Groups") +
+        geom_hline(yintercept = 151, linetype = "dashed", color = "orange", size = 1) + 
+        annotate("text", x = unique(cs3$param)[1], y = 195, label = "Unhealthy") +
+        geom_hline(yintercept = 201, linetype = "dashed", color = "red", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 295, label = "Very Unhealthy") +
+        geom_hline(yintercept = 301, linetype = "dashed", color = "purple", size = 1) +
+        annotate("text", x = unique(cs3$param)[1], y = 395, label = "Hazardous") +
+        geom_hline(yintercept = 401, linetype = "dashed", color = "brown", size = 1)
+    }
+    
+    cs4 <- com.s1 %>% 
+      group_by(date) %>% 
+      summarize(Traffic_Index = mean(traffic_index_live, na.rm = TRUE),
+                Jams_Delay = mean(jams_delay, na.rm = TRUE),
+                Jams_Length = mean(jams_length, na.rm = TRUE),
+                Jams_Count = mean(jams_count, na.rm = TRUE),
+                .groups = 'drop')
+    
+    if(input$tindex == TRUE){
+      if(input$jdelay == TRUE){
+        if(input$jlength == TRUE){
+          if(input$jcount == TRUE){
+            cs4 <- cs4[,c(1, 2, 3, 4, 5)]
+          }else if(input$jcount == FALSE){
+            cs4 <- cs4[,c(1, 2, 3, 4)]
+          }
+        }else if(input$jlength == FALSE){
+          if(input$jcount == TRUE){
+            cs4 <- cs4[,c(1, 2, 3, 5)]
+          }else if(input$jcount == FALSE){
+            cs4 <- cs4[,c(1, 2, 3)]
+          }
+        }
+      }else if(input$jdelay == FALSE){
+        if(input$jlength == TRUE){
+          if(input$jcount == TRUE){
+            cs4 <- cs4[,c(1, 2, 4, 5)]
+          }else if(input$jcount == FALSE){
+            cs4 <- cs4[,c(1, 2, 4)]
+          }
+        }else if(input$jlength == FALSE){
+          if(input$jcount == TRUE){
+            cs4 <- cs4[,c(1, 2, 5)]
+          }else if(input$jcount == FALSE){
+            cs4 <- cs4[,c(1, 2)]
+          }
+        }
+      }
+    }else if(input$tindex == FALSE){
+      if(input$jdelay == TRUE){
+        if(input$jlength == TRUE){
+          if(input$jcount == TRUE){
+            cs4 <- cs4[,c(1, 3, 4, 5)]
+          }else if(input$jcount == FALSE){
+            cs4 <- cs4[,c(1, 3, 4)]
+          }
+        }else if(input$jlength == FALSE){
+          if(input$jcount == TRUE){
+            cs4 <- cs4[,c(1, 3, 5)]
+          }else if(input$jcount == FALSE){
+            cs4 <- cs4[,c(1, 3)]
+          }
+        }
+      }else if(input$jdelay == FALSE){
+        if(input$jlength == TRUE){
+          if(input$jcount == TRUE){
+            cs4 <- cs4[,c(1, 4, 5)]
+          }else if(input$jcount == FALSE){
+            cs4 <- cs4[,c(1, 4)]
+          }
+        }else if(input$jlength == FALSE){
+          if(input$jcount == TRUE){
+            cs4 <- cs4[,c(1, 5)]
+          }else if(input$jcount == FALSE){
+            cs4 <- cs4[,c(1)]
+          }
+        }
+      }
+    }
+    
+    cs4 <- pivot_longer(cs4, -date, names_to = "param")
+    
+    cs4$date <- str_c(substr(cs4$date, start = 1, stop = 10), " T",
+                      substr(cs4$date, start = 12, stop = 13))
+    
+    p1 <- ggplot(data = cs4, aes(x = param, y = value, fill = as.character(date))) +
+      geom_bar(stat = "identity", position = "dodge") +
+      labs(x = "Traffic Parameters", y = "Traffic Value", fill = "Date",
+           title = "Weekly Comparison of Traffic")
+    
+    cs5 <- com.s1 %>% 
+      group_by(date) %>% 
+      summarize(Temperature = mean(temp, na.rm = TRUE),
+                Humidity = mean(humidity, na.rm = TRUE),
+                Wind_Speed = mean(wind_speed, na.rm = TRUE),
+                .groups = 'drop')
+    
+    if(input$temp == TRUE){
+      if(input$humidity == TRUE){
+        if(input$wind.speed == TRUE){
+          cs5 <- cs5[,c(1, 2, 3, 4)]
+        }else if(input$wind.speed == FALSE){
+          cs5 <- cs5[,c(1, 2, 3)]
+        }
+      }else if(input$humidity == FALSE){
+        if(input$wind.speed == TRUE){
+          cs5 <- cs5[,c(1, 2, 4)]
+        }else if(input$wind.speed == FALSE){
+          cs5 <- cs5[,c(1, 2)]
+        }
+      }
+    }else if(input$temp == FALSE){
+      if(input$humidity == TRUE){
+        if(input$wind.speed == TRUE){
+          cs5 <- cs5[,c(1, 3, 4)]
+        }else if(input$wind.speed == FALSE){
+          cs5 <- cs5[,c(1, 3)]
+        }
+      }else if(input$humidity == FALSE){
+        if(input$wind.speed == TRUE){
+          cs5 <- cs5[,c(1, 4)]
+        }else if(input$wind.speed == FALSE){
+          cs5 <- cs5[,c(1)]
+        }
+      }
+    }
+    
+    cs5 <- pivot_longer(cs5, -date, names_to = "param")
+    
+    cs5$date <- str_c(substr(cs5$date, start = 1, stop = 10), " T",
+                      substr(cs5$date, start = 12, stop = 13))
+    
+    p3 <- ggplot(data = cs5, aes(x = param, y = value, fill = as.character(date))) +
+      geom_bar(stat = "identity", position = "dodge") +
+      labs(x = "Weather Parameters", y = "Weather Value", fill = "Date",
+           title = "Weekly Comparison of Weather")
+    
+    if(input$include.weather == TRUE){
+      grid.arrange(p2, p1, p3, ncol = 2) 
+    }else if(input$include.weather == FALSE){
       grid.arrange(p2, p1, ncol = 2)
+    }
   })
   
   ## Overview graph for the Overview tab
@@ -1524,7 +1586,75 @@ server <- function(input, output, session) {
           }
         }
       }
-      grid.arrange(plot1, plot2, ncol = 2)
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      param.slim <- parameter_wider %>% 
+        dplyr::select(date, temp, humidity, wind_speed) 
+      
+      param.slim <- param.slim %>% 
+        distinct() %>% 
+        rename(Temperature = temp,
+               Humidity = humidity,
+               Wind_Speed = wind_speed)
+      
+      colors <- c("Temperature" = "blue", "Humidity" = "orange", 
+                  "Wind_Speed" = "red")
+      
+      #ptitle <- str_c("AQI and Traffic")
+      p1 <- 
+        ggplot(data = param.slim, aes(x = date)) +
+        labs(x = "Date", y = "Weather Value", title = "Weather",
+             color = "Parameter") +
+        scale_color_manual(values = colors) 
+      
+      pt <- geom_line(aes(y = Temperature, color = "Temperature"))
+      ph <- geom_line(aes(y = Humidity, color = "Humidity"))
+      pw <- geom_line(aes(y = Wind_Speed, color = "Wind_Speed"))
+      #pt <- labs(title = ptitle, x = "Date", y = "")
+      
+      if(input$temp == TRUE){
+        if(input$humidity == TRUE){
+          if(input$wind.speed == TRUE){
+            plot3 <- p1 + pt + ph + pw
+          } else if(input$wind.speed == FALSE){
+            plot3 <- p1 + pt + ph
+          }
+        }else if(input$humidity == FALSE){
+          if(input$wind.speed == TRUE){
+            plot3 <- p1 + pt + pw
+          } else if(input$wind.speed == FALSE){
+            plot3 <- p1 + pt
+          }
+        }
+      } else if(input$temp == FALSE){
+        if(input$humidity == TRUE){
+          if(input$wind.speed == TRUE){
+            plot3 <- p1 + ph + pw
+          } else if(input$wind.speed == FALSE){
+            plot3 <- p1 + ph
+          }
+        }else if(input$humidity == FALSE){
+          if(input$wind.speed == TRUE){
+            plot3 <- p1 + pw
+          } else if(input$wind.speed == FALSE){
+            plot3 <- p1 
+          }
+        }
+      }
+      
+      if(input$include.weather == TRUE){
+        grid.arrange(plot1, plot2, plot3, ncol = 2)
+      }else if(input$include.weather == FALSE){
+        grid.arrange(plot1, plot2, ncol = 2)
+      }
+      
     }
   })
   
