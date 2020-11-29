@@ -2788,6 +2788,10 @@ server <- function(input, output, session) {
     }
   }) ## filtered location
   output$loc.type.graph1 <- renderPlot({
+    traffic.flow <- traffic.flow %>% 
+      mutate(ward = as.character(ward), 
+             voter_precinct = as.character(voter_precinct))
+    
     if(input$historical == TRUE){
       if(input$loc.type == "Quadrant"){
         cs3 <- traffic.flow %>% 
@@ -4497,6 +4501,10 @@ server <- function(input, output, session) {
     }
   }) ## comparison of location, air
   output$loc.type.graph2 <- renderPlot({
+    traffic.flow <- traffic.flow %>% 
+      mutate(ward = factor(ward), 
+             voter_precinct = as.character(voter_precinct))
+    
     if(input$historical == TRUE){
       if(input$loc.type == "Quadrant"){
         cs4 <- traffic.flow %>% 
@@ -4806,7 +4814,7 @@ server <- function(input, output, session) {
                   .groups = 'drop') %>% 
         rename(id = quadrant)
       
-      map_tf <- merge(map_tf, map_centroids, by = "id")
+      map_tf <- merge(map_tf, map_centroids, by = "id", all.y = TRUE)
     }else if(input$loc.type == "Ward"){
       map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Ward_from_2012-shp/"),
                         verbose = FALSE)
@@ -4839,7 +4847,7 @@ server <- function(input, output, session) {
         rename(id = ward) %>% 
         mutate(id = as.integer(id))
       
-      map_tf <- merge(map_tf, map_centroids, by = "id")
+      map_tf <- merge(map_tf, map_centroids, by = "id", all.y = TRUE)
     }else if(input$loc.type == "Zip Code"){
       map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Zip_Codes-shp/"),
                         verbose = FALSE)
@@ -5087,7 +5095,7 @@ server <- function(input, output, session) {
                   .groups = 'drop') %>% 
         rename(id = quadrant)
       
-      map_tf <- merge(map_tf, map_centroids, by = "id")
+      map_tf <- merge(map_tf, map_centroids, by = "id", all.y = TRUE)
     }else if(input$loc.type == "Ward"){
       map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Ward_from_2012-shp/"),
                         verbose = FALSE)
@@ -5119,7 +5127,7 @@ server <- function(input, output, session) {
                   .groups = 'drop') %>% 
         rename(id = ward)
       
-      map_tf <- merge(map_tf, map_centroids, by = "id")
+      map_tf <- merge(map_tf, map_centroids, by = "id", all.y = TRUE)
     }else if(input$loc.type == "Zip Code"){
       map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Zip_Codes-shp/"),
                         verbose = FALSE)
@@ -5152,7 +5160,7 @@ server <- function(input, output, session) {
         rename(id = zip_code) %>% 
         mutate(id = as.integer(id))
       
-      map_tf <- merge(map_tf, map_centroids, by = "id")
+      map_tf <- merge(map_tf, map_centroids, by = "id", all.y = TRUE)
     }else if(input$loc.type == "Advisory Neighborhood Commission"){
       map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Advisory_Neighborhood_Commissions_from_2013-shp/"),
                         verbose = FALSE)
@@ -5184,7 +5192,7 @@ server <- function(input, output, session) {
                   .groups = 'drop') %>% 
         rename(id = anc)
       
-      map_tf <- merge(map_tf, map_centroids, by = "id")
+      map_tf <- merge(map_tf, map_centroids, by = "id", all.y = TRUE)
     }else if(input$loc.type == "Single Member District"){
       map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Single_Member_District_from_2013-shp/"),
                         verbose = FALSE)
@@ -5216,7 +5224,7 @@ server <- function(input, output, session) {
                   .groups = 'drop') %>% 
         rename(id = single_member_district)
       
-      map_tf <- merge(map_tf, map_centroids, by = "id")
+      map_tf <- merge(map_tf, map_centroids, by = "id", all.y = TRUE)
     }else if(input$loc.type == "Voter Precinct"){
       map_df <- readOGR(dsn = paste0(getwd(), "/data/shape_files/Voting_Precinct_-_2012-shp/"),
                         verbose = FALSE)
@@ -5250,7 +5258,7 @@ server <- function(input, output, session) {
                   .groups = 'drop') %>% 
         rename(id = voter_precinct)
       
-      map_tf <- merge(map_tf, map_centroids, by = "id")
+      map_tf <- merge(map_tf, map_centroids, by = "id", all.y = TRUE)
     }
     
     if(input$loc.type != "Census Tract"){
