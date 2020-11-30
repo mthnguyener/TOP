@@ -153,7 +153,7 @@ ui <- fluidPage(
   tabsetPanel(
     tabPanel("Overview",
              h2("Welcome to AirMotionDC"),
-             p("AirMotionDC is a real time data tool that compiles and analyzes traffic patterns and air pollution in the District of Columbia to explore the relationship between transportation and air quality. AirMotionDC utilizes a variety of data sources including AirNow, TomTom, Open Data DC, and OpenWeather. For more information on these sources and how the data was compiled, please visit the Background tab."),
+             p("AirMotionDC is a real time data tool that compiles and analyzes traffic patterns, air pollution, and weather in the District of Columbia to explore the relationship between transportation and air quality. AirMotionDC utilizes a variety of data sources including AirNow, TomTom, Open Data DC, and OpenWeather. For more information on these sources and how the data was compiled, please visit the Background tab."),
              h3("Understanding the Tool"),
              p("Click the following to expand the section and explore what information is provided in each of the tabs above."),
              bsCollapse(id = "collapseOverview",
@@ -5509,7 +5509,6 @@ server <- function(input, output, session) {
       shinyjs::hide("temp");shinyjs::hide("weather.des");shinyjs::hide("humidity");shinyjs::hide("wind.speed")
     }
   })
-  
   observeEvent(input$sensor.type,{
     if (input$sensor.type == "Average Across Sensors"){
       shinyjs::hide("location.type")
