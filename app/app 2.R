@@ -5509,6 +5509,14 @@ server <- function(input, output, session) {
       shinyjs::hide("temp");shinyjs::hide("weather.des");shinyjs::hide("humidity");shinyjs::hide("wind.speed")
     }
   })
+  
+  observeEvent(input$sensor.type,{
+    if (input$sensor.type == "Average Across Sensors"){
+      shinyjs::hide("location.type")
+    }else{
+      shinyjs::show("location.type")
+    }
+  })
 
 }
 
