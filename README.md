@@ -8,7 +8,7 @@ Maria Barouti, Sr Professional Lecturer Mathematics & Statistics (barouti@americ
 
 Zois Boukouvalas, Assistant Professor Mathematics & Statistics (boukouva@american.edu)
 
-Konstantinos Koukoulakis
+Konstantinos Koukoulakis (kkoukoulakis@chem.uoa.gr)
 
 ## The Opportunity Project
 Brings together government agencies, user advocates, data stewards, product advisors, and students to solve problems facing the community.
