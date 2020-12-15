@@ -1,5 +1,15 @@
 # The Opportunity Project - 2020 Earth Sprints (September - November 2020)
 
+## Contributors:
+Chace Paulson (cp5864a@student.american.edu), Minh-Tuan Nguyen (mnguyen@wcl.american.edu) and Shalini Ramachandra (sr6890a@student.american.edu)
+
+## Advisory team: 
+Maria Barouti, Sr Professional Lecturer Mathematics & Statistics (barouti@american.edu)
+
+Zois Boukouvalas, Assistant Professor Mathematics & Statistics (boukouva@american.edu)
+
+Konstantinos Koukoulakis
+
 ## The Opportunity Project
 Brings together government agencies, user advocates, data stewards, product advisors, and students to solve problems facing the community.
 The teams of students design, develop and launch products, utilizing federal open data 
