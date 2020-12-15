@@ -29,13 +29,13 @@ To enabling users to explore the relationship between transportation and air qua
 Gather and clean the data 
  
 ### TomTom - Citywide 
-Two sides to our data collection - citywide levels and location specific data 
-For citywide traffic data, we utilized a process of webscraping on the live traffic map for DC at TomTom 
-TomTom is a Dutch technology firm that sources traffic information for government and third-party data such as GPS traces, community input, and vehicle sensor data
-The white panel shows a sample of what the live traffic map contains 
-Data points like congestion level, number of jams, length of jams, etc. 
- To scrape this data, we “inspected” the page and grabbed the fetch key from the network tab 
-A sample of how this data pulls into R is provided on the left and how it is sorted after cleaning is in the middle 
+Two sides to our data collection - citywide levels and location specific data.
+
+For citywide traffic data, we utilized a process of webscraping on the live traffic map for DC at TomTom.
+
+Data points like congestion level, number of jams, length of jams, etc.
+
+To scrape this data, we “inspected” the page and grabbed the fetch key from the network tab.
  
 ### AirNow 
 Taking the 166 date times that come in with the traffic data scrape (i.e., current time to exactly one week ago)
@@ -45,39 +45,34 @@ Unlist the data and merge it by date with the traffic data
 The six sensor locations the data pulls for is shown on the right and the tidied data in the middle 
  
 ### OpenDataDC
-In order to pull for specific locations - we have to first choose those locations 
-To do that - we used Open Data DC’s street segment data which contained locations for 13,676 segments across the district 
-The map on the left shows what each of these individual street segments look like
-We then randomly sampled these segments to create a data set of 106 locations 
-This is the max number of free API pulls we are allowed from TomTom per hour
-To make sure we weren’t over representing on location such as downtown, we proportionally sampled the four quadrants based on their relative number of appearances in the data set - break down shown on the left 
-The data provides the furthest most address on either side of the segment
-We calculated the midpoint between these two addresses and rounded up if it contained a decimal 
- 
+In order to pull for specific locations - we have to first choose those locations. To do that - we used Open Data DC’s street segment data which contained locations for 13,676 segments across the district. We then randomly sampled these segments to create a data set of 106 locations. This is the max number of free API pulls we are allowed from TomTom per hour.
+
+To make sure we weren’t over representing on location such as downtown, we proportionally sampled the four quadrants based on their relative number of appearances in the data set.
+
 ### DC GIS Master Address Repository
-To include more useful location information then just lat/long and one address, we webscraped from the DC GIS Master Address Repository for info like ward and quadrant 
-The regular interface is shown on the left 
-Using the XML page link - which appears like the middle picture - we were able to create a shell structure from which to pull this information for the 106 addresses
-Replacing the location in the URL frame, we then used a for loop to pull data, turn into a list, sort, and export 
+To include more useful location information then just lat/long and one address, we webscraped from the DC GIS Master Address Repository for info like ward and quadrant.
+
+Using the XML page link - which appears like the middle picture - we were able to create a shell structure from which to pull this information for the 106 addresses.
+
+We replaced the location in the URL frame, we then used a for loop to pull data, turn into a list, sort, and export.
  
 ### TomTom - Location Search 
-Using these locations, then, we could gather the data for the location specific search 
-Used a similar location shell URL frame and replaced the latitude and longitude in the shell
-Ran a for loop to pull the data, turn it into a list, and sort it into a data frame 
-To merge with the air quality data - we found the absolute value of the difference between the latitude and longitude of the traffic data and the six sensors and selected the sensor with the lowest number for each of the four parameters
-Sample of the data when it was first pulled and after it is tidied is provided on the left 
+Using these locations, then, we could gather the data for the location specific search.
+
+We used a similar location shell URL frame and replaced the latitude and longitude in the shell then ran a for loop to pull the data, turn it into a list, and sort it into a data frame.
+
+To merge with the air quality data - we found the absolute value of the difference between the latitude and longitude of the traffic data and the six sensors and selected the sensor with the lowest number for each of the four parameters.
  
 ### Open Weather/Automation 
-Lastly we added in hourly citywide weather data from Open Weather 
-As you can see - this pulled in fairly clean and didn’t require any tidying
-In order to automate this process
-Utilized cronR package to schedule our R script to run through every hour, on the hour
-Loading in the old data, pulling new data, merging them together, and exporting it
-Given the structure of the citywide traffic data (i.e., includes one full week of data), it is more robust then location search data as it can pick up missing hours when you log back onto the computer 
-Location search can only pull for the current time, and, thus, requires the computer to be active to scrape the data 
+Lastly we added in hourly citywide weather data from Open Weather. 
+
+In order to automate this process, we utilized cronR package to schedule our R script to run through every hour, on the hour.
+
+Given the structure of the citywide traffic data (i.e., includes one full week of data), it is more robust then location search data as it can pick up missing hours when you log back onto the computer. Location search can only pull for the current time, and, thus, requires the computer to be active to scrape the data.
  
 ### Product Design 
-After data wrangling, then, it was time to begin creating our actual application 
-As previously mentioned - AirMotionDC compiles and analyzes real time data on traffic patterns, air pollution, and weather in the District of Columbia 
-To explore the relationship between transportation and air quality locally, at both a granular and citywide level 
-The interface includes several features 
+After data wrangling, then, it was time to begin creating our actual application.
+
+As previously mentioned - AirMotionDC compiles and analyzes real time data on traffic patterns, air pollution, and weather in the District of Columbia.
+
+To explore the relationship between transportation and air quality locally, at both a granular and citywide level. the interface includes several features.
